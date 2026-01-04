@@ -1,0 +1,119 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+final String RESET = "\u001B[0m"
+final String RED = "\u001B[31m"
+final String GREEN = "\u001B[32m"
+final String YELLOW = "\u001B[33m"
+final String BLUE = "\u001B[34m"
+final String PURPLE = "\u001B[35m"
+final String CYAN = "\u001B[36m"
+final String WHITE = "\u001B[37m"
+
+def timings = [:]
+def elapsedTimes = [:]
+ext {
+    historyFile = new File(gradle.gradleUserHomeDir, 'hitpaw-ven-build-history.json')
+}
+
+// 加载历史数据
+def loadHistory() {
+    if (!historyFile.exists()) {
+        return [:]
+    }
+    try {
+        return new JsonSlurper().parse(historyFile)
+    } catch (Exception e) {
+        println "${RED}Error loading history: ${e.message}${RESET}"
+        return [:]
+    }
+}
+
+// 保存历史数据
+def saveHistory(Map history) {
+    try {
+        historyFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(history))
+    } catch (Exception e) {
+        println "${RED}Error saving history: ${e.message}${RESET}"
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    taskGraph.allTasks.each { task ->
+        task.doFirst {
+            timings[task.path] = System.currentTimeMillis()
+        }
+        task.doLast {
+            def startTime = timings[task.path]
+            if (startTime != null) {
+                def endTime = System.currentTimeMillis()
+                def elapsedTime = endTime - startTime
+                elapsedTimes[task.path] = elapsedTime
+                println "${PURPLE}>>>>> 耗时统计 ${task.path} 耗时 ${elapsedTime}ms${RESET}"
+            }
+        }
+    }
+}
+
+gradle.addBuildListener(new BuildListenerAdapter() {
+    @Override
+    void buildFinished(BuildResult result) {
+        def history = loadHistory()
+        def today = new Date().format('yyyy-MM-dd')
+        def totalBuildTime = elapsedTimes.values().sum() ?: 0
+
+        // 更新今日数据
+        if (!history[today]) {
+            history[today] = []
+        }
+        history[today] << [timestamp: System.currentTimeMillis(),
+                           totalTime: totalBuildTime,
+                           tasks    : elapsedTimes]
+
+        // 保存更新后的历史数据
+        saveHistory(history)
+
+        // 显示当天统计
+        def todayBuilds = history[today]
+        def todayTotalTime = todayBuilds*.totalTime.sum()
+        def todayBuildCount = todayBuilds.size()
+
+        // 计算本周统计
+        def calendar = Calendar.getInstance()
+        calendar.setFirstDayOfWeek(Calendar.MONDAY)
+        calendar.time = new Date()
+        def weekStart = calendar.clone()
+        weekStart.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        def weekEnd = calendar.clone()
+        weekEnd.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+
+        def weeklyBuilds = history.findAll { date, builds ->
+            def buildDate = Date.parse('yyyy-MM-dd', date)
+            buildDate >= weekStart.time && buildDate <= weekEnd.time
+        }
+        def weeklyTotalTime = weeklyBuilds.values().flatten()*.totalTime.sum()
+        def weeklyBuildCount = weeklyBuilds.values().flatten().size()
+
+        // 显示统计信息
+        println "\n${GREEN}==================================================================================="
+        println "当天编译统计:"
+        println "\t总编译次数: ${todayBuildCount}"
+        println "\t总编译时间: ${todayTotalTime}ms (${todayTotalTime / 1000 / 60 as int}分钟)"
+        println "\t平均编译时间: ${todayBuildCount > 0 ? todayTotalTime / todayBuildCount : 0}ms"
+
+        println "\n本周编译统计:"
+        println "\t总编译次数: ${weeklyBuildCount}"
+        println "\t总编译时间: ${weeklyTotalTime}ms (${(weeklyTotalTime ?: 0) / 1000 / 60 as int}分钟)"
+        println "\t平均编译时间: ${weeklyBuildCount > 0 ? weeklyTotalTime / weeklyBuildCount : 0}ms"
+
+        println "\n本次编译最耗时的任务:"
+        def sortedTimings = elapsedTimes.collect { taskPath, elapsedTime -> [taskPath, elapsedTime] }
+                .sort { -it[1] }
+                .take(50)
+        sortedTimings.each { taskPath, elapsedTime -> println "\t ${taskPath}: ${elapsedTime}ms"
+        }
+        println "===================================================================================${RESET}"
+    }
+})
+
+class BuildListenerAdapter extends BuildAdapter {}

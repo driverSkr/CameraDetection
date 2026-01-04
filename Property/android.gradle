@@ -1,0 +1,59 @@
+ext {
+    library = this.&library
+}
+
+def library() {
+    return {
+        compileSdkVersion project.COMPILE_SDK_VERSION as int
+        defaultConfig setupDefaultConfig("")
+        buildTypes {
+            release {
+                minifyEnabled true
+                consumerProguardFiles 'proguard-rules.pro'
+            }
+        }
+        flavorDimensions "appConfig"
+        // 渠道
+        productFlavors {
+            //正式版
+            prodVersion {
+                dimension "appConfig"
+            }
+            //内网版
+            innerVersion {
+                dimension "appConfig"
+            }
+            //开发版
+            devVersion {
+                dimension "appConfig"
+            }
+        }
+        sourceSets {
+            main {
+                jniLibs.srcDirs = ['libs']
+            }
+        }
+        buildFeatures {
+            buildConfig  true
+        }
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+}
+
+def setupDefaultConfig(String packageName) {
+    return {
+        if (!packageName?.isEmpty()) {
+            applicationId "${packageName}"
+        }
+        minSdkVersion project.MIN_SDK_VERSION as int
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        }
+        targetSdkVersion project.TARGET_SDK_VERSION as int
+        multiDexEnabled true
+        versionCode project.APP_VERSION_CODE as int
+        versionName "${APP_VERSION_NAME}"
+    }
+}

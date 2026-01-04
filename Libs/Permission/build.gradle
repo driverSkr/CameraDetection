@@ -1,0 +1,18 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+apply from: "$rootDir$Android"
+
+android library()
+
+android {
+    namespace 'com.ethan.permission'
+}
+
+dependencies {
+
+    implementation "androidx.core:core-ktx:${KTX_CORE_VERSION}"
+    implementation "androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}"
+    implementation "com.blankj:utilcode:${UTILS_VERSION}"
+}

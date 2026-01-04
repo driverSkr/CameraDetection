@@ -1,0 +1,22 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+apply from: "$rootDir$Android"
+
+android library()
+
+android {
+    namespace 'com.ethan.base'
+    buildFeatures {
+        buildConfig true
+        viewBinding true
+    }
+}
+
+dependencies {
+
+    implementation "androidx.core:core-ktx:${KTX_CORE_VERSION}"
+    implementation "androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}"
+    implementation project(path: ':Libs:Permission')
+}

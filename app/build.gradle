@@ -1,0 +1,102 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-android'
+    id 'kotlin-kapt' // 必须添加 kapt 插件
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+android {
+    namespace "com.ethan.cameradetection"
+    compileSdk project.COMPILE_SDK_VERSION as int
+
+    defaultConfig {
+        applicationId "com.ethan.cameradetection"
+        minSdk project.MIN_SDK_VERSION as int
+        targetSdk project.TARGET_SDK_VERSION as int
+        versionCode project.APP_VERSION_CODE as int
+        versionName "${APP_VERSION_NAME}"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
+        ndk {
+            //'x86', 'x86_64'：Intel架构，曾经被许多PC和一些Android设备使用
+            //noinspection ChromeOsAbiSupport
+            abiFilters 'armeabi-v7a', 'arm64-v8a' // 仅支持这两个架构
+        }
+    }
+
+    buildTypes {
+        release {
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    flavorDimensions = ["appConfig"]
+    productFlavors {
+        //正式版
+        prodVersion {
+            dimension "appConfig"
+            manifestPlaceholders = ['useHttp': false]
+            buildConfigField("boolean", "isVideoTest", "false")
+            proguardFile 'log-proguard-rules.pro' //正式版本混淆掉日志
+        }
+        //内网版
+        innerVersion {
+            dimension "appConfig"
+            manifestPlaceholders = ['useHttp': true]
+            buildConfigField("boolean", "isVideoTest", "false")
+        }
+        //开发版
+        devVersion {
+            dimension "appConfig"
+            manifestPlaceholders = ['useHttp': false]
+            buildConfigField("boolean", "isVideoTest", "false")
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+    buildFeatures {
+        compose true
+        viewBinding true
+        buildConfig true
+    }
+}
+
+dependencies {
+
+    implementation "androidx.core:core-ktx:${KTX_CORE_VERSION}"
+    implementation "androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}"
+    implementation "androidx.activity:activity-ktx:${ANDROID_X_VERSION}"
+    implementation "com.google.android.material:material:${MATERIAL_VERSION}"
+
+    //================================compose dependencies area==============================
+    def composeBom = platform('androidx.compose:compose-bom:2025.06.01')
+    implementation composeBom
+    androidTestImplementation composeBom
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5'
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.wear.compose:compose-material:1.4.1")
+    implementation("androidx.compose.material:material")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.navigation:navigation-compose:$NAV_VERSION")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    //================================compose dependencies area==============================
+    implementation "com.blankj:utilcode:${UTILS_VERSION}"
+    implementation "com.github.skydoves:bundler:1.0.4"
+    //=========================================libs=========================================
+    implementation project(path: ':Libs:Base')
+    implementation project(path: ':Libs:Permission')
+
+}

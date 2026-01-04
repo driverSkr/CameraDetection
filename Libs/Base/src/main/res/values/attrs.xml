@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="LoadingView">
+        <attr name="color" format="color" />
+        <attr name="strokeWidth" format="dimension" />
+    </declare-styleable>
+
+    <!-- 仿 ios 开关按钮 -->
+    <declare-styleable name="SwitchButton">
+        <!-- 是否选中 -->
+        <attr name="android:checked" />
+        <!-- 是否禁用 -->
+        <attr name="android:enabled" />
+        <!-- 宽高比 -->
+        <attr name="aspectRatio" format="float" />
+    </declare-styleable>
+
+
+    <declare-styleable name="BubbleSeekBar">
+        <attr name="bsb_min" format="float|reference" /> <!--min < max, default: 0.0f-->
+        <attr name="bsb_max" format="float|reference" /> <!--min < max, default: 100.0f-->
+        <attr name="bsb_progress" format="float|reference" /> <!--real time progress value, default: min-->
+        <attr name="bsb_is_float_type" format="boolean" /> <!--support for float type-->
+        <attr name="bsb_track_size" format="dimension|reference" /> <!--height of right-track(on the right of thumb), default: 2dp-->
+        <!--height of left-track(on the left of thumb), default: 2dp higher than right-track's height-->
+        <attr name="bsb_second_track_size" format="dimension|reference" />
+        <attr name="bsb_thumb_radius" format="dimension|reference" /> <!--radius of thumb, default: 2dp higher than left-track's height-->
+        <!--radius of thumb when be dragging, default: 2 times of left-track's height-->
+        <attr name="bsb_thumb_radius_on_dragging" format="dimension|reference" />
+        <attr name="bsb_track_color" format="color|reference" /> <!--color of right-track, default: R.color.colorPrimary-->
+        <attr name="bsb_second_track_color" format="color|reference" /> <!--color of left-track, default: R.color.colorAccent-->
+        <attr name="bsb_thumb_color" format="color|reference" /> <!--color of thumb, default: same as left-track's color-->
+        <attr name="bsb_section_count" format="integer|reference" /> <!--shares of whole progress(max - min), default: 10-->
+        <attr name="bsb_show_section_mark" format="boolean" /> <!--show demarcation points or not, default: false-->
+        <attr name="bsb_auto_adjust_section_mark" format="boolean" /> <!--auto scroll to the nearest section_mark or not, default: false-->
+        <attr name="bsb_show_section_text" format="boolean" /> <!--show section-text or not, default: false-->
+        <attr name="bsb_section_text_size" format="dimension|reference" /> <!--text size of section-text, default: 14sp-->
+        <attr name="bsb_section_text_color" format="color|reference" /> <!--text color of section-text, default: same as right-track's color-->
+        <!--text position of section-text relative to track, sides, bottom_sides, below_section_mark, default: sides-->
+        <attr name="bsb_section_text_position">
+            <enum name="sides" value="0" />
+            <enum name="bottom_sides" value="1" />
+            <enum name="below_section_mark" value="2" />
+        </attr>
+        <attr name="bsb_section_text_interval" format="integer" /> <!--the interval of two section-text, default: 1-->
+        <attr name="bsb_show_thumb_text" format="boolean" /> <!--show real time progress-text under thumb or not, default: false-->
+        <attr name="bsb_thumb_text_size" format="dimension|reference" /> <!--text size of progress-text, default: 14sp-->
+        <attr name="bsb_thumb_text_color" format="color|reference" /> <!--text color of progress-text, default: same as left-track's color-->
+        <attr name="bsb_show_progress_in_float" format="boolean" /> <!--show bubble-progress in float or not, default: false-->
+        <attr name="bsb_touch_to_seek" format="boolean" /> <!--touch anywhere on track to quickly seek, default: false-->
+        <attr name="bsb_seek_step_section" format="boolean" /> <!--seek one step by one section, the progress is discrete, default: false-->
+        <attr name="bsb_seek_by_section" format="boolean" /> <!--seek by section, the progress may not be linear, default: false-->
+        <attr name="bsb_bubble_color" format="color|reference" /> <!--color of bubble, default: same as left-track's color-->
+        <attr name="bsb_bubble_text_size" format="dimension|reference" /> <!--text size of bubble-progress, default: 14sp-->
+        <attr name="bsb_bubble_text_color" format="color|reference" /> <!--text color of bubble-progress, default: #ffffffff-->
+        <attr name="bsb_anim_duration" format="integer" /> <!--duration of animation, default: 200ms-->
+        <attr name="bsb_always_show_bubble" format="boolean" /> <!--bubble shows all time, default: false-->
+        <attr name="bsb_always_show_bubble_delay" format="integer" /> <!--the delay duration before bubble shows all the time, default: 200ms-->
+        <attr name="bsb_hide_bubble" format="boolean" /> <!--hide bubble, default: false-->
+        <attr name="bsb_rtl" format="boolean" /> <!--right to left, default: false-->
+        <attr name="android:enabled" />
+    </declare-styleable>
+
+
+    <declare-styleable name="CircularProgressBar">
+        <attr name="cpb_progress" format="integer" />
+        <attr name="cpb_progress_max" format="integer" />
+        <attr name="cpb_indeterminate_mode" format="boolean" />
+        <attr name="cpb_progressbar_color" format="color" />
+        <attr name="cpb_progressbar_color_start" format="color" />
+        <attr name="cpb_progressbar_color_end" format="color" />
+        <attr name="cpb_progressbar_color_direction">
+            <flag name="left_to_right" value="1" />
+            <flag name="right_to_left" value="2" />
+            <flag name="top_to_bottom" value="3" />
+            <flag name="bottom_to_top" value="4" />
+        </attr>
+        <attr name="cpb_background_progressbar_color" format="color" />
+        <attr name="cpb_background_progressbar_color_start" format="color" />
+        <attr name="cpb_background_progressbar_color_end" format="color" />
+        <attr name="cpb_background_progressbar_color_direction">
+            <flag name="left_to_right" value="1" />
+            <flag name="right_to_left" value="2" />
+            <flag name="top_to_bottom" value="3" />
+            <flag name="bottom_to_top" value="4" />
+        </attr>
+        <attr name="cpb_progressbar_width" format="dimension" />
+        <attr name="cpb_background_progressbar_width" format="dimension" />
+        <attr name="cpb_round_border" format="boolean" />
+        <attr name="cpb_start_angle" format="float" />
+        <attr name="cpb_progress_direction">
+            <flag name="to_right" value="1" />
+            <flag name="to_left" value="2" />
+        </attr>
+    </declare-styleable>
+
+
+    <declare-styleable name="BaseRoundCornerProgressBar">
+        <attr name="rcReverse" format="boolean" />
+        <attr name="rcProgress" format="float" />
+        <attr name="rcMax" format="float" />
+        <attr name="rcSecondaryProgress" format="float" />
+        <attr name="rcBackgroundPadding" format="dimension" />
+        <attr name="rcRadius" format="dimension" />
+        <attr name="rcProgressColor" format="color" />
+        <attr name="rcProgressColors" format="reference" />
+        <attr name="rcSecondaryProgressColor" format="color" />
+        <attr name="rcSecondaryProgressColors" format="reference" />
+        <attr name="rcBackgroundColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="AnimatedRoundCornerProgressBar">
+        <attr name="rcAnimationEnable" format="boolean" />
+        <attr name="rcAnimationSpeedScale" format="float" />
+    </declare-styleable>
+
+    <declare-styleable name="IconRoundCornerProgressBar">
+        <attr name="rcIconSrc" format="integer" />
+        <attr name="rcIconSize" format="dimension" />
+        <attr name="rcIconWidth" format="dimension" />
+        <attr name="rcIconHeight" format="dimension" />
+        <attr name="rcIconPadding" format="dimension" />
+        <attr name="rcIconPaddingLeft" format="dimension" />
+        <attr name="rcIconPaddingRight" format="dimension" />
+        <attr name="rcIconPaddingTop" format="dimension" />
+        <attr name="rcIconPaddingBottom" format="dimension" />
+        <attr name="rcIconBackgroundColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="TextRoundCornerProgressBar">
+        <attr name="rcTextProgressColor" format="color" />
+        <attr name="rcTextProgressSize" format="dimension" />
+        <attr name="rcTextProgressMargin" format="dimension" />
+        <attr name="rcTextProgress" format="string" />
+        <attr name="rcTextInsideGravity" format="enum">
+            <enum name="start" value="0" />
+            <enum name="end" value="1" />
+        </attr>
+        <attr name="rcTextOutsideGravity" format="enum">
+            <enum name="start" value="0" />
+            <enum name="end" value="1" />
+        </attr>
+        <attr name="rcTextPositionPriority" format="enum">
+            <enum name="inside" value="0" />
+            <enum name="outside" value="1" />
+        </attr>
+    </declare-styleable>
+
+
+</resources>
