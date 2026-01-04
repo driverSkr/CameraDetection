@@ -75,6 +75,7 @@ dependencies {
     implementation "androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}"
     implementation "androidx.activity:activity-ktx:${ANDROID_X_VERSION}"
     implementation "com.google.android.material:material:${MATERIAL_VERSION}"
+    implementation libs.androidx.activity
 
     //================================compose dependencies area==============================
     def composeBom = platform('androidx.compose:compose-bom:2025.06.01')
