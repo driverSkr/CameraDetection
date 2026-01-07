@@ -29,8 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.ethan.cameradetection.R
 import com.ethan.cameradetection.theme.Black
 import com.ethan.cameradetection.ui.guide.view.GuideBannerView
-import com.ethan.cameradetection.ui.main.MainActivity
-import com.ethan.cameradetection.utils.findBaseActivityVBind
+import com.ethan.cameradetection.ui.main.context.LocalMainContextEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -38,6 +37,7 @@ import kotlinx.coroutines.launch
 @Preview
 fun GuidePage() {
     val context = LocalContext.current
+    val localMain = LocalMainContextEntity.current
     val scope = rememberCoroutineScope()
     val bannerInfo = listOf(
         Triple(R.mipmap.img_guide_1, "Scan for Hidden Cameras", "Find hidden cameras on your Wi-Fi network to protect your privacy."),
@@ -67,8 +67,7 @@ fun GuidePage() {
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         }
                     } else {
-                        MainActivity.launch(context)
-                        context.findBaseActivityVBind()?.finish()
+                        localMain.isOpenMainPage = true
                     }
                 }
             ) {

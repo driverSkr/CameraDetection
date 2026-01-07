@@ -1,6 +1,5 @@
 package com.ethan.cameradetection.ui.main
 
-import android.content.Context
 import android.os.Bundle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -10,26 +9,28 @@ import com.ethan.cameradetection.base.BaseActivityVBind
 import com.ethan.cameradetection.databinding.LayoutComposeContainerBinding
 import com.ethan.cameradetection.theme.ComposeProjectTheme
 import com.ethan.cameradetection.theme.Transparent
+import com.ethan.cameradetection.ui.guide.page.GuidePage
+import com.ethan.cameradetection.ui.main.context.LocalMainContextEntity
+import com.ethan.cameradetection.ui.main.context.MainContextEntity
 import com.ethan.cameradetection.ui.main.page.MainPage
-import com.skydoves.bundler.intentOf
+import com.ethan.cameradetection.utils.DataHelper
 
 class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
-    companion object {
-        fun launch(context: Context) {
-            context.intentOf<MainActivity> {
-                startActivity(context)
-            }
-        }
-    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val isFirstOpen = DataHelper.isFirst(this, "open")
         binding.composeView.apply {
             setContent {
-                CompositionLocalProvider {
+                CompositionLocalProvider(LocalMainContextEntity provides MainContextEntity()) {
                     ComposeProjectTheme {
+                        val localMain = LocalMainContextEntity.current
                         Surface(modifier = Modifier.Companion.fillMaxSize(), color = Transparent) {
-                            MainPage()
+                            if (isFirstOpen && !localMain.isOpenMainPage) {
+                                GuidePage()
+                            } else {
+                                MainPage()
+                            }
                         }
                     }
                 }
