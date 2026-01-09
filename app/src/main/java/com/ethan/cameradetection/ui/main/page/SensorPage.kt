@@ -27,8 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ethan.cameradetection.R
-import com.ethan.cameradetection.theme.Cyan
-import com.ethan.cameradetection.theme.Red
 
 /**
  * 传感器页
