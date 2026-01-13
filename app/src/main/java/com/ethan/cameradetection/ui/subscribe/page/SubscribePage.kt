@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -45,6 +47,7 @@ fun SubscribePage() {
         Triple("≈\$2.30/wk", "\$6.99", "Weekly"),
         Triple("≈\$0.58/wk", "\$29.99", "Yearly"),
     )
+    val selectedProduct = remember { mutableStateOf(productList[1]) }
 
     Box(modifier = Modifier.fillMaxSize().background(color = Black).navigationBarsPadding()) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -135,15 +138,18 @@ fun SubscribePage() {
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                productList.forEachIndexed { index, triple ->
-                    SubscribeItemView(modifier = Modifier.weight(1f))
+            Row(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+                productList.forEachIndexed { _, triple ->
+                    SubscribeItemView(modifier = Modifier.weight(1f), triple, selectedProduct.value.third == triple.third) {
+                        selectedProduct.value = triple
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
             Text("Auto-Renewable. Cancel anytime.", color = Color(0xFF96939E), fontSize = 14.sp, fontWeight = FontWeight.W400)
             Spacer(modifier = Modifier.height(20.dp))
             Box(modifier = Modifier
+                .padding(horizontal = 24.dp)
                 .fillMaxWidth()
                 .height(56.dp)
                 .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
