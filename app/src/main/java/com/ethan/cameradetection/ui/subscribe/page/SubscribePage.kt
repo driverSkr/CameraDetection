@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,25 +58,25 @@ fun SubscribePage() {
             Image(
                 painter = painterResource(R.mipmap.img_position),
                 modifier = Modifier
-                    .size(32.dp)
                     .align(Alignment.BottomStart)
-                    .padding(start = 74.dp, bottom = 44.dp),
+                    .padding(start = 74.dp, bottom = 44.dp)
+                    .size(32.dp),
                 contentDescription = null
             )
             Image(
                 painter = painterResource(R.mipmap.img_position),
                 modifier = Modifier
-                    .size(32.dp)
                     .align(Alignment.BottomStart)
-                    .padding(start = 23.dp, bottom = 199.dp),
+                    .padding(start = 23.dp, bottom = 199.dp)
+                    .size(32.dp),
                 contentDescription = null
             )
             Image(
                 painter = painterResource(R.mipmap.img_position),
                 modifier = Modifier
-                    .size(32.dp)
                     .align(Alignment.BottomEnd)
-                    .padding(end = 41.dp, bottom = 144.dp),
+                    .padding(end = 41.dp, bottom = 144.dp)
+                    .size(32.dp),
                 contentDescription = null
             )
         }
