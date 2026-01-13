@@ -6,4 +6,17 @@
     </style>
 
     <style name="Theme.CameraDetection" parent="Base.Theme.CameraDetection" />
+
+    <style name="ComposeBottomSheetDialog" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:windowFrame">@null</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
+
+    <style name="BottomSheetAnimation">
+        <item name="android:windowEnterAnimation">@anim/bottom_sheet_enter</item>
+        <item name="android:windowExitAnimation">@anim/bottom_sheet_exit</item>
+    </style>
 </resources>

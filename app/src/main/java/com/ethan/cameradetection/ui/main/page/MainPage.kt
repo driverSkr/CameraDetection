@@ -29,11 +29,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ethan.cameradetection.R
+import com.ethan.cameradetection.ui.main.context.LocalMainContextEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
 fun MainPage() {
+    val localMain = LocalMainContextEntity.current
     val pagerState = rememberPagerState { 4 }
 
     Box(modifier = Modifier.fillMaxSize().background(color = Color(0xFF000000))) {
@@ -53,10 +55,12 @@ fun MainPage() {
                 }
             }
 
-            NavigationBarView(
-                modifier = Modifier.navigationBarsPadding().fillMaxWidth().height(64.dp),
-                pagerState = pagerState
-            )
+            if (!localMain.isShowResult || pagerState.currentPage != 0) {
+                NavigationBarView(
+                    modifier = Modifier.navigationBarsPadding().fillMaxWidth().height(64.dp),
+                    pagerState = pagerState
+                )
+            }
         }
     }
 }
