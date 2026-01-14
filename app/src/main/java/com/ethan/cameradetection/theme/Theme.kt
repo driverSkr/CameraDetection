@@ -37,7 +37,7 @@ private const val TAG = "Theme"
 
 @Composable
 fun ComposeProjectTheme(
-    darkTheme: Boolean = !isSystemInDarkTheme(),//状态栏颜色
+    darkTheme: Boolean = isSystemInDarkTheme(),//状态栏颜色
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit

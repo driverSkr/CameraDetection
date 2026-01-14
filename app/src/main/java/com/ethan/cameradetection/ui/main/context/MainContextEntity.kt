@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 
 class MainContextEntity {
     var isOpenMainPage by mutableStateOf(false)
-    var isShowResult by mutableStateOf(true)
+    var isShowResult by mutableStateOf(false)
 }
 
 val LocalMainContextEntity = compositionLocalOf { MainContextEntity() }
