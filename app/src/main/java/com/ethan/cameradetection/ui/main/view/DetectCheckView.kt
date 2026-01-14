@@ -49,13 +49,7 @@ fun DetectCheckView() {
         }
 
         Box(modifier = Modifier.size(313.dp).align(Alignment.Center)) {
-            Image(
-                painter = painterResource(R.mipmap.img_radar_bg),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                contentDescription = null
-            )
-            Image(painterResource(R.mipmap.img_radar_detect), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            RadarScannerWithControls()
             Text(
                 text = "Start",
                 color = Color(0xFFFFFFFF),
