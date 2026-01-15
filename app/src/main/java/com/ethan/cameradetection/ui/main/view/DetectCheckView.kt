@@ -1,5 +1,6 @@
 package com.ethan.cameradetection.ui.main.view
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ethan.cameradetection.R
 import com.ethan.cameradetection.theme.Transparent
 import com.ethan.cameradetection.theme.White
 import com.ethan.cameradetection.theme.White10
@@ -114,97 +117,101 @@ fun DetectCheckView() {
             }
         }
 
-        if (localMain.isStartDetect) {
-            if (localMain.isAnimating) {
-                Box(modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp)
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 24.dp)
-                    .background(color = White10, shape = RoundedCornerShape(999.dp))
-                    .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
-                    .clickable{
-                        localMain.isStartDetect = false
-                        localMain.isAnimating = false
-                    }
-                ) {
-                    Text(
-                        text = "Cancel",
-                        color = White60,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.W500,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+        Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (localMain.isStartDetect) {
+                Row(modifier = Modifier, verticalAlignment = Alignment.CenterVertically) {
+                    Image(painter = painterResource(R.drawable.svg_icon_warning_red), contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Suspicious devices: ", color = White60, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                    Text("12", color = Color(0xFFFE2D3F), fontSize = 16.sp, fontWeight = FontWeight.W500)
                 }
-            } else {
-                Row(modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp)
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 24.dp)
-                ) {
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            if (localMain.isStartDetect) {
+                if (localMain.isAnimating) {
                     Box(modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 24.dp)
                         .background(color = White10, shape = RoundedCornerShape(999.dp))
                         .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                         .clickable{
-                            localMain.isStartDetect = true
-                            localMain.isAnimating = true
-                            detectProgress.intValue = 0
+                            localMain.isStartDetect = false
+                            localMain.isAnimating = false
                         }
                     ) {
                         Text(
-                            text = "Recheck",
+                            text = "Cancel",
                             color = White60,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Box(modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
-                        .clickable{
-                            localMain.isShowResult = true
-                        }
+                } else {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 24.dp)
                     ) {
-                        Text(
-                            text = "Result",
-                            color = Color(0xFFFFFFFF),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.W500,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                        Box(modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(color = White10, shape = RoundedCornerShape(999.dp))
+                            .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                            .clickable{
+                                localMain.isStartDetect = true
+                                localMain.isAnimating = true
+                                detectProgress.intValue = 0
+                            }
+                        ) {
+                            Text(
+                                text = "Recheck",
+                                color = White60,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.W500,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Box(modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                            .clickable{
+                                localMain.isShowResult = true
+                            }
+                        ) {
+                            Text(
+                                text = "Result",
+                                color = Color(0xFFFFFFFF),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.W500,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
                     }
                 }
-            }
-        } else {
-            Box(modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp)
-                .fillMaxWidth()
-                .height(56.dp)
-                .padding(horizontal = 24.dp)
-                .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
-                .clickable{
-                    localMain.isStartDetect = true
-                    localMain.isAnimating = true
+            } else {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .padding(horizontal = 24.dp)
+                    .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                    .clickable{
+                        localMain.isStartDetect = true
+                        localMain.isAnimating = true
+                    }
+                ) {
+                    Text(
+                        text = "Start",
+                        color = Color(0xFFFFFFFF),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.W500,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
-            ) {
-                Text(
-                    text = "Start",
-                    color = Color(0xFFFFFFFF),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.W500,
-                    modifier = Modifier.align(Alignment.Center)
-                )
             }
         }
-
     }
 }
