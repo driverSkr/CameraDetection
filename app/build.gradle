@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-android'
+    id 'kotlin-parcelize'
     id 'kotlin-kapt' // 必须添加 kapt 插件
     id 'org.jetbrains.kotlin.plugin.compose'
 }

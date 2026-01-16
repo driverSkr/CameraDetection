@@ -53,7 +53,7 @@ fun DetectCheckView() {
 
     LaunchedEffect(Unit) {
         while (true) {
-            wifiSsid.value = WifiHelper.getWifiSSID(context)
+            wifiSsid.value = WifiHelper.showWifiInfo(context).ssid
             delay(5000) // 每5秒更新一次
         }
     }
