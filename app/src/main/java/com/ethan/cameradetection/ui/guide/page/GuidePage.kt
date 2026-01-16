@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,10 +32,12 @@ import com.ethan.cameradetection.ui.main.context.LocalMainContextEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+/**
+ * todo 第一版先不添加引导页
+ */
 @Composable
 @Preview
 fun GuidePage() {
-    val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
     val scope = rememberCoroutineScope()
     val bannerInfo = listOf(

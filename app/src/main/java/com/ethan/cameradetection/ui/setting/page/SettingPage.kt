@@ -52,26 +52,28 @@ fun SettingPage() {
                     .clickable{ context.findBaseActivityVBind()?.finish() }
             )
             Text("Setting", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
-            Image(
-                painter = painterResource(R.mipmap.img_crown),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(40.dp)
-                    .align(Alignment.CenterEnd)
-                    .clickable{ SubscribeActivity.launch(context) }
-            )
+            // todo 第一版先不要订阅页
+//            Image(
+//                painter = painterResource(R.mipmap.img_crown),
+//                contentDescription = null,
+//                modifier = Modifier
+//                    .size(40.dp)
+//                    .align(Alignment.CenterEnd)
+//                    .clickable{ SubscribeActivity.launch(context) }
+//            )
         }
 
-        Spacer(modifier = Modifier.height(28.dp))
-        Image(
-            painter = painterResource(R.mipmap.img_subscribe_card),
-            contentScale = ContentScale.Fit,
-            contentDescription = null,
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth()
-                .clickable{ SubscribeActivity.launch(context) }
-        )
+        // todo 第一版先不要订阅页
+//        Spacer(modifier = Modifier.height(28.dp))
+//        Image(
+//            painter = painterResource(R.mipmap.img_subscribe_card),
+//            contentScale = ContentScale.Fit,
+//            contentDescription = null,
+//            modifier = Modifier
+//                .padding(horizontal = 16.dp)
+//                .fillMaxWidth()
+//                .clickable{ SubscribeActivity.launch(context) }
+//        )
         Spacer(modifier = Modifier.height(19.dp))
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),

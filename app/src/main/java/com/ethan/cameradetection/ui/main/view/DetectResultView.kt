@@ -1,5 +1,6 @@
 package com.ethan.cameradetection.ui.main.view
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,6 +52,8 @@ fun DetectResultView() {
         WifiInfoModel(1, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", true),
         WifiInfoModel(2, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", true),
     )
+
+    BackHandler { }
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(54.dp)) {
             Image(painter = painterResource(R.drawable.svg_icon_back), modifier = Modifier.align(Alignment.CenterStart).clickable{ localMain.isShowResult = false }, contentDescription = null)
