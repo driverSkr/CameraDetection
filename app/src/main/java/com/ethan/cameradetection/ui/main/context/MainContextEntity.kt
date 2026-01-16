@@ -10,6 +10,9 @@ class MainContextEntity {
     var isStartDetect by mutableStateOf(false)
     var isAnimating by mutableStateOf(false)
     var isShowResult by mutableStateOf(false)
+
+    // SensorPage
+    var magneticGauge by mutableStateOf(0)
 }
 
 val LocalMainContextEntity = compositionLocalOf { MainContextEntity() }
