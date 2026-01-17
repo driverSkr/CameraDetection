@@ -20,14 +20,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ethan.cameradetection.R
-import com.ethan.cameradetection.model.WifiInfoModel
+import com.ethan.cameradetection.model.WifiDevice
 import com.ethan.cameradetection.theme.White
 import com.ethan.cameradetection.theme.White10
 import com.ethan.cameradetection.theme.White60
 
 @Composable
-fun WifiInfoItemView(info: WifiInfoModel, onClick: () -> Unit) {
-    val deviceType = when(info.deviceType) {
+fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
+    val deviceType = when(info.riskLevel) {
         1 -> R.drawable.svg_icon_wifi_info_router
         else -> R.drawable.svg_icon_wifi_info_router
     }
@@ -48,6 +48,6 @@ fun WifiInfoItemView(info: WifiInfoModel, onClick: () -> Unit) {
             Text(info.ip, color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
         }
         Spacer(modifier = Modifier.weight(1f))
-        Image(painter = painterResource(if (info.isSafe) R.drawable.svg_icon_safety else R.drawable.svg_icon_risk), contentDescription = null)
+        Image(painter = painterResource(if (info.riskLevel == 0) R.drawable.svg_icon_safety else R.drawable.svg_icon_risk), contentDescription = null)
     }
 }

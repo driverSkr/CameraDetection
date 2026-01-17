@@ -55,7 +55,7 @@ fun MainPage() {
                 }
             }
 
-            if (!localMain.isShowResult || pagerState.currentPage != 0) {
+            if (!localMain.isShowResult.value || pagerState.currentPage != 0) {
                 NavigationBarView(
                     modifier = Modifier.navigationBarsPadding().fillMaxWidth().height(64.dp),
                     pagerState = pagerState

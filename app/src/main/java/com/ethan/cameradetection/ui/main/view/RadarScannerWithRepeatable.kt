@@ -26,7 +26,7 @@ fun RadarScannerWithControls() {
 
     // 使用独立的动画状态
     val infiniteTransition = rememberInfiniteTransition()
-    val rotationAngle by if (localMain.isAnimating) {
+    val rotationAngle by if (localMain.isAnimating.value) {
         infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 360f,
@@ -51,7 +51,7 @@ fun RadarScannerWithControls() {
             contentDescription = "雷达背景"
         )
 
-        if (localMain.isStartDetect) {
+        if (localMain.isStartDetect.value) {
             Image(
                 painter = painterResource(R.mipmap.img_radar_detect),
                 contentDescription = "扫描指针",

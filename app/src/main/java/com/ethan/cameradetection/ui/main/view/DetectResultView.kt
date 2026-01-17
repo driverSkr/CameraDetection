@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.ethan.cameradetection.R
 import com.ethan.cameradetection.dialog.DialogHelper
-import com.ethan.cameradetection.model.WifiInfoModel
 import com.ethan.cameradetection.theme.White
 import com.ethan.cameradetection.theme.White10
 import com.ethan.cameradetection.theme.White60
@@ -43,20 +42,15 @@ fun DetectResultView() {
     val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
 
-    val wifiInfoList = listOf(
-        WifiInfoModel(1, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", true),
-        WifiInfoModel(2, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", false),
-        WifiInfoModel(3, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", true),
-        WifiInfoModel(4, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", true),
-        WifiInfoModel(5, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", false),
-        WifiInfoModel(1, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", true),
-        WifiInfoModel(2, "John’s home", "192.168.1.1", "2E:FE:54:D3:A3", true),
-    )
-
     BackHandler { }
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(54.dp)) {
-            Image(painter = painterResource(R.drawable.svg_icon_back), modifier = Modifier.align(Alignment.CenterStart).clickable{ localMain.isShowResult = false }, contentDescription = null)
+            Image(painter = painterResource(R.drawable.svg_icon_back), contentDescription = null, modifier = Modifier.align(Alignment.CenterStart).clickable{
+                localMain.isShowResult.value = false
+                localMain.isStartDetect.value = false
+                localMain.trustedDevices.clear()
+                localMain.suspiciousDevices.clear()
+            })
             Text("Result", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -73,7 +67,7 @@ fun DetectResultView() {
                 .background(color = Color(0x33FE2D3F), shape = RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${wifiInfoList.filter { !it.isSafe }.size}", color = Color(0xFFFE2D3F), fontSize = 32.sp, fontWeight = FontWeight.W700)
+                    Text("${localMain.suspiciousDevices.size}", color = Color(0xFFFE2D3F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("Suspicious", color = Color(0xFFFE2D3F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                 }
@@ -85,7 +79,7 @@ fun DetectResultView() {
                 .background(color = Color(0x3300C46F), shape = RoundedCornerShape(20.dp))
             ) {
                 Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${wifiInfoList.filter { it.isSafe }.size}", color = Color(0xFF00C46F), fontSize = 32.sp, fontWeight = FontWeight.W700)
+                    Text("${localMain.trustedDevices.size}", color = Color(0xFF00C46F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("Safe", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                 }
@@ -100,7 +94,7 @@ fun DetectResultView() {
                 .background(color = White10, shape = RoundedCornerShape(999.dp))
                 .padding(horizontal = 8.dp)
             ) {
-                Text("${wifiInfoList.size}", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.Center))
+                Text("${localMain.suspiciousDevices.size + localMain.trustedDevices.size}", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.Center))
             }
         }
         LazyColumn(
@@ -108,9 +102,10 @@ fun DetectResultView() {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
         ) {
-            items(wifiInfoList.size) { index ->
-                WifiInfoItemView(wifiInfoList[index]) {
-                    DialogHelper.showWifiInfoDialog(context as FragmentActivity, wifiInfoList[index])
+            val allDevices = localMain.suspiciousDevices + localMain.trustedDevices
+            items(allDevices.size) { index ->
+                WifiInfoItemView(allDevices[index]) {
+                    DialogHelper.showWifiInfoDialog(context as FragmentActivity, allDevices[index])
                 }
             }
         }

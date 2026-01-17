@@ -18,7 +18,7 @@ fun DetectPage() {
     val localMain = LocalMainContextEntity.current
 
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-        AnimatedContent(localMain.isShowResult) {
+        AnimatedContent(localMain.isShowResult.value) {
             when(it) {
                 true -> DetectResultView()
                 false -> DetectCheckView()
