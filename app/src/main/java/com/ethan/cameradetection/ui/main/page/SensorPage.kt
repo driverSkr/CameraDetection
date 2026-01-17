@@ -61,7 +61,7 @@ fun SensorPage() {
     val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
     val magneticSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) }
     var magneticGauge by remember { mutableStateOf(0) }
-    var isListening by remember { mutableStateOf(true) } // 控制是否监听传感器
+    var isListening by remember { mutableStateOf(false) } // 控制是否监听传感器
 
     val magneticSensorListener = remember {
         object : SensorEventListener {

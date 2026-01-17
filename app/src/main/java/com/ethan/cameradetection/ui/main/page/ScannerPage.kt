@@ -17,10 +17,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ethan.cameradetection.R
+import com.ethan.cameradetection.ui.camera.CameraScannerActivity
 import com.ethan.cameradetection.ui.main.view.ScannerItemView
 
 /**
@@ -28,6 +30,7 @@ import com.ethan.cameradetection.ui.main.view.ScannerItemView
  */
 @Composable
 fun ScannerPage() {
+    val context = LocalContext.current
     val scannerItemList = listOf(
         Pair(R.drawable.svg_icon_tv, "TV"),
         Pair(R.drawable.svg_icon_socket, "Socket"),
@@ -57,7 +60,9 @@ fun ScannerPage() {
             modifier = Modifier.fillMaxWidth().align(Alignment.Center)
         ) {
             items(scannerItemList.size) { index ->
-                ScannerItemView(scannerItemList[index])
+                ScannerItemView(scannerItemList[index]) {
+                    CameraScannerActivity.launch(context)
+                }
             }
         }
     }
