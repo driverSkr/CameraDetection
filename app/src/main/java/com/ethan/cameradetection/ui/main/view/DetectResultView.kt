@@ -51,7 +51,7 @@ fun DetectResultView() {
                 localMain.trustedDevices.clear()
                 localMain.suspiciousDevices.clear()
             })
-            Text("Result", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+            Text("Result", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }
         Spacer(modifier = Modifier.height(24.dp))
         Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {

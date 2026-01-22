@@ -83,7 +83,7 @@ fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_detect), contentDescription = null)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Detect", color = Color(0xFFFFFFFF), fontSize = 10.sp, fontWeight = FontWeight.W500)
+            Text("Detect", color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
             modifier = Modifier.fillMaxHeight().weight(1f).then(
@@ -98,7 +98,7 @@ fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_sensor), contentDescription = null)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Sensor", color = Color(0xFFFFFFFF), fontSize = 10.sp, fontWeight = FontWeight.W500)
+            Text("Sensor", color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
             modifier = Modifier.fillMaxHeight().weight(1f).then(
@@ -113,7 +113,7 @@ fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_scanner), contentDescription = null)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Scanner", color = Color(0xFFFFFFFF), fontSize = 10.sp, fontWeight = FontWeight.W500)
+            Text("Scanner", color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
             modifier = Modifier.fillMaxHeight().weight(1f).then(
@@ -128,7 +128,7 @@ fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_feature), contentDescription = null)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Feature", color = Color(0xFFFFFFFF), fontSize = 10.sp, fontWeight = FontWeight.W500)
+            Text("Feature", color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
     }
 }

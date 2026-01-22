@@ -127,7 +127,7 @@ fun CameraScannerPage() {
                 }
             }
 
-            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = null, modifier = Modifier.clickable{
+            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = null, modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 8.dp).clickable{
                 currentFilterColorIndex = 0
             })
 

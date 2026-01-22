@@ -11,6 +11,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -49,7 +51,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ethan.cameradetection.R
+import com.ethan.cameradetection.theme.Transparent
 import com.ethan.cameradetection.theme.White
+import com.ethan.cameradetection.theme.White10
+import com.ethan.cameradetection.theme.White60
 import kotlin.math.sqrt
 
 /**
@@ -232,7 +237,8 @@ fun SensorPage() {
             Box(modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .background(color = Color(0xFFFFFFFF).copy(0.1f), shape = RoundedCornerShape(999.dp))
+                .background(color = if (isListening) White10 else Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                 .padding(12.dp)
                 .clickable {
                     // 点击切换监听状态
@@ -241,7 +247,7 @@ fun SensorPage() {
             ) {
                 Text(
                     text = if (isListening) "Stop Detection" else "Start Detection",
-                    color = Color(0xFFFFFFFF).copy(0.6f),
+                    color = if (isListening) White60 else White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.W500,
                     modifier = Modifier.align(Alignment.Center)

@@ -1,5 +1,6 @@
 package com.ethan.cameradetection.ui.main.view
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.wifi.WifiManager
 import androidx.compose.foundation.Image
@@ -52,6 +53,7 @@ import com.stealthcopter.networktools.SubnetDevices
 import com.stealthcopter.networktools.subnet.Device
 import kotlinx.coroutines.delay
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun DetectCheckView() {
     val context = LocalContext.current
@@ -81,7 +83,7 @@ fun DetectCheckView() {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text("Wifi Scan", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Connected WI-FI: ${if (wifiSsid.value == null) "未连接" else wifiSsid.value }", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
+            Text("Connected WI-FI: ${if (wifiSsid.value == null) "未连接" else "\"${wifiSsid.value}\"" }", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
         }
 
         Box(modifier = Modifier.size(313.dp).align(Alignment.Center)) {
