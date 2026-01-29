@@ -38,7 +38,7 @@ fun SettingPage() {
     val settingItemList = listOf(
         Pair(R.drawable.svg_icon_share_app, "Share App"),
         Pair(R.drawable.svg_icon_privacy_policy, "Privacy Policy"),
-        Pair(R.drawable.svg_icon_restore, "Restore"),
+//        Pair(R.drawable.svg_icon_restore, "Restore"),
         Pair(R.drawable.svg_icon_rate_us, "Rate us"),
     )
 

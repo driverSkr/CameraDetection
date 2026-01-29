@@ -89,7 +89,7 @@ fun DetectCheckView() {
         Box(modifier = Modifier.size(313.dp).align(Alignment.Center)) {
             RadarScannerWithControls()
             if (localMain.isStartDetect.value) {
-                RandomRedDotsWithVisibility()
+                RandomRedDotsWithVisibility(isAnimating = localMain.isAnimating)
                 Text(
                     buildAnnotatedString {
                         withStyle(
