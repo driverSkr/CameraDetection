@@ -51,7 +51,7 @@ fun MainPage() {
                     0 -> DetectPage()
                     1 -> SensorPage()
                     2 -> ScannerPage()
-                    3 -> FeaturePage()
+                    3 -> FeaturePage(pagerState)
                 }
             }
 
