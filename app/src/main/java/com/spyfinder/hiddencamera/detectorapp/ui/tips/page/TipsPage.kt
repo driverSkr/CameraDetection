@@ -120,7 +120,6 @@ fun TipsPage() {
                         Image(painter = painterResource(if (showText2.value) R.drawable.svg_icon_down else R.drawable.svg_icon_next), modifier = Modifier.clickable { showText2.value = !showText2.value }, contentDescription = null)
                     }
                     if (showText2.value) {
-                        // todo 文案记得修改
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Text("1. ", color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
@@ -168,7 +167,6 @@ fun TipsPage() {
                         Spacer(Modifier.weight(1f))
                         Image(painter = painterResource(if (showText3.value) R.drawable.svg_icon_down else R.drawable.svg_icon_next), modifier = Modifier.clickable { showText3.value = !showText3.value }, contentDescription = null)
                     }
-                    // todo 文案记得修改
                     if (showText3.value) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(modifier = Modifier.fillMaxWidth()) {

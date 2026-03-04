@@ -90,12 +90,10 @@ fun SettingPage() {
                 SettingItemView(settingItemList[index]) {
                     when(settingItemList[index].second) {
                         "Share App" -> {
-                            // todo 分享应用链接
-                            ShareUtils.shareTextWithHighlightedLinks(context, "应用分享", "应用链接")
+                            ShareUtils.shareTextWithHighlightedLinks(context, "应用分享", "https://play.google.com/store/apps/details?id=" + context.packageName)
                         }
                         "Privacy Policy" -> {
-                            // todo 待提供隐私链接
-                            LaunchUtils.launchWeb(context, "https://www.baidu.com", "测试")
+                            LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.app_name))
                         }
                         "Rate us" -> {
                             scope.launch(Dispatchers.Main) {
