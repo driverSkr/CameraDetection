@@ -29,8 +29,22 @@ android {
         }
     }
 
+    signingConfigs {
+        //release版本,打包机配置
+        release {
+            storeFile file("$rootDir$KEY_STORE_PATH")
+            storePassword project.KEY_STORE_PWD
+            keyAlias project.KEY_STORE_ALIAS
+            keyPassword project.KEY_STORE_PWD
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
     buildTypes {
         release {
+            shrinkResources true
+            debuggable false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
