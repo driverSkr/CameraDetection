@@ -68,17 +68,22 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice) {
             Text("Device Model", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
             Text("Unknown", color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
         }
-        Spacer(modifier = Modifier.height(20.dp))
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
-            .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.horizontalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
-        ) {
-            Row(modifier = Modifier.align(Alignment.Center)) {
-                Image(painter = painterResource(R.drawable.svg_icon_correct_white), contentDescription = null)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Mark as safe", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+        if (device.riskLevel == 1) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.horizontalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                .clickable{
+
+                }
+            ) {
+                Row(modifier = Modifier.align(Alignment.Center)) {
+                    Image(painter = painterResource(R.drawable.svg_icon_correct_white), contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Mark as safe", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                }
             }
         }
     }

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.view.FeatureItemView
 import com.spyfinder.hiddencamera.detectorapp.ui.setting.SettingActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.tips.TipsActivity
@@ -36,9 +37,10 @@ import kotlinx.coroutines.launch
  * 功能页
  */
 @Composable
-fun FeaturePage(pagerState: PagerState) {
+fun FeaturePage() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val localMain = LocalMainContextEntity.current
     val featureItemList = listOf(
         Triple("Wi-Fi", R.drawable.svg_icon_wifi, "Scan for suspicious devices in the current network"),
         Triple("Magnetic", R.drawable.svg_icon_magnetic, "Use mobile phones magnetic snsor to detect sneak shots"),
@@ -64,23 +66,10 @@ fun FeaturePage(pagerState: PagerState) {
         ) {
             items(featureItemList.size) { index ->
                 FeatureItemView(featureItemList[index]) {
-                    when(index) {
-                        0 -> {
-                            scope.launch(Dispatchers.Main) {
-                                pagerState.animateScrollToPage(0)
-                            }
-                        }
-                        1 -> {
-                            scope.launch(Dispatchers.Main) {
-                                pagerState.animateScrollToPage(1)
-                            }
-                        }
-                        2 -> {
-                            scope.launch(Dispatchers.Main) {
-                                pagerState.animateScrollToPage(2)
-                            }
-                        }
-                        3 -> { TipsActivity.launch(context) }
+                    if (index != 3) {
+                        localMain.selectTabIndex.intValue = index
+                    } else {
+                        TipsActivity.launch(context)
                     }
                 }
             }

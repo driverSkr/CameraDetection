@@ -1,5 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,29 +37,42 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainPage() {
     val localMain = LocalMainContextEntity.current
-    val pagerState = rememberPagerState { 4 }
+//    val pagerState = rememberPagerState { 4 }
 
-    Box(modifier = Modifier.fillMaxSize().background(color = Color(0xFF000000))) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(color = Color(0xFF000000))) {
         Image(painter = painterResource(R.mipmap.bg_mask), contentScale = ContentScale.Crop, contentDescription = null)
 
         Column(modifier = Modifier.fillMaxSize()) {
-            HorizontalPager(
-                state = pagerState,
-                userScrollEnabled = false,
-                modifier = Modifier.fillMaxWidth().weight(1f)
-            ) { page ->
-                when(page) {
+//            HorizontalPager(
+//                state = pagerState,
+//                userScrollEnabled = false,
+//                beyondViewportPageCount = 3,
+//                modifier = Modifier.fillMaxWidth().weight(1f)
+//            ) { page ->
+//                when(page) {
+//                    0 -> DetectPage()
+//                    1 -> SensorPage()
+//                    2 -> ScannerPage()
+//                    3 -> FeaturePage(pagerState)
+//                }
+//            }
+            AnimatedContent(localMain.selectTabIndex.intValue, modifier = Modifier.fillMaxWidth().weight(1f)) { index ->
+                when(index) {
                     0 -> DetectPage()
                     1 -> SensorPage()
                     2 -> ScannerPage()
-                    3 -> FeaturePage(pagerState)
+                    3 -> FeaturePage()
                 }
             }
 
-            if (!localMain.isShowResult.value || pagerState.currentPage != 0) {
+            if (!localMain.isShowResult.value || localMain.selectTabIndex.intValue != 0) {
                 NavigationBarView(
-                    modifier = Modifier.navigationBarsPadding().fillMaxWidth().height(64.dp),
-                    pagerState = pagerState
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .fillMaxWidth()
+                        .height(64.dp)
                 )
             }
         }
@@ -66,18 +80,21 @@ fun MainPage() {
 }
 
 @Composable
-fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
+fun NavigationBarView(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
+    val localMain = LocalMainContextEntity.current
 
     Row(modifier = modifier) {
         Column(
-            modifier = Modifier.fillMaxHeight().weight(1f).then(
-                if (pagerState.currentPage == 0) Modifier.alpha(1f) else Modifier.alpha(0.5f)
-            ).clickable {
-                scope.launch(Dispatchers.Main) {
-                    pagerState.animateScrollToPage(0)
-                }
-            },
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
+                .then(
+                    if (localMain.selectTabIndex.intValue == 0) Modifier.alpha(1f) else Modifier.alpha(0.5f)
+                )
+                .clickable {
+                    localMain.selectTabIndex.intValue = 0
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -86,13 +103,15 @@ fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
             Text("Detect", color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
-            modifier = Modifier.fillMaxHeight().weight(1f).then(
-                if (pagerState.currentPage == 1) Modifier.alpha(1f) else Modifier.alpha(0.5f)
-            ).clickable {
-                scope.launch(Dispatchers.Main) {
-                    pagerState.animateScrollToPage(1)
-                }
-            },
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
+                .then(
+                    if (localMain.selectTabIndex.intValue == 1) Modifier.alpha(1f) else Modifier.alpha(0.5f)
+                )
+                .clickable {
+                    localMain.selectTabIndex.intValue = 1
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -101,13 +120,15 @@ fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
             Text("Sensor", color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
-            modifier = Modifier.fillMaxHeight().weight(1f).then(
-                if (pagerState.currentPage == 2) Modifier.alpha(1f) else Modifier.alpha(0.5f)
-            ).clickable {
-                scope.launch(Dispatchers.Main) {
-                    pagerState.animateScrollToPage(2)
-                }
-            },
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
+                .then(
+                    if (localMain.selectTabIndex.intValue == 2) Modifier.alpha(1f) else Modifier.alpha(0.5f)
+                )
+                .clickable {
+                    localMain.selectTabIndex.intValue = 2
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -116,13 +137,15 @@ fun NavigationBarView(modifier: Modifier = Modifier, pagerState: PagerState) {
             Text("Scanner", color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
-            modifier = Modifier.fillMaxHeight().weight(1f).then(
-                if (pagerState.currentPage == 3) Modifier.alpha(1f) else Modifier.alpha(0.5f)
-            ).clickable {
-                scope.launch(Dispatchers.Main) {
-                    pagerState.animateScrollToPage(3)
-                }
-            },
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(1f)
+                .then(
+                    if (localMain.selectTabIndex.intValue == 3) Modifier.alpha(1f) else Modifier.alpha(0.5f)
+                )
+                .clickable {
+                    localMain.selectTabIndex.intValue = 3
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

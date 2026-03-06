@@ -52,6 +52,7 @@ import com.spyfinder.hiddencamera.detectorapp.utils.WifiHelper
 import com.stealthcopter.networktools.SubnetDevices
 import com.stealthcopter.networktools.subnet.Device
 import kotlinx.coroutines.delay
+import java.lang.Integer.min
 import kotlin.random.Random
 
 @SuppressLint("DefaultLocale")
@@ -82,9 +83,9 @@ fun DetectCheckView() {
 
     LaunchedEffect(localMain.isAnimating.value) {
         while (localMain.isAnimating.value) {
-            if (detectProgress.intValue >= 100) break
-            detectProgress.intValue += (1..10).random()
-            delay(1000) // 每5秒更新一次
+            if (detectProgress.intValue >= 99) break
+            detectProgress.intValue = min((1..10).random() + detectProgress.intValue, 99)
+            delay(1000) // 每秒更新一次
         }
     }
 
