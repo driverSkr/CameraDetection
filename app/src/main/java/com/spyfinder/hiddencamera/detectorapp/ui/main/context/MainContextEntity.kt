@@ -19,6 +19,19 @@ class MainContextEntity {
     val trustedDevices = mutableStateListOf<WifiDevice>()
 
     val selectTabIndex = mutableIntStateOf(0)
+
+    fun markDeviceAsSafe(device: WifiDevice) {
+        // 创建更新后的设备副本（因为WifiDevice是data class）
+        val updatedDevice = device.copy(riskLevel = 0)
+
+        // 从suspiciousDevices中移除原设备
+        val suspiciousIndex = suspiciousDevices.indexOfFirst { it.mac == device.mac }
+        if (suspiciousIndex != -1) {
+            suspiciousDevices.removeAt(suspiciousIndex)
+        }
+
+        trustedDevices.add(updatedDevice)
+    }
 }
 
 val LocalMainContextEntity = compositionLocalOf { MainContextEntity() }

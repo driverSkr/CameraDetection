@@ -33,7 +33,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.spyfinder.hiddencamera.detectorapp.R
 
 @Composable
-fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice) {
+fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSafe: (WifiDevice) -> Unit) {
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(color = Color(0xFF161618), shape = RoundedCornerShape(48.dp))
@@ -76,7 +76,8 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice) {
                 .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                 .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.horizontalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                 .clickable{
-
+                    onMarkSafe(device)  // 传递整个设备对象
+                    dialog.dismiss()     // 关闭对话框
                 }
             ) {
                 Row(modifier = Modifier.align(Alignment.Center)) {

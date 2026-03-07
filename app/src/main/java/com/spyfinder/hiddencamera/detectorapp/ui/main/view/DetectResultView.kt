@@ -105,7 +105,10 @@ fun DetectResultView() {
             val allDevices = localMain.suspiciousDevices + localMain.trustedDevices
             items(allDevices.size) { index ->
                 WifiInfoItemView(allDevices[index]) {
-                    DialogHelper.showWifiInfoDialog(context as FragmentActivity, allDevices[index])
+                    DialogHelper.showWifiInfoDialog(context as FragmentActivity, allDevices[index]) { device ->
+                        // 调用ViewModel的方法标记为安全
+                        localMain.markDeviceAsSafe(device)
+                    }
                 }
             }
         }

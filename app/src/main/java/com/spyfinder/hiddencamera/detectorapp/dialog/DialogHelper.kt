@@ -14,13 +14,13 @@ import com.spyfinder.hiddencamera.detectorapp.theme.ComposeProjectTheme
 import com.spyfinder.hiddencamera.detectorapp.utils.ComposeNativeDialog
 
 object DialogHelper {
-    fun showWifiInfoDialog(activity: FragmentActivity, device: WifiDevice) {
+    fun showWifiInfoDialog(activity: FragmentActivity, device: WifiDevice, onMarkSafe: (WifiDevice) -> Unit) {
         val (binding, dialog) = ComposeNativeDialog.composeBottomDialog(activity)
         binding.composeView.apply {
             setContent {
                 ComposeProjectTheme {
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                        WifiInfoDetailsView(dialog, device)
+                        WifiInfoDetailsView(dialog, device, onMarkSafe)
                         Spacer(modifier = Modifier.height(42.dp))
                     }
                 }
