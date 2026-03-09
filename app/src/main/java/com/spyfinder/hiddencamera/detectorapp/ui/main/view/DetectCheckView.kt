@@ -53,7 +53,6 @@ import com.stealthcopter.networktools.SubnetDevices
 import com.stealthcopter.networktools.subnet.Device
 import kotlinx.coroutines.delay
 import java.lang.Integer.min
-import kotlin.random.Random
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -82,10 +81,19 @@ fun DetectCheckView() {
     }
 
     LaunchedEffect(localMain.isAnimating.value) {
+        var times = 0
         while (localMain.isAnimating.value) {
             if (detectProgress.intValue >= 99) break
-            detectProgress.intValue = min((1..10).random() + detectProgress.intValue, 99)
-            delay(1000) // 每秒更新一次
+            if (times == 3) {
+                detectProgress.intValue = min((70..90).random(), detectProgress.intValue)
+            }
+            detectProgress.intValue = min((1..5).random() + detectProgress.intValue, 99)
+            delay(500)
+            detectProgress.intValue = min((1..5).random() + detectProgress.intValue, 99)
+            delay(500)
+            detectProgress.intValue = min((1..5).random() + detectProgress.intValue, 99)
+            delay(500)
+            times += 1
         }
     }
 
@@ -216,16 +224,15 @@ fun DetectCheckView() {
                 }
             } else {
                 Box(modifier = Modifier
+                    .clickable{
+                        localMain.isStartDetect.value = true
+                        localMain.isAnimating.value = true
+                        wifiDetect(localIp, localMain.suspiciousDevices, localMain.trustedDevices, localMain.isAnimating, detectProgress)
+                    }
                     .fillMaxWidth()
                     .height(56.dp)
                     .padding(horizontal = 24.dp)
                     .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
-                    .clickable{
-                        localMain.isStartDetect.value = true
-                        localMain.isAnimating.value = true
-
-                        wifiDetect(localIp, localMain.suspiciousDevices, localMain.trustedDevices, localMain.isAnimating, detectProgress)
-                    }
                 ) {
                     Text(
                         text = "Start",
