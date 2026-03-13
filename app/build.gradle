@@ -17,6 +17,7 @@ android {
         targetSdk project.TARGET_SDK_VERSION as int
         versionCode project.APP_VERSION_CODE as int
         versionName "${APP_VERSION_NAME}"
+        multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -43,11 +44,21 @@ android {
 
     buildTypes {
         release {
-//            shrinkResources true
+            shrinkResources true
+            minifyEnabled true
             debuggable false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
+
+    // 禁用多语言分包
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     flavorDimensions = ["appConfig"]
     productFlavors {
         //正式版
@@ -82,6 +93,17 @@ android {
         viewBinding true
         buildConfig true
     }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+    lintOptions {
+        disable "Instantiatable"
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.5'
+    }
 }
 
 dependencies {
@@ -108,6 +130,9 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+//    implementation "com.android.support:multidex:${MULTIDEX_VERSION}"
+    implementation 'androidx.multidex:multidex:2.0.1'
     //================================compose dependencies area==============================
     implementation "com.blankj:utilcode:${UTILS_VERSION}"
     implementation "com.github.skydoves:bundler:1.0.4"
