@@ -22,6 +22,7 @@
 -keepattributes Signature
 # 抛出异常时保留代码行号
 -keepattributes SourceFile,LineNumberTable
+
 #优化时允许访问并修改有修饰符的类和类的成员，这可以提高优化步骤的结果。
 # 比如，当内联一个公共的getter方法时，这也可能需要外地公共访问。
 # 虽然java二进制规范不需要这个，要不然有的虚拟机处理这些代码会有问题。当有优化和使用-repackageclasses时才适用。
@@ -68,15 +69,6 @@
     void *(**On*Listener);
     void *(**On*Callback);
 }
-# 删除代码中Log相关的代码
--assumenosideeffects class android.util.Log {
-    public static boolean isLoggable(java.lang.String, int);
-    public static int v(...);
-    public static int i(...);
-    public static int w(...);
-    public static int d(...);
-    public static int e(...);
-}
 
 # 保持测试相关的代码
 -dontnote junit.framework.**
@@ -87,7 +79,115 @@
 
 -keep public class * extends java.lang.Exception
 
+#表示不混淆任何包含native方法的类的类名以及native方法名，这个和我们刚才验证的结果是一致
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+#ViewBinding反射混淆规则
+-keep class * implements androidx.viewbinding.ViewBinding {*;}
+
 #协程混淆
 -keepclassmembernames class kotlinx.** {
     volatile <fields>;
 }
+
+# ----------------------------- 第三方 -----------------------------
+#Gson
+-keepattributes Signature
+# For using GSON @Expose annotation
+-keepattributes *Annotation*
+# Gson specific classes
+-dontwarn sun.misc.**
+#-keep class com.google.gson.stream.** { *; }
+# Application classes that will be serialized/deserialized over Gson
+# Prevent proguard from stripping interface information from TypeAdapter, TypeAdapterFactory,
+# JsonSerializer, JsonDeserializer instances (so they can be used in @JsonAdapter)
+
+-keep class com.hitpaw.network.gson.BaseRObjectResult.** { <fields>; }
+-keep class com.hitpaw.ven.model.** { <fields>; }
+-keep class com.hitpaw.ven.ui.pay.model.** { <fields>; }
+-keep class com.hitpaw.ven.ui.setting.model.** { <fields>; }
+-keep class com.hitpaw.ven.network.** { <fields>; }
+-keep class com.hitpaw.ven.ui.main.model.** { <fields>; }
+# Prevent R8 from leaving Data object members always null
+#Glide
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+  **[] $VALUES;
+  public *;
+}
+
+# OkHttp3
+-dontwarn okhttp3.logging.**
+-keep class okhttp3.internal.**{*;}
+-dontwarn okio.**
+# Retrofit
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+-keepattributes Signature
+-keepattributes Exceptions
+
+# okhttp
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.squareup.okhttp.* { *; }
+-keep interface com.squareup.okhttp.** { *; }
+-dontwarn com.squareup.okhttp.**
+
+# okhttp
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+
+# Okio
+-dontwarn com.squareup.**
+-dontwarn okio.**
+-keep public class org.codehaus.* { *; }
+-keep public class java.nio.* { *; }
+
+-keepattributes SourceFile,LineNumberTable        # Keep file names and line numbers.
+-keep public class * extends java.lang.Exception  # Optional: Keep custom exceptions.
+
+-keep class com.appsflyer.** { *; }
+-keep public class com.android.installreferrer.** { *; }
+-keep public class com.miui.referrer.** {*;}
+
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.google.ads.** { *; }
+
+-keep class androidx.compose.ui.graphics.** { *; }
+-keep class androidx.compose.ui.graphics.drawscope.** { *; }
+-dontwarn androidx.compose.ui.graphics.**
+
+#pag混淆
+-keep class org.libpag.** {*;}
+-keep class androidx.exifinterface.** {*;}
+
+#阿里oss混淆
+-keep class com.alibaba.sdk.android.oss.** { *; }
+-dontwarn okio.**
+-dontwarn org.apache.commons.codec.binary.**
+
+#agp r8 混淆规则
+-keepattributes Signature
+
+-if interface * { @retrofit2.http.* public *** *(...); }
+-keep,allowoptimization,allowshrinking,allowobfuscation class <3>
+
+-keepattributes Signature
+-keep class kotlin.coroutines.Continuation
+
+# With R8 full mode, it sees no subtypes of Retrofit interfaces since they are created with a Proxy
+# and replaces all potential values with null. Explicitly keeping the interfaces prevents this.
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface <1>
+
+# With R8 full mode generic signatures are stripped for classes that are not
+# kept. Suspend functions are wrapped in continuations where the type argument
+# is used.
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+# Lottie
+-keep class com.airbnb.lottie.** { *; }
+-dontwarn com.airbnb.lottie.**
