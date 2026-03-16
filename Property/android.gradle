@@ -8,7 +8,7 @@ def library() {
         defaultConfig setupDefaultConfig("")
         buildTypes {
             release {
-                minifyEnabled true
+//                minifyEnabled true
                 consumerProguardFiles 'proguard-rules.pro'
             }
         }
