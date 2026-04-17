@@ -27,4 +27,5 @@ include ':app'
 include ':Libs'
 include ':Libs:Base'
 include ':Libs:Permission'
+include ':Libs:GPay'
  

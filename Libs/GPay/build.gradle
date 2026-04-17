@@ -1,0 +1,17 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+apply from: "$rootDir$Android"
+
+android library()
+android {
+    namespace = "com.ethan.pay"
+}
+
+dependencies {
+
+    implementation "androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}"
+    implementation "androidx.core:core-ktx:${KTX_CORE_VERSION}"
+    implementation "com.android.billingclient:billing-ktx:${BILLING_VERSION}"
+}
