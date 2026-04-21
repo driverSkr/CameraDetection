@@ -42,14 +42,14 @@ fun DetectResultView() {
     val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
 
-    BackHandler { }
+    // 系统返回与左上角返回按钮保持一致，都只回到扫描页并保留当前扫描状态。
+    BackHandler {
+        localMain.closeDetectResult()
+    }
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(54.dp)) {
             Image(painter = painterResource(R.drawable.svg_icon_back), contentDescription = null, modifier = Modifier.align(Alignment.CenterStart).clickable{
-                localMain.isShowResult.value = false
-                localMain.isStartDetect.value = false
-                localMain.trustedDevices.clear()
-                localMain.suspiciousDevices.clear()
+                localMain.closeDetectResult()
             })
             Text("Result", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }

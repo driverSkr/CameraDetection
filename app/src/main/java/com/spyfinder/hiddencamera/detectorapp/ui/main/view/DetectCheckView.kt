@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -60,7 +59,7 @@ fun DetectCheckView() {
     val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
     val wifiSsid = remember { mutableStateOf<String?>(null) }
-    val detectProgress = remember { mutableIntStateOf(0) }
+    val detectProgress = localMain.detectProgress
     val localIp = remember {
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
@@ -71,6 +70,24 @@ fun DetectCheckView() {
             wifiInfo.ipAddress shr 16 and 0xff,
             wifiInfo.ipAddress shr 24 and 0xff
         )
+    }
+    val startDetectAction = {
+        // 每次开始扫描前先重置当前态，避免残留上一次展示数据影响本次结果。
+        localMain.isShowResult.value = false
+        localMain.isStartDetect.value = true
+        localMain.isAnimating.value = true
+        detectProgress.intValue = 0
+        localMain.suspiciousDevices.clear()
+        localMain.trustedDevices.clear()
+        wifiDetect(
+            localIp = localIp,
+            suspiciousDevices = localMain.suspiciousDevices,
+            trustedDevices = localMain.trustedDevices,
+            isAnimating = localMain.isAnimating,
+            detectProgress = detectProgress
+        ) { suspiciousList, trustedList ->
+            localMain.saveLatestScanResult(suspiciousList, trustedList)
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -182,22 +199,17 @@ fun DetectCheckView() {
                         .padding(horizontal = 24.dp)
                     ) {
                         Box(modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(color = White10, shape = RoundedCornerShape(999.dp))
-                            .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
-                            .clickable{
-                                localMain.isStartDetect.value = true
-                                localMain.isAnimating.value = true
-                                detectProgress.intValue = 0
-                                localMain.suspiciousDevices.clear()
-                                localMain.trustedDevices.clear()
-                                wifiDetect(localIp, localMain.suspiciousDevices, localMain.trustedDevices, localMain.isAnimating, detectProgress)
-                            }
-                        ) {
-                            Text(
-                                text = "Recheck",
-                                color = White60,
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .background(color = White10, shape = RoundedCornerShape(999.dp))
+                        .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                        .clickable{
+                            startDetectAction()
+                        }
+                    ) {
+                        Text(
+                            text = "Recheck",
+                            color = White60,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
                                 modifier = Modifier.align(Alignment.Center)
@@ -223,24 +235,65 @@ fun DetectCheckView() {
                     }
                 }
             } else {
-                Box(modifier = Modifier
-                    .clickable{
-                        localMain.isStartDetect.value = true
-                        localMain.isAnimating.value = true
-                        wifiDetect(localIp, localMain.suspiciousDevices, localMain.trustedDevices, localMain.isAnimating, detectProgress)
+                if (localMain.hasScanHistory) {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 24.dp)
+                    ) {
+                        Box(modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(color = White10, shape = RoundedCornerShape(999.dp))
+                            .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                            .clickable{
+                                localMain.openLatestResult()
+                            }
+                        ) {
+                            Text(
+                                text = "History",
+                                color = White60,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.W500,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Box(modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                            .clickable{
+                                startDetectAction()
+                            }
+                        ) {
+                            Text(
+                                text = "Start",
+                                color = Color(0xFFFFFFFF),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.W500,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
                     }
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 24.dp)
-                    .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
-                ) {
-                    Text(
-                        text = "Start",
-                        color = Color(0xFFFFFFFF),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.W500,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                } else {
+                    Box(modifier = Modifier
+                        .clickable{
+                            startDetectAction()
+                        }
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 24.dp)
+                        .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                    ) {
+                        Text(
+                            text = "Start",
+                            color = Color(0xFFFFFFFF),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.W500,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
                 }
             }
         }
@@ -252,7 +305,8 @@ fun wifiDetect(
     suspiciousDevices: SnapshotStateList<WifiDevice>,
     trustedDevices: SnapshotStateList<WifiDevice>,
     isAnimating: MutableState<Boolean>,
-    detectProgress: MutableIntState
+    detectProgress: MutableIntState,
+    onDetectFinished: (List<WifiDevice>, List<WifiDevice>) -> Unit = { _, _ -> }
 ) {
     SubnetDevices.fromLocalAddress().findDevices(object : SubnetDevices.OnSubnetDeviceFound {
         override fun onDeviceFound(device: Device?) {
@@ -284,6 +338,8 @@ fun wifiDetect(
             }
             threads.forEach { it.join(3000) }
 
+            // 扫描完成后保存一次快照，供首页 History 入口回看最近一次结果。
+            onDetectFinished(suspiciousDevices.toList(), trustedDevices.toList())
             isAnimating.value = false
             detectProgress.intValue = 100
         }

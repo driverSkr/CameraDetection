@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.spyfinder.hiddencamera.detectorapp.base.BaseActivityVBind
 import com.spyfinder.hiddencamera.detectorapp.databinding.LayoutComposeContainerBinding
@@ -35,7 +36,13 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 //        val isFirstOpen = DataHelper.isFirst(this, "open")
         binding.composeView.apply {
             setContent {
-                CompositionLocalProvider(LocalMainContextEntity provides MainContextEntity()) {
+                val mainContextEntity = remember {
+                    MainContextEntity(applicationContext).apply {
+                        // 进入首页时恢复最近一次扫描记录，支持 History 跨重启保留。
+                        restoreLatestScanResult()
+                    }
+                }
+                CompositionLocalProvider(LocalMainContextEntity provides mainContextEntity) {
                     ComposeProjectTheme {
 //                        val localMain = LocalMainContextEntity.current
                         Surface(modifier = Modifier.fillMaxSize(), color = Transparent) {

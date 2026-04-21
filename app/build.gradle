@@ -98,6 +98,12 @@ android {
             jniLibs.srcDirs = ['libs']
         }
     }
+    packaging {
+        jniLibs {
+            // 显式关闭 legacy packaging，确保 APK 中的 so 以可页对齐方式打包。
+            useLegacyPackaging = false
+        }
+    }
     lintOptions {
         disable "Instantiatable"
     }
@@ -140,7 +146,8 @@ dependencies {
     implementation 'com.google.android.play:review:2.0.2'
 
     // CameraX
-    def camerax_version = "1.3.0-alpha07"
+    // 升级到稳定版，修复旧版 CameraX 附带的 native so 仅 4KB 对齐的问题。
+    def camerax_version = "1.5.2"
     implementation "androidx.camera:camera-core:${camerax_version}"
     implementation "androidx.camera:camera-camera2:${camerax_version}"
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
