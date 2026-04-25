@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.ethan.pay.BillFactory
 import com.ethan.pay.model.OrderInfo
+import com.ethan.pay.utils.SubHelper
 import com.ethan.pay.utils.SubHelper.listLifeGoodsList
 import com.spyfinder.hiddencamera.detectorapp.DetectorApp
 import kotlinx.coroutines.CoroutineScope
@@ -104,5 +105,12 @@ object SubscribeHelper {
         val resultCode = BillFactory.init(context)
         isBillingInitialized = resultCode == 0
         Log.d(TAG, "Google Play Billing初始化结果：$resultCode")
+    }
+
+    fun getProductType(planId: String?) = when(planId) {
+        SubHelper.getWeekPlanId() -> "Weekly"
+        SubHelper.getMonthPlanId() -> "Monthly"
+        SubHelper.getYearPlanId() -> "Yearly"
+        else -> ""
     }
 }

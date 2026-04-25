@@ -1,5 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.subscribe.page
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,37 +18,70 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.dialog.rememberLoadingDialog
+import com.spyfinder.hiddencamera.detectorapp.model.SubModel
 import com.spyfinder.hiddencamera.detectorapp.theme.Black
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
 import com.spyfinder.hiddencamera.detectorapp.theme.White
 import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.view.SubscribeItemView
+import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.view.SubProductView
+import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.viewmodel.SubscribeViewModel
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun SubscribePage() {
     val context = LocalContext.current
-    val productList = listOf(
-        Triple("≈\$3.99/wk", "\$19.99", "Monthly"),
-        Triple("≈\$2.30/wk", "\$6.99", "Weekly"),
-        Triple("≈\$0.58/wk", "\$29.99", "Yearly"),
-    )
-    val selectedProduct = remember { mutableStateOf(productList[1]) }
+    val scope = rememberCoroutineScope()
+    val dialog = rememberLoadingDialog()
+    var isLoading by remember { mutableStateOf(true) }
+    var subModelList by remember { mutableStateOf<MutableList<SubModel>?>(null) }
+    var selectedSubProduct by remember { mutableStateOf<SubModel?>(null) }
+    val subscribeViewModel = context.findBaseActivityVBind()?.let { viewModel<SubscribeViewModel>(it) }
+
+    /**
+     * 查询订阅商品
+     */
+    LaunchedEffect(Unit) {
+        isLoading = true
+        val queryResult = subscribeViewModel?.querySubProduct(context)
+        if (queryResult != null) {
+            subModelList = queryResult
+            selectedSubProduct = queryResult.getOrNull(1)
+        }
+        isLoading = false
+    }
+
+    // 监听 订阅状态
+    LaunchedEffect(subscribeViewModel?.isBuySuccess?.value) {
+        if (subscribeViewModel?.isBuySuccess?.value == 1) {
+            context.findBaseActivityVBind()?.finish()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(color = Black).navigationBarsPadding()) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -138,10 +172,35 @@ fun SubscribePage() {
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
-                productList.forEachIndexed { _, triple ->
-                    SubscribeItemView(modifier = Modifier.weight(1f), triple, selectedProduct.value.third == triple.third) {
-                        selectedProduct.value = triple
+            Box(modifier = Modifier.fillMaxWidth().height(148.dp)) {
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center).size(36.dp),
+                            color = Color.White,
+                            trackColor = White10,
+                            strokeCap = StrokeCap.Round
+                        )
+                    }
+                } else {
+                    subModelList?.let { list ->
+                        Row(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+                            list.forEach { model ->
+                                SubProductView(modifier = Modifier.weight(1f),  selectedSubProduct?.id == model.id, model) {
+                                    selectedSubProduct = model
+                                }
+                            }
+                        }
+                    } ?: EmptyView {
+                        scope.launch(Dispatchers.Default) {
+                            isLoading = true
+                            val queryResult = subscribeViewModel?.querySubProduct(context)
+                            if (queryResult != null) {
+                                subModelList = queryResult
+                                selectedSubProduct = queryResult[0]
+                            }
+                            isLoading = false
+                        }
                     }
                 }
             }
@@ -154,6 +213,15 @@ fun SubscribePage() {
                 .height(56.dp)
                 .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                 .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                .clickable {
+                    dialog.value = true
+                    if (selectedSubProduct != null) {
+                        subscribeViewModel?.buySubscribe(selectedSubProduct, context as FragmentActivity, dialog)
+                    } else {
+                        dialog.value = false
+                        Toast.makeText(context, "no product", Toast.LENGTH_SHORT).show()
+                    }
+                }
             ) {
                 Text("Continue", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
             }
@@ -163,6 +231,20 @@ fun SubscribePage() {
                 Text(" and ", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400)
                 Text("Terms of Use", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
             }
+        }
+    }
+}
+
+@Composable
+fun EmptyView(modifier: Modifier = Modifier, onRetryClick: () -> Unit) {
+    Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Text("No product found", color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.W400)
+        Box(modifier = Modifier
+            .padding(top = 20.dp)
+            .border(width = 1.dp, color = Color.White, shape = RoundedCornerShape(44.dp))
+            .padding(vertical = 10.dp, horizontal = 30.dp)
+            .clickable { onRetryClick.invoke() }) {
+            Text("Retry", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.W400)
         }
     }
 }

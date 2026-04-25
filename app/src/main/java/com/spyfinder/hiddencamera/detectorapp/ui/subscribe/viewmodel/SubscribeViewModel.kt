@@ -29,9 +29,9 @@ class SubscribeViewModel: ViewModel() {
         viewModelScope.launch(Dispatchers.Default) {
             var isQueryPrice = false
             val goodsList = arrayListOf(SubHelper.getProductId(), SubHelper.getProductId(), SubHelper.getProductId())
-            val planList = arrayListOf(SubHelper.getYearPlanId(), SubHelper.getMonthPlanId(), SubHelper.getWeekPlanId())
+            val planList = arrayListOf(SubHelper.getMonthPlanId(), SubHelper.getWeekPlanId(), SubHelper.getYearPlanId())
             val offerList = arrayListOf("", "", "")
-            val skuList = arrayListOf(SubHelper.getYearSkuId(), SubHelper.getMonthSkuId(), SubHelper.getWeekSkuId())
+            val skuList = arrayListOf(SubHelper.getMonthSkuId(), SubHelper.getWeekSkuId(), SubHelper.getYearSkuId())
             val list = mutableListOf<SubModel>()
             for (i in planList.indices) {
                 val planId = planList[i]
