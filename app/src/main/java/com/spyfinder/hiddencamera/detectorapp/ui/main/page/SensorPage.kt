@@ -1,11 +1,14 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
 
 import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -29,9 +32,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +60,9 @@ import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
 import com.spyfinder.hiddencamera.detectorapp.theme.White
 import com.spyfinder.hiddencamera.detectorapp.theme.White10
 import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
+import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
 /**
@@ -63,10 +71,26 @@ import kotlin.math.sqrt
 @Composable
 fun SensorPage() {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
     val magneticSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) }
+    val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
     var magneticGauge by remember { mutableStateOf(0) }
     var isListening by remember { mutableStateOf(false) } // 控制是否监听传感器
+
+    val shouldStartDetectionAfterSubscribe = remember { mutableStateOf(false) }
+    val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (!shouldStartDetectionAfterSubscribe.value) {
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            val subscribed = SubscribeHelper.isSubscribe()
+            if (subscribed) {
+                isListening = true
+            }
+            shouldStartDetectionAfterSubscribe.value = false
+        }
+    }
 
     val magneticSensorListener = remember {
         object : SensorEventListener {
@@ -146,6 +170,30 @@ fun SensorPage() {
         ),
         label = "pointerRotation"
     )
+
+    fun toggleDetectionWithSubscriptionCheck() {
+        if (isListening) {
+            shouldStartDetectionAfterSubscribe.value = false
+            isListening = false
+            return
+        }
+
+        scope.launch {
+            val subscribed = if (isSubscribed) {
+                true
+            } else {
+                SubscribeHelper.isSubscribe()
+            }
+
+            if (subscribed) {
+                shouldStartDetectionAfterSubscribe.value = false
+                isListening = true
+            } else {
+                shouldStartDetectionAfterSubscribe.value = true
+                subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Text("Magnetic Detector", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
@@ -242,7 +290,7 @@ fun SensorPage() {
                 .padding(12.dp)
                 .clickable {
                     // 点击切换监听状态
-                    isListening = !isListening
+                    toggleDetectionWithSubscriptionCheck()
                 },
             ) {
                 Text(

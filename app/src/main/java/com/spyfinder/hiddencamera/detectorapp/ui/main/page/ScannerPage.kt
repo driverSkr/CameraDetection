@@ -1,5 +1,8 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +17,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,6 +31,9 @@ import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.ui.camera.CameraScannerActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.view.ScannerItemView
+import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
+import kotlinx.coroutines.launch
 
 /**
  * 扫描仪页
@@ -31,6 +41,21 @@ import com.spyfinder.hiddencamera.detectorapp.ui.main.view.ScannerItemView
 @Composable
 fun ScannerPage() {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
+    val shouldLaunchScannerAfterSubscribe = remember { mutableStateOf(false) }
+    val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (!shouldLaunchScannerAfterSubscribe.value) {
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            val subscribed = SubscribeHelper.isSubscribe()
+            if (subscribed) {
+                CameraScannerActivity.launch(context)
+            }
+            shouldLaunchScannerAfterSubscribe.value = false
+        }
+    }
     val scannerItemList = listOf(
         Pair(R.drawable.svg_icon_tv, "TV"),
         Pair(R.drawable.svg_icon_socket, "Socket"),
@@ -45,6 +70,25 @@ fun ScannerPage() {
         Pair(R.drawable.svg_icon_air_conditioner, "Air Conditioner"),
         Pair(R.drawable.svg_icon_router, "Router")
     )
+
+    fun openScannerWithSubscriptionCheck() {
+        scope.launch {
+            val subscribed = if (isSubscribed) {
+                true
+            } else {
+                SubscribeHelper.isSubscribe()
+            }
+
+            if (subscribed) {
+                shouldLaunchScannerAfterSubscribe.value = false
+                CameraScannerActivity.launch(context)
+            } else {
+                shouldLaunchScannerAfterSubscribe.value = true
+                subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text("Scanner", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
@@ -61,7 +105,7 @@ fun ScannerPage() {
         ) {
             items(scannerItemList.size) { index ->
                 ScannerItemView(scannerItemList[index]) {
-                    CameraScannerActivity.launch(context)
+                    openScannerWithSubscriptionCheck()
                 }
             }
         }

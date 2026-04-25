@@ -2,7 +2,10 @@ package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.net.wifi.WifiManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -70,6 +73,7 @@ fun DetectCheckView() {
     val uiProgressCompletedScanId = remember { androidx.compose.runtime.mutableIntStateOf(-1) }
     val displayedSuspiciousCount = remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val finishingScanId = remember { androidx.compose.runtime.mutableIntStateOf(-1) }
+    val shouldOpenResultAfterSubscribe = remember { mutableStateOf(false) }
     val localIp = remember {
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
@@ -80,6 +84,18 @@ fun DetectCheckView() {
             wifiInfo.ipAddress shr 16 and 0xff,
             wifiInfo.ipAddress shr 24 and 0xff
         )
+    }
+    val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (!shouldOpenResultAfterSubscribe.value) {
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            val subscribed = SubscribeHelper.isSubscribe()
+            if (subscribed) {
+                localMain.isShowResult.value = true
+            }
+            shouldOpenResultAfterSubscribe.value = false
+        }
     }
 
     fun finishScanIfReady(scanId: Int) {
@@ -115,12 +131,31 @@ fun DetectCheckView() {
         }
     }
 
+    fun openResultWithSubscriptionCheck() {
+        scope.launch {
+            val subscribed = if (isSubscribed) {
+                true
+            } else {
+                SubscribeHelper.isSubscribe()
+            }
+
+            if (subscribed) {
+                shouldOpenResultAfterSubscribe.value = false
+                localMain.isShowResult.value = true
+            } else {
+                shouldOpenResultAfterSubscribe.value = true
+                subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
+            }
+        }
+    }
+
     val startDetectAction = {
         val scanId = activeScanId.intValue + 1
         activeScanId.intValue = scanId
         actualScanCompletedScanId.intValue = -1
         uiProgressCompletedScanId.intValue = -1
         finishingScanId.intValue = -1
+        shouldOpenResultAfterSubscribe.value = false
         // 每次开始扫描前先重置当前态，避免残留上一次展示数据影响本次结果。
         localMain.isShowResult.value = false
         localMain.isStartDetect.value = true
@@ -347,7 +382,7 @@ fun DetectCheckView() {
                             .fillMaxHeight()
                             .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                             .clickable{
-                                localMain.isShowResult.value = true
+                                openResultWithSubscriptionCheck()
                             }
                         ) {
                             Text(
