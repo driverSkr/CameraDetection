@@ -28,17 +28,12 @@ import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.theme.Black
 import com.spyfinder.hiddencamera.detectorapp.ui.guide.view.GuideBannerView
-import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * todo 第一版先不添加引导页
- */
 @Composable
 @Preview
-fun GuidePage() {
-    val localMain = LocalMainContextEntity.current
+fun GuidePage(onComplete: (() -> Unit)? = null) {
     val scope = rememberCoroutineScope()
     val bannerInfo = listOf(
         Triple(R.mipmap.img_guide_1, "Scan for Hidden Cameras", "Find hidden cameras on your Wi-Fi network to protect your privacy."),
@@ -68,7 +63,8 @@ fun GuidePage() {
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         }
                     } else {
-                        localMain.isOpenMainPage = true
+                        // Activity 场景直接回调跳转主页
+                        onComplete?.invoke()
                     }
                 }
             ) {
