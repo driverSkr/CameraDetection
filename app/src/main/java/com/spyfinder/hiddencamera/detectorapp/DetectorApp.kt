@@ -3,6 +3,7 @@ package com.spyfinder.hiddencamera.detectorapp
 import android.content.Context
 import androidx.multidex.MultiDex
 import com.ethan.base.component.BaseApp
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 
 class DetectorApp: BaseApp() {
     companion object {
@@ -12,6 +13,8 @@ class DetectorApp: BaseApp() {
 
     override fun initLibs() {
         INSTANCE = this
+        // 应用启动后立即初始化订阅状态，保证各页面拿到的是全局同一份数据。
+        SubscribeHelper.init(this)
     }
 
     override fun attachBaseContext(base: Context) {

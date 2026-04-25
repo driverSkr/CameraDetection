@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -47,6 +48,8 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White
 import com.spyfinder.hiddencamera.detectorapp.theme.White10
 import com.spyfinder.hiddencamera.detectorapp.theme.White60
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
+import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.WifiHelper
 import com.stealthcopter.networktools.SubnetDevices
 import com.stealthcopter.networktools.subnet.Device
@@ -58,6 +61,7 @@ import java.lang.Integer.min
 fun DetectCheckView() {
     val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
+    val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
     val wifiSsid = remember { mutableStateOf<String?>(null) }
     val detectProgress = localMain.detectProgress
     val localIp = remember {
@@ -116,7 +120,20 @@ fun DetectCheckView() {
 
     Box(modifier = Modifier.fillMaxSize().padding(top = 18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            Text("Wifi Scan", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Wifi Scan", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
+                Spacer(modifier = Modifier.weight(1f))
+                if (!isSubscribed) {
+                    // 未订阅时展示皇冠入口，订阅后自动隐藏。
+                    Image(
+                        painter = painterResource(R.mipmap.img_crown),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clickable{ SubscribeActivity.launch(context) }
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text("Connected WI-FI: ${if (wifiSsid.value == null) "未连接" else "\"${wifiSsid.value}\"" }", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
         }

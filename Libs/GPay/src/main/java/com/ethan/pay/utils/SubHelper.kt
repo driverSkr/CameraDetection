@@ -14,6 +14,11 @@ object SubHelper {
     private const val plan_id_month = "spycamera-monthly"
     private const val plan_id_year = "spycamera-yearly"
 
+    /**
+     * todo 请注意，如果添加了lifetime套餐，请向该list添加！！！，不然无法识别lifetime权益,以及积分包添加！！！！
+     */
+    val listLifeGoodsList = listOf<String>()
+
     fun getProductId(): String {
         return product_id_sub
     }

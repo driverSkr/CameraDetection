@@ -13,13 +13,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,8 +34,10 @@ import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.theme.Black
 import com.spyfinder.hiddencamera.detectorapp.theme.White
 import com.spyfinder.hiddencamera.detectorapp.ui.setting.view.SettingItemView
+import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.LaunchUtils
 import com.spyfinder.hiddencamera.detectorapp.utils.ShareUtils
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,6 +46,7 @@ import kotlinx.coroutines.launch
 fun SettingPage() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
     val settingItemList = listOf(
         Pair(R.drawable.svg_icon_share_app, "Share App"),
         Pair(R.drawable.svg_icon_privacy_policy, "Privacy Policy"),
@@ -58,28 +64,33 @@ fun SettingPage() {
                     .clickable{ context.findBaseActivityVBind()?.finish() }
             )
             Text("Setting", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
-            // todo 第一版先不要订阅页
-//            Image(
-//                painter = painterResource(R.mipmap.img_crown),
-//                contentDescription = null,
-//                modifier = Modifier
-//                    .size(40.dp)
-//                    .align(Alignment.CenterEnd)
-//                    .clickable{ SubscribeActivity.launch(context) }
-//            )
+            if (!isSubscribed) {
+                // 未订阅时展示皇冠入口，订阅后自动隐藏。
+                Image(
+                    painter = painterResource(R.mipmap.img_crown),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .align(Alignment.CenterEnd)
+                        .clickable{ SubscribeActivity.launch(context) }
+                )
+            }
         }
 
-        // todo 第一版先不要订阅页
-//        Spacer(modifier = Modifier.height(28.dp))
-//        Image(
-//            painter = painterResource(R.mipmap.img_subscribe_card),
-//            contentScale = ContentScale.Fit,
-//            contentDescription = null,
-//            modifier = Modifier
-//                .padding(horizontal = 16.dp)
-//                .fillMaxWidth()
-//                .clickable{ SubscribeActivity.launch(context) }
-//        )
+        if (!isSubscribed) {
+            Spacer(modifier = Modifier.height(28.dp))
+            // 未订阅时展示订阅卡片，订阅后自动隐藏。
+            Image(
+                painter = painterResource(R.mipmap.img_subscribe_card),
+                contentScale = ContentScale.Fit,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .clickable{ SubscribeActivity.launch(context) }
+            )
+
+        }
         Spacer(modifier = Modifier.height(19.dp))
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),

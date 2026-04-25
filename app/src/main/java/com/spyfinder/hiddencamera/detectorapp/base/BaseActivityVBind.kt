@@ -14,6 +14,7 @@ import com.ethan.base.component.BaseActivityVB
 import com.spyfinder.hiddencamera.detectorapp.utils.DataHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.LanguageUtils
 import com.ethan.permission.PermissionUtils
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import java.util.Locale
 
 open class BaseActivityVBind<T: ViewBinding>: BaseActivityVB<T>() {
@@ -28,6 +29,8 @@ open class BaseActivityVBind<T: ViewBinding>: BaseActivityVB<T>() {
 
     override fun onResume() {
         super.onResume()
+        // 页面回到前台时刷新订阅状态，覆盖支付完成、退款、取消订阅等外部变化。
+        SubscribeHelper.refreshSubscribeState()
     }
 
     fun edge2EdgeWithCompose() {
