@@ -5,22 +5,14 @@ object SubHelper {
     /**
      * 订阅商品id
      */
-    private const val product_id_sub = ""
-    const val product_200 = ""
-    const val product_1000 = ""
-    const val product_2000 = ""
+    private const val product_id_sub = "hidden.spycamera.premium"
 
     /**
      * 订阅商品plan_id
      */
-    private const val plan_id_week = ""
-    private const val plan_id_month = ""
-    private const val plan_id_year = ""
-
-    /**
-     * todo 请注意，如果添加了lifetime套餐，请向该list添加！！！，不然无法识别lifetime权益,以及积分包添加！！！！
-     */
-    val listLifeGoodsList = listOf<String>()
+    private const val plan_id_week = "spycamera-weekly"
+    private const val plan_id_month = "spycamera-monthly"
+    private const val plan_id_year = "spycamera-yearly"
 
     fun getProductId(): String {
         return product_id_sub
@@ -48,12 +40,5 @@ object SubHelper {
 
     fun getYearSkuId(): String {
         return product_id_sub
-    }
-
-    fun getEventName(planId: String?) = when(planId) {
-        plan_id_week -> "Weekly"
-        plan_id_month -> "Monthly"
-        plan_id_year -> "Annually"
-        else -> ""
     }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "925677071842",
+    "project_id": "hidden-spy-camera-finder-8af6c",
+    "storage_bucket": "hidden-spy-camera-finder-8af6c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:925677071842:android:4a8a626b34b17daceb9dbb",
+        "android_client_info": {
+          "package_name": "com.spyfinder.hiddencamera.detectorapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhPGRMRgHKrkNa3Bfckgjt4g1voxpv4Zo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
