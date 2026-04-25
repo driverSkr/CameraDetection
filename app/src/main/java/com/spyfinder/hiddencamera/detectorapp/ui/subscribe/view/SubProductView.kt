@@ -59,6 +59,7 @@ fun SubProductView(modifier: Modifier = Modifier, isSelected: Boolean, model: Su
             .clickable{ onClick.invoke() }
         ) {
             Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                // todo 乱写的，得沟通清楚
                 Text("${model.currency}${model.price}", color = Color(0xFF96939E), fontSize = 12.sp, fontWeight = FontWeight.W400)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text("${model.currency}${model.price}", color = White, fontSize = 20.sp, fontWeight = FontWeight.W700)
