@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -92,30 +93,43 @@ fun SubscribePage() {
                 .height(200.dp)
                 .background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to Transparent, 1f to Black)))
             )
-            Image(
-                painter = painterResource(R.mipmap.img_position),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 74.dp, bottom = 44.dp)
-                    .size(32.dp),
-                contentDescription = null
-            )
-            Image(
-                painter = painterResource(R.mipmap.img_position),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 23.dp, bottom = 199.dp)
-                    .size(32.dp),
-                contentDescription = null
-            )
-            Image(
-                painter = painterResource(R.mipmap.img_position),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 41.dp, bottom = 144.dp)
-                    .size(32.dp),
-                contentDescription = null
-            )
+
+            Box(modifier = Modifier.align(Alignment.BottomCenter).offset(x = (-20).dp, y = (-78).dp)) {
+                Image(painter = painterResource(R.mipmap.img_light_cone_big), contentDescription = null)
+                Image(painter = painterResource(R.drawable.svg_icon_red_dot), contentDescription = null, modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-2).dp))
+                Image(painter = painterResource(R.mipmap.img_sub_camera), contentDescription = null, modifier = Modifier.align(Alignment.BottomStart).offset(x = (-20).dp))
+            }
+
+            Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-30).dp, y = (-100).dp)) {
+                Image(painter = painterResource(R.mipmap.img_light_cone_small), contentDescription = null)
+                Image(painter = painterResource(R.drawable.svg_icon_red_dot), contentDescription = null, modifier = Modifier.align(Alignment.BottomStart).offset(x = (-2).dp, y = 4.dp))
+                Image(painter = painterResource(R.mipmap.img_sub_notebook), contentDescription = null, modifier = Modifier.align(Alignment.TopEnd).offset(y = (-20).dp))
+            }
+            // 弃用，可能后边会开启
+//            Image(
+//                painter = painterResource(R.mipmap.img_position),
+//                modifier = Modifier
+//                    .align(Alignment.BottomStart)
+//                    .padding(start = 74.dp, bottom = 44.dp)
+//                    .size(32.dp),
+//                contentDescription = null
+//            )
+//            Image(
+//                painter = painterResource(R.mipmap.img_position),
+//                modifier = Modifier
+//                    .align(Alignment.BottomStart)
+//                    .padding(start = 23.dp, bottom = 199.dp)
+//                    .size(32.dp),
+//                contentDescription = null
+//            )
+//            Image(
+//                painter = painterResource(R.mipmap.img_position),
+//                modifier = Modifier
+//                    .align(Alignment.BottomEnd)
+//                    .padding(end = 41.dp, bottom = 144.dp)
+//                    .size(32.dp),
+//                contentDescription = null
+//            )
         }
 
         Image(
