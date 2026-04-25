@@ -22,12 +22,18 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class SubscribeViewModel: ViewModel() {
+    companion object {
+        private const val DEFAULT_CURRENCY = "$"
+        private const val DEFAULT_MONTH_PRICE = "19.99"
+        private const val DEFAULT_WEEK_PRICE = "6.99"
+        private const val DEFAULT_YEAR_PRICE = "39.99"
+    }
+
     var isBuySuccess: MutableState<Int> = mutableIntStateOf(0)
     var isBuyDiscordSuccess: MutableState<Int> = mutableIntStateOf(0)
 
     suspend fun querySubProduct(context: Context) = suspendCoroutine { suspendCoroutine ->
         viewModelScope.launch(Dispatchers.Default) {
-            var isQueryPrice = false
             val goodsList = arrayListOf(SubHelper.getProductId(), SubHelper.getProductId(), SubHelper.getProductId())
             val planList = arrayListOf(SubHelper.getMonthPlanId(), SubHelper.getWeekPlanId(), SubHelper.getYearPlanId())
             val offerList = arrayListOf("", "", "")
@@ -40,25 +46,33 @@ class SubscribeViewModel: ViewModel() {
                 model.id = planId
                 model.offerId = offerList[i]
                 model.sku = skuList[i]
+                model.currency = DEFAULT_CURRENCY
+                model.price = getDefaultPrice(planId)
                 val goods = Goods(goodsList[i], planId, offerList[i], skuList[i])
-                val prices = BillFactory.getSubscribe().getGoodsPrice(context, goods)
+                val prices = runCatching {
+                    BillFactory.getSubscribe().getGoodsPrice(context, goods)
+                }.onFailure {
+                    Log.e("subscribe", "Failed to query subscribe price for planId=$planId", it)
+                }.getOrNull()
                 val trial = false
-                if (prices[0] != null && prices[0] != "0.00") {
-                    isQueryPrice = true
-                }
                 model.isFreeTrial = trial
-                if (prices.size == 2) {
-                    model.price = prices[0] ?: ""
-                    model.currency = prices[1] ?: ""
+                val remotePrice = prices?.getOrNull(0)
+                if (!remotePrice.isNullOrBlank() && remotePrice != "0.00") {
+                    model.price = remotePrice
+                    model.currency = prices?.getOrNull(1).orEmpty().ifBlank { DEFAULT_CURRENCY }
                 }
                 list.add(model)
             }
-            if (isQueryPrice) {
-                // subList.value = list
-                suspendCoroutine.resume(list)
-            } else {
-                suspendCoroutine.resume(null)
-            }
+            suspendCoroutine.resume(list)
+        }
+    }
+
+    private fun getDefaultPrice(planId: String?): String {
+        return when (planId) {
+            SubHelper.getMonthPlanId() -> DEFAULT_MONTH_PRICE
+            SubHelper.getWeekPlanId() -> DEFAULT_WEEK_PRICE
+            SubHelper.getYearPlanId() -> DEFAULT_YEAR_PRICE
+            else -> DEFAULT_WEEK_PRICE
         }
     }
 

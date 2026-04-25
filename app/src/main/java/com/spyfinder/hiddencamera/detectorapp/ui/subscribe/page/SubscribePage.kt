@@ -1,5 +1,9 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.subscribe.page
 
+import android.app.AlertDialog
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -50,12 +54,13 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White
 import com.spyfinder.hiddencamera.detectorapp.theme.White10
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.view.SubProductView
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.viewmodel.SubscribeViewModel
+import com.spyfinder.hiddencamera.detectorapp.utils.findActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
-fun SubscribePage() {
+fun SubscribePage(onDismiss: (() -> Unit)? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dialog = rememberLoadingDialog()
@@ -80,7 +85,11 @@ fun SubscribePage() {
     // 监听 订阅状态
     LaunchedEffect(subscribeViewModel?.isBuySuccess?.value) {
         if (subscribeViewModel?.isBuySuccess?.value == 1) {
-            context.findBaseActivityVBind()?.finish()
+            if (onDismiss != null) {
+                onDismiss.invoke()
+            } else {
+                context.findBaseActivityVBind()?.finish()
+            }
         }
     }
 
@@ -138,7 +147,13 @@ fun SubscribePage() {
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
                 .padding(top = 15.dp, end = 16.dp)
-                .clickable{ context.findBaseActivityVBind()?.finish() },
+                .clickable{ 
+                    if (onDismiss != null) {
+                        onDismiss.invoke()
+                    } else {
+                        context.findBaseActivityVBind()?.finish()
+                    }
+                },
             contentDescription = null
         )
 
@@ -228,9 +243,15 @@ fun SubscribePage() {
                 .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                 .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                 .clickable {
-                    dialog.value = true
-                    if (selectedSubProduct != null) {
-                        subscribeViewModel?.buySubscribe(selectedSubProduct, context as FragmentActivity, dialog)
+                    if (!context.isPurchaseAvailable()) {
+                        showPurchaseUnavailableDialog(context)
+                        return@clickable
+                    }
+
+                    val activity = context.findActivity() as? FragmentActivity
+                    if (selectedSubProduct != null && activity != null) {
+                        dialog.value = true
+                        subscribeViewModel?.buySubscribe(selectedSubProduct, activity, dialog)
                     } else {
                         dialog.value = false
                         Toast.makeText(context, "no product", Toast.LENGTH_SHORT).show()
@@ -247,6 +268,23 @@ fun SubscribePage() {
             }
         }
     }
+}
+
+private fun Context.isPurchaseAvailable(): Boolean {
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+    val network = connectivityManager.activeNetwork ?: return false
+    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+}
+
+private fun showPurchaseUnavailableDialog(context: Context) {
+    val activity = context.findActivity() ?: return
+    AlertDialog.Builder(activity)
+        .setTitle("Unable to Purchase")
+        .setMessage("You're offline right now, so purchases are unavailable. Please check your internet connection and try again.")
+        .setPositiveButton(android.R.string.ok, null)
+        .show()
 }
 
 @Composable

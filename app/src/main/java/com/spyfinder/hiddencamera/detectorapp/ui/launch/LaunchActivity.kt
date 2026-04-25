@@ -20,7 +20,7 @@ class LaunchActivity : Activity() {
             // 启动页不展示 UI，只根据首次打开标记分发到引导页或主页。
             if (isFirstOpen) {
                 Log.d(TAG, "首次打开应用，跳转引导页")
-                GuideActivity.launch(this)
+                GuideActivity.launch(this, true)
             } else {
                 Log.d(TAG, "非首次打开应用，跳转主页")
                 MainActivity.launch(this)

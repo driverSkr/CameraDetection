@@ -43,7 +43,13 @@ fun SubProductView(modifier: Modifier = Modifier, isSelected: Boolean, model: Su
             .height(120.dp)
             .background(
                 brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color(0xFF1E2024), 1f to Color(0xFF242227))),
-                shape = if (isSelected) RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp) else RoundedCornerShape(24.dp)
+                shape = if (isSelected) {
+                    if (model.id == SubHelper.getWeekPlanId()) {
+                        RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
+                    } else {
+                        RoundedCornerShape(24.dp)
+                    }
+                } else RoundedCornerShape(24.dp)
             )
             .then(
                 if (isSelected) {
