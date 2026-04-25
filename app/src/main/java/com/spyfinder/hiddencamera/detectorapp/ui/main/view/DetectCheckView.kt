@@ -3,7 +3,7 @@ package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.net.wifi.WifiManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -74,17 +74,6 @@ fun DetectCheckView() {
     val displayedSuspiciousCount = remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val finishingScanId = remember { androidx.compose.runtime.mutableIntStateOf(-1) }
     val shouldOpenResultAfterSubscribe = remember { mutableStateOf(false) }
-    val localIp = remember {
-        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val wifiInfo = wifiManager.connectionInfo
-        String.format(
-            "%d.%d.%d.%d",
-            wifiInfo.ipAddress and 0xff,
-            wifiInfo.ipAddress shr 8 and 0xff,
-            wifiInfo.ipAddress shr 16 and 0xff,
-            wifiInfo.ipAddress shr 24 and 0xff
-        )
-    }
     val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (!shouldOpenResultAfterSubscribe.value) {
             return@rememberLauncherForActivityResult
@@ -149,7 +138,13 @@ fun DetectCheckView() {
         }
     }
 
-    val startDetectAction = {
+    val startDetectAction = startDetect@{
+        val localIp = resolveCurrentWifiLocalIp(context)
+        if (localIp == null) {
+            Toast.makeText(context, "Please connect to wifi first", Toast.LENGTH_LONG).show()
+            return@startDetect
+        }
+
         val scanId = activeScanId.intValue + 1
         activeScanId.intValue = scanId
         actualScanCompletedScanId.intValue = -1
@@ -555,14 +550,22 @@ fun wifiDetect(
     onDeviceDetected: (WifiDevice) -> Unit = {},
     onDetectFinished: (List<WifiDevice>, List<WifiDevice>) -> Unit = { _, _ -> }
 ) {
+    if (localIp.isBlank() || localIp == "0.0.0.0") {
+        if (isScanActive()) {
+            onDetectFinished(emptyList(), emptyList())
+        }
+        return
+    }
+
     val suspiciousDevices = mutableListOf<WifiDevice>()
     val trustedDevices = mutableListOf<WifiDevice>()
     val resultLock = Any()
-    SubnetDevices.fromLocalAddress().findDevices(object : SubnetDevices.OnSubnetDeviceFound {
-        override fun onDeviceFound(device: Device?) {
-        }
+    try {
+        SubnetDevices.fromLocalAddress().findDevices(object : SubnetDevices.OnSubnetDeviceFound {
+            override fun onDeviceFound(device: Device?) {
+            }
 
-        override fun onFinished(devicesFound: ArrayList<Device?>?) {
+            override fun onFinished(devicesFound: ArrayList<Device?>?) {
             if (devicesFound == null) {
                 if (isScanActive()) {
                     onDetectFinished(emptyList(), emptyList())
@@ -611,7 +614,22 @@ fun wifiDetect(
             }
 
             onDetectFinished(suspiciousSnapshot, trustedSnapshot)
-        }
+            }
 
-    })
+        })
+    } catch (_: Throwable) {
+        // The subnet scan library may throw IllegalAccessError when no local address is available.
+        if (isScanActive()) {
+            onDetectFinished(emptyList(), emptyList())
+        }
+    }
+}
+
+private fun resolveCurrentWifiLocalIp(context: Context): String? {
+    if (!WifiHelper.isWifiEnabled(context)) {
+        return null
+    }
+
+    val localIp = WifiHelper.showWifiInfo(context).ip
+    return localIp.takeUnless { it.isBlank() || it == "0.0.0.0" }
 }
