@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
@@ -64,17 +63,6 @@ fun SettingPage() {
                     .clickable{ context.findBaseActivityVBind()?.finish() }
             )
             Text("Setting", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
-            if (!isSubscribed) {
-                // 未订阅时展示皇冠入口，订阅后自动隐藏。
-                Image(
-                    painter = painterResource(R.mipmap.img_crown),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .align(Alignment.CenterEnd)
-                        .clickable{ SubscribeActivity.launch(context) }
-                )
-            }
         }
 
         if (!isSubscribed) {
@@ -89,7 +77,6 @@ fun SettingPage() {
                     .fillMaxWidth()
                     .clickable{ SubscribeActivity.launch(context) }
             )
-
         }
         Spacer(modifier = Modifier.height(19.dp))
         LazyColumn(

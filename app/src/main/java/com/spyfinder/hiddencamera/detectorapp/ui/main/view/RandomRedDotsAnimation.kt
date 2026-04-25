@@ -36,7 +36,8 @@ fun RandomRedDotsWithVisibility(
     maxDots: Int = 5,
     areaWidth: Dp = 313.dp,
     areaHeight: Dp = 313.dp,
-    isAnimating: MutableState<Boolean>
+    isAnimating: MutableState<Boolean>,
+    onDotAppeared: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -84,6 +85,7 @@ fun RandomRedDotsWithVisibility(
                         )
 
                         visibleDots.add(dotInfo)
+                        onDotAppeared()
 
                         // 在单独的协程中处理消失
                         scope.launch {

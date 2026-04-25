@@ -65,8 +65,6 @@ class SubscribeViewModel: ViewModel() {
     fun buySubscribe(model: SubModel?, activity: FragmentActivity, dialog: MutableState<Boolean>) {
         viewModelScope.launch {
             val planId = model?.id.toString()
-            val price = model?.price ?: ""
-            val currency = model?.currency ?: ""
             Log.d("subscribe", "购买订阅 planId：$planId")
             val goods = Goods(model?.goods ?: SubHelper.getProductId(), planId, model?.offerId ?: "", model?.sku ?: SubHelper.getWeekSkuId())
             withContext(Dispatchers.Main) {
