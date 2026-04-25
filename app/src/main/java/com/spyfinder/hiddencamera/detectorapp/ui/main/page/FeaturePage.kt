@@ -67,6 +67,7 @@ fun FeaturePage() {
             items(featureItemList.size) { index ->
                 FeatureItemView(featureItemList[index]) {
                     if (index != 3) {
+                        localMain.pendingWifiAutoScan.value = index == 0
                         localMain.selectTabIndex.intValue = index
                     } else {
                         TipsActivity.launch(context)

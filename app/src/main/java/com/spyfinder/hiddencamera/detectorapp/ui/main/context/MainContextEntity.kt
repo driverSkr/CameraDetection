@@ -30,6 +30,7 @@ class MainContextEntity(
     val latestTrustedDevices = mutableStateListOf<WifiDevice>()
 
     val selectTabIndex = mutableIntStateOf(0)
+    val pendingWifiAutoScan = mutableStateOf(false)
 
     fun markDeviceAsSafe(device: WifiDevice) {
         // 创建更新后的设备副本（因为WifiDevice是 data class）

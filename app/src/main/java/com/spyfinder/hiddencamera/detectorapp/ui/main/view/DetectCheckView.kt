@@ -163,6 +163,14 @@ fun DetectCheckView() {
         }
     }
 
+    LaunchedEffect(localMain.pendingWifiAutoScan.value, localMain.selectTabIndex.intValue) {
+        if (!localMain.pendingWifiAutoScan.value || localMain.selectTabIndex.intValue != 0) {
+            return@LaunchedEffect
+        }
+        localMain.pendingWifiAutoScan.value = false
+        startDetectAction()
+    }
+
     LaunchedEffect(Unit) {
         while (true) {
             wifiSsid.value = WifiHelper.showWifiInfo(context).ssid
