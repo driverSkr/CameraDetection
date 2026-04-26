@@ -13,7 +13,6 @@ import com.spyfinder.hiddencamera.detectorapp.theme.ComposeProjectTheme
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
 import com.spyfinder.hiddencamera.detectorapp.ui.guide.page.GuidePage
 import com.spyfinder.hiddencamera.detectorapp.ui.main.MainActivity
-import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 
 class GuideActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
@@ -40,15 +39,11 @@ class GuideActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
                         Surface(modifier = Modifier.fillMaxSize(), color = Transparent) {
                             GuidePage(
                                 onComplete = {
-                                    if (isFirstLaunch) {
-                                        // 首次启动：引导完成后进入订阅页，关闭引导页
-                                        SubscribeActivity.launch(this@GuideActivity, true)
-                                        finish()
-                                    } else {
-                                        // 非首次启动：引导完成后进入主页并关闭引导页，避免返回键回到引导流程。
-                                        MainActivity.launch(this@GuideActivity)
-                                        finish()
-                                    }
+                                    MainActivity.launch(
+                                        context = this@GuideActivity,
+                                        checkSubscribeOnLaunch = isFirstLaunch
+                                    )
+                                    finish()
                                 }
                             )
                         }

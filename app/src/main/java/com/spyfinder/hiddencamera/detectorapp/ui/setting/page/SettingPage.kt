@@ -1,6 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.setting.page
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,6 +41,7 @@ import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SettingPage() {
@@ -49,7 +51,7 @@ fun SettingPage() {
     val settingItemList = listOf(
         Pair(R.drawable.svg_icon_share_app, "Share App"),
         Pair(R.drawable.svg_icon_privacy_policy, "Privacy Policy"),
-//        Pair(R.drawable.svg_icon_restore, "Restore"),
+        Pair(R.drawable.svg_icon_restore, "Restore"),
         Pair(R.drawable.svg_icon_rate_us, "Rate us"),
     )
 
@@ -92,6 +94,14 @@ fun SettingPage() {
                         }
                         "Privacy Policy" -> {
                             LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.app_name))
+                        }
+                        "Restore" -> {
+                            scope.launch(Dispatchers.Default) {
+                                SubscribeHelper.refreshSubscribeStateSuspend()
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(context, "订阅状态刷新完成", Toast.LENGTH_LONG).show()
+                                }
+                            }
                         }
                         "Rate us" -> {
                             /**
