@@ -144,6 +144,9 @@ dependencies {
     implementation "com.github.skydoves:bundler:1.0.4"
     implementation 'com.github.stealthcopter:AndroidNetworkTools:0.4.5.3'
     implementation 'com.google.android.play:review:2.0.2'
+    //高斯模糊
+    implementation 'com.github.centerzx:ShapeBlurView:1.0.5'
+    implementation "dev.chrisbanes.haze:haze-materials:0.9.0-rc03" //compose 使用的动态模糊库，性能开销小，仅支持33以上
 
     // CameraX
     // 升级到稳定版，修复旧版 CameraX 附带的 native so 仅 4KB 对齐的问题。

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -241,7 +242,7 @@ fun DetectCheckView() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(top = 18.dp)) {
+    Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Wifi Scan", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
