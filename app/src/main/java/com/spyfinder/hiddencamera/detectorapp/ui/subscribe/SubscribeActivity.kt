@@ -11,20 +11,31 @@ import com.spyfinder.hiddencamera.detectorapp.base.BaseActivityVBind
 import com.spyfinder.hiddencamera.detectorapp.databinding.LayoutComposeContainerBinding
 import com.spyfinder.hiddencamera.detectorapp.theme.ComposeProjectTheme
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
+import com.spyfinder.hiddencamera.detectorapp.ui.main.MainActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.page.SubscribePage
 
 class SubscribeActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     companion object {
-        fun launch(context: Context) {
+        private const val EXTRA_LAUNCH_MAIN_ON_DISMISS = "extra_launch_main_on_dismiss"
+
+        fun launch(
+            context: Context,
+            launchMainOnDismiss: Boolean = false
+        ) {
             context.intentOf<SubscribeActivity> {
+                putExtra(EXTRA_LAUNCH_MAIN_ON_DISMISS, launchMainOnDismiss)
                 startActivity(context)
             }
         }
     }
 
+    private var launchMainOnDismiss: Boolean = false
+    private var hasHandledDismissNavigation = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        launchMainOnDismiss = intent.getBooleanExtra(EXTRA_LAUNCH_MAIN_ON_DISMISS, false)
         binding.composeView.apply {
             setContent {
                 CompositionLocalProvider {
@@ -32,7 +43,7 @@ class SubscribeActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
                         Surface(modifier = Modifier.fillMaxSize(), color = Transparent) {
                             SubscribePage(
                                 onDismiss = {
-                                    finish()
+                                    handleDismiss()
                                 }
                             )
                         }
@@ -43,6 +54,14 @@ class SubscribeActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
     }
 
     override fun onBackPressed() {
+        handleDismiss()
+    }
+
+    private fun handleDismiss() {
+        if (launchMainOnDismiss && !hasHandledDismissNavigation) {
+            hasHandledDismissNavigation = true
+            MainActivity.launch(context = this)
+        }
         finish()
     }
 }
