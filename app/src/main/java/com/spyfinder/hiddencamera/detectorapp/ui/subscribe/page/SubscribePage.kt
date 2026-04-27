@@ -55,6 +55,7 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White
 import com.spyfinder.hiddencamera.detectorapp.theme.White10
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.view.SubProductView
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.viewmodel.SubscribeViewModel
+import com.spyfinder.hiddencamera.detectorapp.utils.LaunchUtils
 import com.spyfinder.hiddencamera.detectorapp.utils.findActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
 import kotlinx.coroutines.Dispatchers
@@ -288,9 +289,13 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row {
-                Text("Terms of Use", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                Text("Privacy Policy", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
+                    LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", "Privacy Policy")
+                })
                 Text(" and ", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400)
-                Text("Terms of Use", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                Text("Terms of Use", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
+                    LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-terms-of-use/home", "Terms of Use")
+                })
             }
         }
     }

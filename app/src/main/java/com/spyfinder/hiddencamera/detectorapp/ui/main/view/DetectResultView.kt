@@ -164,11 +164,13 @@ fun DetectResultView() {
             }
         }
 
-        //todo 未订阅显示
         if (!isSubscribed) {
             Box(modifier = Modifier
                 .fillMaxSize()
                 .hazeChild(hazeState, style = HazeStyle(backgroundColor = Black, tint = null, blurRadius = 12.dp))
+                .clickable(enabled = false) {
+                    // 防止点击穿透
+                }
             ) {
                 Column(modifier = Modifier.align(Alignment.Center).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(modifier = Modifier
