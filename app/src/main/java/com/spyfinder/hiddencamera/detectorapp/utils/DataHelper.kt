@@ -11,12 +11,13 @@ object DataHelper {
 
     fun isFirst(context: Context, key: String) : Boolean {
         val sharedPreferences = context.getSharedPreferences("sp_first_$key", Context.MODE_PRIVATE)
-        val result = sharedPreferences.getBoolean("key", true)
-        if (result) {
-            sharedPreferences.edit {
-                putBoolean("key", false)
-            }
+        return sharedPreferences.getBoolean("key", true)
+    }
+
+    fun setFirstCompleted(context: Context, key: String) {
+        val sharedPreferences = context.getSharedPreferences("sp_first_$key", Context.MODE_PRIVATE)
+        sharedPreferences.edit {
+            putBoolean("key", false)
         }
-        return result
     }
 }
