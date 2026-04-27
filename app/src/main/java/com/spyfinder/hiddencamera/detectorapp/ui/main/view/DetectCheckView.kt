@@ -498,11 +498,8 @@ fun DetectCheckView() {
 
 private const val WIFI_SCAN_STAGE_ONE_END = 80
 private const val WIFI_SCAN_STAGE_TWO_END = 99
-private const val WIFI_SCAN_STAGE_THREE_END = 100
 private const val WIFI_SCAN_STAGE_ONE_DURATION_MS = 5_000L
 private const val WIFI_SCAN_STAGE_TWO_DURATION_MS = 3_000L
-private const val WIFI_SCAN_STAGE_THREE_DURATION_MS = 3_000L
-private const val WIFI_SCAN_COMPLETE_HOLD_MS = 3_000L
 private const val WIFI_SCAN_PROGRESS_TICK_MS = 50L
 
 private suspend fun runWifiDetectProgressTimeline(
@@ -523,17 +520,10 @@ private suspend fun runWifiDetectProgressTimeline(
         durationMs = WIFI_SCAN_STAGE_TWO_DURATION_MS,
         isScanActive = isScanActive
     )
-    animateWifiDetectProgress(
-        detectProgress = detectProgress,
-        start = WIFI_SCAN_STAGE_TWO_END,
-        end = WIFI_SCAN_STAGE_THREE_END,
-        durationMs = WIFI_SCAN_STAGE_THREE_DURATION_MS,
-        isScanActive = isScanActive
-    )
-    waitForWifiScanStage(
-        durationMs = WIFI_SCAN_COMPLETE_HOLD_MS,
-        isScanActive = isScanActive
-    )
+    // 扫描真正完成前，UI 进度最高只到 99%，避免设备仍在扫描时提前展示 100%。
+    if (isScanActive()) {
+        detectProgress.intValue = WIFI_SCAN_STAGE_TWO_END
+    }
 }
 
 private suspend fun animateWifiDetectProgress(
