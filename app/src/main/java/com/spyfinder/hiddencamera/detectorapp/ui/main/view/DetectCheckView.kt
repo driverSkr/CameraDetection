@@ -85,7 +85,7 @@ fun DetectCheckView() {
             if (subscribed) {
                 // 订阅完成后打开结果页，记录付费墙后的结果查看转化。
                 Event.event(context, Event.WIFI_RESULT_CLICK, Event.PARAM_SOURCE to "after_subscribe")
-                localMain.isShowResult.value = true
+                localMain.openCurrentResult()
             }
             shouldOpenResultAfterSubscribe.value = false
         }
@@ -135,7 +135,7 @@ fun DetectCheckView() {
             if (subscribed) {
                 shouldOpenResultAfterSubscribe.value = false
                 Event.event(context, Event.WIFI_RESULT_CLICK, Event.PARAM_SOURCE to "scan_complete")
-                localMain.isShowResult.value = true
+                localMain.openCurrentResult()
             } else {
                 shouldOpenResultAfterSubscribe.value = true
                 Event.event(
@@ -440,8 +440,8 @@ fun DetectCheckView() {
                                 Event.event(
                                     context,
                                     Event.WIFI_HISTORY_CLICK,
-                                    Event.PARAM_SUSPICIOUS_COUNT to localMain.suspiciousDevices.size,
-                                    Event.PARAM_TRUSTED_COUNT to localMain.trustedDevices.size
+                                    Event.PARAM_SUSPICIOUS_COUNT to localMain.latestSuspiciousDevices.size,
+                                    Event.PARAM_TRUSTED_COUNT to localMain.latestTrustedDevices.size
                                 )
                                 localMain.openLatestResult()
                             }

@@ -60,6 +60,9 @@ fun DetectResultView() {
     val hazeState = HazeState()
     val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
+    val resultSuspiciousDevices = localMain.resultSuspiciousDevices
+    val resultTrustedDevices = localMain.resultTrustedDevices
+    val allDevices = resultSuspiciousDevices + resultTrustedDevices
     val scope = rememberCoroutineScope()
     val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
     val shouldRefreshSubscribeStateAfterSubscribe = remember { mutableStateOf(false) }
@@ -91,17 +94,33 @@ fun DetectResultView() {
         }
     }
 
-    // 系统返回与左上角返回按钮保持一致，都只回到扫描页并保留当前扫描状态。
     BackHandler {
         localMain.closeDetectResult()
     }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 12.dp).haze(hazeState)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp)
+                .haze(hazeState)
+        ) {
             Box(modifier = Modifier.fillMaxWidth().height(54.dp)) {
-                Image(painter = painterResource(R.drawable.svg_icon_back), contentDescription = null, modifier = Modifier.align(Alignment.CenterStart).clickable{
-                    localMain.closeDetectResult()
-                })
-                Text("Result", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+                Image(
+                    painter = painterResource(R.drawable.svg_icon_back),
+                    contentDescription = null,
+                    modifier = Modifier.align(Alignment.CenterStart).clickable {
+                        localMain.closeDetectResult()
+                    }
+                )
+                Text(
+                    "Result",
+                    color = White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.W500,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
@@ -111,52 +130,55 @@ fun DetectResultView() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth().height(92.dp)) {
-                Box(modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
-                    .background(color = Color(0x33FE2D3F), shape = RoundedCornerShape(20.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .background(color = Color(0x33FE2D3F), shape = RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${localMain.suspiciousDevices.size}", color = Color(0xFFFE2D3F), fontSize = 32.sp, fontWeight = FontWeight.W700)
+                        Text("${resultSuspiciousDevices.size}", color = Color(0xFFFE2D3F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("Suspicious", color = Color(0xFFFE2D3F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Box(modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
-                    .background(color = Color(0x3300C46F), shape = RoundedCornerShape(20.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .background(color = Color(0x3300C46F), shape = RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${localMain.trustedDevices.size}", color = Color(0xFF00C46F), fontSize = 32.sp, fontWeight = FontWeight.W700)
+                        Text("${resultTrustedDevices.size}", color = Color(0xFF00C46F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("Safe", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
             }
             Spacer(modifier = Modifier.height(21.dp))
-            Row(modifier = Modifier.fillMaxWidth().height(24.dp).padding(start = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth().height(24.dp).padding(start = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text("All Detection List", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
                 Spacer(modifier = Modifier.width(4.dp))
-                Box(modifier = Modifier
-                    .fillMaxHeight()
-                    .background(color = White10, shape = RoundedCornerShape(999.dp))
-                    .padding(horizontal = 8.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .background(color = White10, shape = RoundedCornerShape(999.dp))
+                        .padding(horizontal = 8.dp)
                 ) {
-                    Text("${localMain.suspiciousDevices.size + localMain.trustedDevices.size}", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.Center))
+                    Text("${allDevices.size}", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.Center))
                 }
             }
             LazyColumn(
                 contentPadding = PaddingValues(vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val allDevices = localMain.suspiciousDevices + localMain.trustedDevices
                 items(allDevices.size) { index ->
                     WifiInfoItemView(allDevices[index]) {
                         DialogHelper.showWifiInfoDialog(context as FragmentActivity, allDevices[index]) { device ->
-                            // 调用ViewModel的方法标记为安全
                             localMain.markDeviceAsSafe(device)
                         }
                     }
@@ -165,35 +187,36 @@ fun DetectResultView() {
         }
 
         if (!isSubscribed) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .hazeChild(hazeState, style = HazeStyle(backgroundColor = Black, tint = null, blurRadius = 12.dp))
-                .clickable(enabled = false) {
-                    // 防止点击穿透
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeChild(hazeState, style = HazeStyle(backgroundColor = Black, tint = null, blurRadius = 12.dp))
+                    .clickable(enabled = false) { }
             ) {
                 Column(modifier = Modifier.align(Alignment.Center).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(modifier = Modifier
-                        .wrapContentWidth()
-                        .background(color = Color(0x33FFFFFF), shape = RoundedCornerShape(20.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    Row(
+                        modifier = Modifier
+                            .wrapContentWidth()
+                            .background(color = Color(0x33FFFFFF), shape = RoundedCornerShape(20.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Warning:", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
-                        Text("${localMain.suspiciousDevices.size}", fontSize = 12.sp, fontWeight = FontWeight.W400, color = Orange)
+                        Text("${resultSuspiciousDevices.size}", fontSize = 12.sp, fontWeight = FontWeight.W400, color = Orange)
                         Text("suspicious devices found", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Box(modifier = Modifier
-                        .clickable{
-                            openSubscribeWithResultRefresh()
-                        }
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 24.dp)
-                        .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                    Box(
+                        modifier = Modifier
+                            .clickable {
+                                openSubscribeWithResultRefresh()
+                            }
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .padding(horizontal = 24.dp)
+                            .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                     ) {
                         Text(
                             text = "View Results",

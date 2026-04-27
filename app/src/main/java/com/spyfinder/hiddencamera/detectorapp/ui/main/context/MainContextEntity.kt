@@ -19,10 +19,9 @@ class MainContextEntity(
     var isStartDetect = mutableStateOf(false)
     var isAnimating = mutableStateOf(false)
     var isShowResult = mutableStateOf(false)
-    // 将扫描进度提升到全局上下文，避免结果页返回后扫描页被重建时进度丢失。
+    var isShowingLatestHistoryResult by mutableStateOf(false)
     val detectProgress = mutableIntStateOf(0)
 
-    // DetectPage
     val suspiciousDevices = mutableStateListOf<WifiDevice>()
     val trustedDevices = mutableStateListOf<WifiDevice>()
     var hasScanHistory by mutableStateOf(false)
@@ -32,11 +31,21 @@ class MainContextEntity(
     val selectTabIndex = mutableIntStateOf(0)
     val pendingWifiAutoScan = mutableStateOf(false)
 
+    val resultSuspiciousDevices: SnapshotStateList<WifiDevice>
+        get() = if (isShowingLatestHistoryResult) latestSuspiciousDevices else suspiciousDevices
+
+    val resultTrustedDevices: SnapshotStateList<WifiDevice>
+        get() = if (isShowingLatestHistoryResult) latestTrustedDevices else trustedDevices
+
     fun markDeviceAsSafe(device: WifiDevice) {
-        // 创建更新后的设备副本（因为WifiDevice是 data class）
         val updatedDevice = device.copy(riskLevel = 0)
 
-        // 同步更新当前展示结果和最近一次扫描结果，确保 History 页面展示最新状态。
+        if (isShowingLatestHistoryResult) {
+            moveDeviceToSafeList(device, updatedDevice, latestSuspiciousDevices, latestTrustedDevices)
+            persistLatestScanResult()
+            return
+        }
+
         moveDeviceToSafeList(device, updatedDevice, suspiciousDevices, trustedDevices)
         if (hasScanHistory) {
             moveDeviceToSafeList(device, updatedDevice, latestSuspiciousDevices, latestTrustedDevices)
@@ -45,7 +54,6 @@ class MainContextEntity(
     }
 
     fun saveLatestScanResult(suspiciousList: List<WifiDevice>, trustedList: List<WifiDevice>) {
-        // 保存最近一次扫描结果，供首页 History 入口直接回看。
         latestSuspiciousDevices.clear()
         latestSuspiciousDevices.addAll(suspiciousList.map { it.copy() })
         latestTrustedDevices.clear()
@@ -58,7 +66,6 @@ class MainContextEntity(
         val context = appContext ?: return
         val latestScanHistory = ScanHistoryStore.loadLatestScanResult(context) ?: return
 
-        // 应用启动时恢复最近一次扫描记录，供 History 入口跨重启访问。
         latestSuspiciousDevices.clear()
         latestSuspiciousDevices.addAll(latestScanHistory.suspiciousDevices.map { it.copy() })
         latestTrustedDevices.clear()
@@ -70,20 +77,17 @@ class MainContextEntity(
         if (!hasScanHistory) {
             return
         }
+        isShowingLatestHistoryResult = true
+        isShowResult.value = true
+    }
 
-        suspiciousDevices.clear()
-        suspiciousDevices.addAll(latestSuspiciousDevices.map { it.copy() })
-        trustedDevices.clear()
-        trustedDevices.addAll(latestTrustedDevices.map { it.copy() })
-        isStartDetect.value = true
-        isAnimating.value = false
-        // History 展示的是一轮已完成扫描，这里固定为 100%，确保返回扫描页时仍保持完成态。
-        detectProgress.intValue = 100
+    fun openCurrentResult() {
+        isShowingLatestHistoryResult = false
         isShowResult.value = true
     }
 
     fun closeDetectResult() {
-        // 关闭结果页时仅切回扫描页，保留当前扫描态，避免页面看起来像重新初始化。
+        isShowingLatestHistoryResult = false
         isShowResult.value = false
     }
 
@@ -111,7 +115,6 @@ class MainContextEntity(
     }
 
     private fun isSameDevice(left: WifiDevice, right: WifiDevice): Boolean {
-        // 优先使用 mac 匹配；部分设备可能拿不到 mac，此时回退到 ip，避免“Mark as safe”不生效。
         return when {
             left.mac.isNotBlank() && right.mac.isNotBlank() -> left.mac == right.mac
             left.ip.isNotBlank() && right.ip.isNotBlank() -> left.ip == right.ip
