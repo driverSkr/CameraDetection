@@ -47,6 +47,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.dialog.rememberLoadingDialog
+import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.model.SubModel
 import com.spyfinder.hiddencamera.detectorapp.theme.Black
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
@@ -73,11 +74,14 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
      * 查询订阅商品
      */
     LaunchedEffect(Unit) {
+        // 订阅页曝光埋点，记录所有付费页展示。
+        Event.event(context, Event.PAGE_VIEW, Event.PARAM_PAGE to "subscribe")
         isLoading = true
         val queryResult = subscribeViewModel?.querySubProduct(context)
         if (queryResult != null) {
             subModelList = queryResult
             selectedSubProduct = queryResult.getOrNull(1)
+            Event.event(context, Event.SUBSCRIBE_PRODUCT_QUERY, Event.PARAM_PRODUCT_COUNT to queryResult.size)
         }
         isLoading = false
     }
@@ -148,6 +152,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                 .statusBarsPadding()
                 .padding(top = 15.dp, end = 16.dp)
                 .clickable{ 
+                    Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to "subscribe_close")
                     if (onDismiss != null) {
                         onDismiss.invoke()
                     } else {
@@ -217,16 +222,28 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                             list.forEach { model ->
                                 SubProductView(modifier = Modifier.weight(1f),  selectedSubProduct?.id == model.id, model) {
                                     selectedSubProduct = model
+                                    // 订阅商品选择埋点，记录用户偏好的付费周期。
+                                    Event.event(
+                                        context,
+                                        Event.SUBSCRIBE_PRODUCT_SELECT,
+                                        Event.PARAM_PLAN_ID to model.id,
+                                        Event.PARAM_GOODS_ID to model.goods,
+                                        Event.PARAM_SKU to model.sku,
+                                        Event.PARAM_PRICE to model.price,
+                                        Event.PARAM_CURRENCY to model.currency
+                                    )
                                 }
                             }
                         }
                     } ?: EmptyView {
+                        Event.event(context, Event.SUBSCRIBE_PRODUCT_QUERY, Event.PARAM_REASON to "retry")
                         scope.launch(Dispatchers.Default) {
                             isLoading = true
                             val queryResult = subscribeViewModel?.querySubProduct(context)
                             if (queryResult != null) {
                                 subModelList = queryResult
                                 selectedSubProduct = queryResult[0]
+                                Event.event(context, Event.SUBSCRIBE_PRODUCT_QUERY, Event.PARAM_PRODUCT_COUNT to queryResult.size)
                             }
                             isLoading = false
                         }
@@ -243,7 +260,15 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                 .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                 .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                 .clickable {
+                    Event.event(
+                        context,
+                        Event.SUBSCRIBE_CONTINUE_CLICK,
+                        Event.PARAM_PLAN_ID to selectedSubProduct?.id,
+                        Event.PARAM_PRICE to selectedSubProduct?.price,
+                        Event.PARAM_CURRENCY to selectedSubProduct?.currency
+                    )
                     if (!context.isPurchaseAvailable()) {
+                        Event.event(context, Event.PURCHASE_FAILED, Event.PARAM_REASON to "network_unavailable")
                         showPurchaseUnavailableDialog(context)
                         return@clickable
                     }
@@ -254,6 +279,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                         subscribeViewModel?.buySubscribe(selectedSubProduct, activity, dialog)
                     } else {
                         dialog.value = false
+                        Event.event(context, Event.PURCHASE_FAILED, Event.PARAM_REASON to "no_product")
                         Toast.makeText(context, "no product", Toast.LENGTH_SHORT).show()
                     }
                 }

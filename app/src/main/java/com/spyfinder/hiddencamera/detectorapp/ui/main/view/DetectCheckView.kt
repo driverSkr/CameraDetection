@@ -45,6 +45,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
 import com.spyfinder.hiddencamera.detectorapp.theme.White
@@ -82,6 +83,8 @@ fun DetectCheckView() {
         scope.launch {
             val subscribed = SubscribeHelper.isSubscribe()
             if (subscribed) {
+                // 订阅完成后打开结果页，记录付费墙后的结果查看转化。
+                Event.event(context, Event.WIFI_RESULT_CLICK, Event.PARAM_SOURCE to "after_subscribe")
                 localMain.isShowResult.value = true
             }
             shouldOpenResultAfterSubscribe.value = false
@@ -131,9 +134,17 @@ fun DetectCheckView() {
 
             if (subscribed) {
                 shouldOpenResultAfterSubscribe.value = false
+                Event.event(context, Event.WIFI_RESULT_CLICK, Event.PARAM_SOURCE to "scan_complete")
                 localMain.isShowResult.value = true
             } else {
                 shouldOpenResultAfterSubscribe.value = true
+                Event.event(
+                    context,
+                    Event.SUBSCRIBE_GATE_SHOW,
+                    Event.PARAM_SOURCE to "wifi_result",
+                    Event.PARAM_SUSPICIOUS_COUNT to localMain.suspiciousDevices.size,
+                    Event.PARAM_TRUSTED_COUNT to localMain.trustedDevices.size
+                )
                 subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
             }
         }
@@ -142,10 +153,13 @@ fun DetectCheckView() {
     val startDetectAction = startDetect@{
         val localIp = resolveCurrentWifiLocalIp(context)
         if (localIp == null) {
+            Event.event(context, Event.WIFI_SCAN_START, Event.PARAM_REASON to "no_wifi")
             Toast.makeText(context, "Please connect to wifi first", Toast.LENGTH_LONG).show()
             return@startDetect
         }
 
+        // Wi-Fi 扫描开始埋点，标记用户主动触发网络检测。
+        Event.event(context, Event.WIFI_SCAN_START, Event.PARAM_SOURCE to "detect_page")
         val scanId = activeScanId.intValue + 1
         activeScanId.intValue = scanId
         actualScanCompletedScanId.intValue = -1
@@ -189,6 +203,14 @@ fun DetectCheckView() {
                 localMain.trustedDevices.clear()
                 localMain.trustedDevices.addAll(trustedList)
                 localMain.saveLatestScanResult(suspiciousList, trustedList)
+                // Wi-Fi 扫描完成埋点，带上风险设备与安全设备数量。
+                Event.event(
+                    context,
+                    Event.WIFI_SCAN_COMPLETE,
+                    Event.PARAM_SUSPICIOUS_COUNT to suspiciousList.size,
+                    Event.PARAM_TRUSTED_COUNT to trustedList.size,
+                    Event.PARAM_TOTAL_COUNT to suspiciousList.size + trustedList.size
+                )
                 finishScanIfReady(scanId)
             }
         }
@@ -254,7 +276,10 @@ fun DetectCheckView() {
                         contentDescription = null,
                         modifier = Modifier
                             .size(40.dp)
-                            .clickable{ SubscribeActivity.launch(context) }
+                            .clickable{
+                                Event.event(context, Event.SUBSCRIBE_ENTRY_CLICK, Event.PARAM_SOURCE to "wifi_scan_crown")
+                                SubscribeActivity.launch(context)
+                            }
                     )
                 }
             }
@@ -333,6 +358,13 @@ fun DetectCheckView() {
                         .background(color = White10, shape = RoundedCornerShape(999.dp))
                         .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                         .clickable{
+                            // 用户主动取消扫描，记录当前进度便于分析中断位置。
+                            Event.event(
+                                context,
+                                Event.WIFI_SCAN_CANCEL,
+                                Event.PARAM_SOURCE to "cancel_button",
+                                Event.PARAM_PROGRESS to detectProgress.intValue
+                            )
                             activeScanId.intValue += 1
                             finishingScanId.intValue = -1
                             localMain.isStartDetect.value = false
@@ -359,10 +391,10 @@ fun DetectCheckView() {
                         .weight(1f)
                         .fillMaxHeight()
                         .background(color = White10, shape = RoundedCornerShape(999.dp))
-                        .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
-                        .clickable{
-                            startDetectAction()
-                        }
+                            .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                            .clickable{
+                                startDetectAction()
+                            }
                     ) {
                         Text(
                             text = "Recheck",
@@ -378,6 +410,7 @@ fun DetectCheckView() {
                             .fillMaxHeight()
                             .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                             .clickable{
+                                Event.event(context, Event.WIFI_RESULT_CLICK, Event.PARAM_SOURCE to "result_button")
                                 openResultWithSubscriptionCheck()
                             }
                         ) {
@@ -404,6 +437,12 @@ fun DetectCheckView() {
                             .background(color = White10, shape = RoundedCornerShape(999.dp))
                             .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                             .clickable{
+                                Event.event(
+                                    context,
+                                    Event.WIFI_HISTORY_CLICK,
+                                    Event.PARAM_SUSPICIOUS_COUNT to localMain.suspiciousDevices.size,
+                                    Event.PARAM_TRUSTED_COUNT to localMain.trustedDevices.size
+                                )
                                 localMain.openLatestResult()
                             }
                         ) {

@@ -14,25 +14,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @Composable
 fun MainPage() {
@@ -81,8 +77,14 @@ fun MainPage() {
 
 @Composable
 fun NavigationBarView(modifier: Modifier = Modifier) {
-    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
+
+    fun switchTab(index: Int, tabName: String) {
+        // 底部导航点击埋点，用于观察基础功能入口分布。
+        Event.event(context, Event.TAB_CLICK, Event.PARAM_TAB to tabName)
+        localMain.selectTabIndex.intValue = index
+    }
 
     Row(modifier = modifier) {
         Column(
@@ -93,7 +95,7 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
                     if (localMain.selectTabIndex.intValue == 0) Modifier.alpha(1f) else Modifier.alpha(0.5f)
                 )
                 .clickable {
-                    localMain.selectTabIndex.intValue = 0
+                    switchTab(0, "detect")
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -110,7 +112,7 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
                     if (localMain.selectTabIndex.intValue == 1) Modifier.alpha(1f) else Modifier.alpha(0.5f)
                 )
                 .clickable {
-                    localMain.selectTabIndex.intValue = 1
+                    switchTab(1, "magnetic")
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -127,7 +129,7 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
                     if (localMain.selectTabIndex.intValue == 2) Modifier.alpha(1f) else Modifier.alpha(0.5f)
                 )
                 .clickable {
-                    localMain.selectTabIndex.intValue = 2
+                    switchTab(2, "scanner")
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -144,7 +146,7 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
                     if (localMain.selectTabIndex.intValue == 3) Modifier.alpha(1f) else Modifier.alpha(0.5f)
                 )
                 .clickable {
-                    localMain.selectTabIndex.intValue = 3
+                    switchTab(3, "feature")
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center

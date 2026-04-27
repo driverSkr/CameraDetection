@@ -13,6 +13,7 @@ import com.ethan.pay.model.Goods
 import com.ethan.pay.model.OnPayResultCallback
 import com.ethan.pay.model.OrderInfo
 import com.ethan.pay.utils.SubHelper
+import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.model.SubModel
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import kotlinx.coroutines.Dispatchers
@@ -88,10 +89,26 @@ class SubscribeViewModel: ViewModel() {
             BillFactory.getSubscribe().launchBilling(activity, goods, object : OnPayResultCallback {
                 override fun begin() {
                     Log.d("subscribe", "InApp Billing 购买订阅开始")
+                    // 支付开始埋点，记录拉起 Google Play Billing 的商品信息。
+                    Event.event(
+                        activity,
+                        Event.PURCHASE_BEGIN,
+                        Event.PARAM_PLAN_ID to planId,
+                        Event.PARAM_GOODS_ID to goods.productId,
+                        Event.PARAM_SKU to goods.skuId,
+                        Event.PARAM_OFFER_ID to goods.offerId
+                    )
                 }
 
                 override fun onSuccess(orderList: MutableList<OrderInfo>) {
                     Log.d("subscribe", "InApp Billing 购买订阅成功")
+                    Event.event(
+                        activity,
+                        Event.PURCHASE_SUCCESS,
+                        Event.PARAM_PLAN_ID to planId,
+                        Event.PARAM_GOODS_ID to goods.productId,
+                        Event.PARAM_ORDER_COUNT to orderList.size
+                    )
                     // 支付成功后立即更新全局订阅状态，避免等待页面重新进入前台。
                     SubscribeHelper.updateSubscribeState(true)
                     SubscribeHelper.refreshSubscribeState()
@@ -99,6 +116,13 @@ class SubscribeViewModel: ViewModel() {
 
                 override fun onOwned(orderList: MutableList<OrderInfo>) {
                     Log.d("subscribe", "InApp Billing 已拥有订阅")
+                    Event.event(
+                        activity,
+                        Event.PURCHASE_OWNED,
+                        Event.PARAM_PLAN_ID to planId,
+                        Event.PARAM_GOODS_ID to goods.productId,
+                        Event.PARAM_ORDER_COUNT to orderList.size
+                    )
                     // 已拥有也视为订阅有效，并后台同步一次真实订单列表。
                     SubscribeHelper.updateSubscribeState(true)
                     SubscribeHelper.refreshSubscribeState()
@@ -114,6 +138,13 @@ class SubscribeViewModel: ViewModel() {
                         isBuyDiscordSuccess.value = 2
                     }
 
+                    Event.event(
+                        activity,
+                        Event.PURCHASE_FAILED,
+                        Event.PARAM_PLAN_ID to planId,
+                        Event.PARAM_GOODS_ID to goods.productId,
+                        Event.PARAM_REASON to msg.orEmpty()
+                    )
                     Log.d("subscribe", "InApp Billing 购买订阅失败: $msg")
                 }
 
@@ -126,6 +157,13 @@ class SubscribeViewModel: ViewModel() {
                     } else {
                         isBuyDiscordSuccess.value = 3
                     }
+                    Event.event(
+                        activity,
+                        Event.PURCHASE_DISCONNECT,
+                        Event.PARAM_PLAN_ID to planId,
+                        Event.PARAM_GOODS_ID to goods.productId,
+                        Event.PARAM_REASON to "billing_disconnect"
+                    )
                     Log.d("subscribe", "InApp Billing GooglePlay连接中断")
                 }
 
@@ -138,6 +176,12 @@ class SubscribeViewModel: ViewModel() {
                     viewModelScope.launch(Dispatchers.Main) {
                         Toast.makeText(activity, "purchase cancelled", Toast.LENGTH_SHORT).show()
                     }
+                    Event.event(
+                        activity,
+                        Event.PURCHASE_CANCEL,
+                        Event.PARAM_PLAN_ID to planId,
+                        Event.PARAM_GOODS_ID to goods.productId
+                    )
                     Log.d("subscribe", "InApp Billing 购买订阅取消")
                 }
             })

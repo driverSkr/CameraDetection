@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.ui.camera.CameraScannerActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.view.ScannerItemView
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
@@ -51,6 +52,8 @@ fun ScannerPage() {
         scope.launch {
             val subscribed = SubscribeHelper.isSubscribe()
             if (subscribed) {
+                // 订阅完成后继续打开红外扫描，记录付费门槛后的转化路径。
+                Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to "after_subscribe")
                 CameraScannerActivity.launch(context)
             }
             shouldLaunchScannerAfterSubscribe.value = false
@@ -71,7 +74,9 @@ fun ScannerPage() {
         Pair(R.drawable.svg_icon_router, "Router")
     )
 
-    fun openScannerWithSubscriptionCheck() {
+    fun openScannerWithSubscriptionCheck(scannerItem: String) {
+        // 红外扫描功能点击埋点，item 表示用户选择的检测位置。
+        Event.event(context, Event.CAMERA_SCANNER_CLICK, Event.PARAM_ITEM to scannerItem)
         scope.launch {
             val subscribed = if (isSubscribed) {
                 true
@@ -81,9 +86,16 @@ fun ScannerPage() {
 
             if (subscribed) {
                 shouldLaunchScannerAfterSubscribe.value = false
+                Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to "scanner_grid")
                 CameraScannerActivity.launch(context)
             } else {
                 shouldLaunchScannerAfterSubscribe.value = true
+                Event.event(
+                    context,
+                    Event.SUBSCRIBE_GATE_SHOW,
+                    Event.PARAM_SOURCE to "camera_scanner",
+                    Event.PARAM_ITEM to scannerItem
+                )
                 subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
             }
         }
@@ -105,7 +117,7 @@ fun ScannerPage() {
         ) {
             items(scannerItemList.size) { index ->
                 ScannerItemView(scannerItemList[index]) {
-                    openScannerWithSubscriptionCheck()
+                    openScannerWithSubscriptionCheck(scannerItemList[index].second)
                 }
             }
         }

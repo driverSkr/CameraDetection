@@ -56,6 +56,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
 import com.spyfinder.hiddencamera.detectorapp.theme.White
 import com.spyfinder.hiddencamera.detectorapp.theme.White10
@@ -86,6 +87,7 @@ fun SensorPage() {
         scope.launch {
             val subscribed = SubscribeHelper.isSubscribe()
             if (subscribed) {
+                Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "after_subscribe")
                 isListening = true
             }
             shouldStartDetectionAfterSubscribe.value = false
@@ -174,6 +176,8 @@ fun SensorPage() {
     fun toggleDetectionWithSubscriptionCheck() {
         if (isListening) {
             shouldStartDetectionAfterSubscribe.value = false
+            // 磁场检测停止埋点，记录用户主动结束检测时的读数。
+            Event.event(context, Event.MAGNETIC_DETECT_STOP, Event.PARAM_GAUGE to magneticGauge)
             isListening = false
             return
         }
@@ -187,9 +191,11 @@ fun SensorPage() {
 
             if (subscribed) {
                 shouldStartDetectionAfterSubscribe.value = false
+                Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "sensor_page")
                 isListening = true
             } else {
                 shouldStartDetectionAfterSubscribe.value = true
+                Event.event(context, Event.SUBSCRIBE_GATE_SHOW, Event.PARAM_SOURCE to "magnetic_detector")
                 subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
             }
         }

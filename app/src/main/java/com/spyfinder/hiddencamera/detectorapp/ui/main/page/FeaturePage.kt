@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.view.FeatureItemView
 import com.spyfinder.hiddencamera.detectorapp.ui.setting.SettingActivity
@@ -56,7 +57,11 @@ fun FeaturePage() {
                 Text("Detection Method", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
             }
             Spacer(modifier = Modifier.weight(1f))
-            Image(painter = painterResource(R.drawable.svg_icon_settings), contentDescription = null, modifier = Modifier.clickable{ SettingActivity.launch(context) })
+            Image(painter = painterResource(R.drawable.svg_icon_settings), contentDescription = null, modifier = Modifier.clickable{
+                // 设置入口点击埋点，方便观察功能页的工具入口使用情况。
+                Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to "settings")
+                SettingActivity.launch(context)
+            })
         }
         Spacer(modifier = Modifier.height(18.dp))
         LazyColumn(
@@ -66,6 +71,14 @@ fun FeaturePage() {
         ) {
             items(featureItemList.size) { index ->
                 FeatureItemView(featureItemList[index]) {
+                    val featureName = when (index) {
+                        0 -> "wifi"
+                        1 -> "magnetic"
+                        2 -> "scanner"
+                        else -> "tips"
+                    }
+                    // 功能卡片点击埋点，用于分析用户偏好的检测方式。
+                    Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to featureName)
                     if (index != 3) {
                         localMain.pendingWifiAutoScan.value = index == 0
                         localMain.selectTabIndex.intValue = index
