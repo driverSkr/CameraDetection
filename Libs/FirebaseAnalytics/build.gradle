@@ -1,0 +1,21 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-parcelize'
+apply from: "$rootDir$Android"
+
+android library()
+
+android{
+    namespace = "com.ethan.firebaseAnalytics"
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:${KTX_CORE_VERSION}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${COROUTINES_VERSION}"
+    implementation platform("com.google.firebase:firebase-bom:${FIREBASE_VERSION}")
+    implementation 'com.google.firebase:firebase-analytics-ktx'
+    implementation 'com.google.firebase:firebase-config-ktx'
+    implementation("com.android.installreferrer:installreferrer:${REFERRER_VERSION}")
+    implementation "com.blankj:utilcode:${UTILS_VERSION}"
+    implementation "com.google.code.gson:gson:${GSON_VERSION}"
+}

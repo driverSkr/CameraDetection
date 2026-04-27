@@ -155,9 +155,11 @@ dependencies {
     implementation "androidx.camera:camera-camera2:${camerax_version}"
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
+    // CameraX 的 ProcessCameraProvider API 暴露了 Guava ListenableFuture，显式引入 Android 版 Guava，避免被空 listenablefuture 占位包替换后编译期找不到类。
+    implementation "com.google.guava:guava:33.4.8-android"
     //=========================================libs=========================================
     implementation project(path: ':Libs:Base')
     implementation project(path: ':Libs:Permission')
     implementation project(path: ':Libs:GPay')
-
+    implementation project(path: ':Libs:FirebaseAnalytics')
 }
