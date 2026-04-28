@@ -3,6 +3,7 @@ package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,6 +61,8 @@ import com.stealthcopter.networktools.subnet.Device
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+private const val WIFI_DETECT_TAG = "WifiDetect"
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -590,65 +593,115 @@ fun wifiDetect(
     val suspiciousDevices = mutableListOf<WifiDevice>()
     val trustedDevices = mutableListOf<WifiDevice>()
     val resultLock = Any()
+    val threadLock = Any()
+    val threads = mutableListOf<Thread>()
+    val detectedDeviceKeys = mutableSetOf<String>()
+
+    fun buildDeviceKey(device: Device): String {
+        return when {
+            !device.mac.isNullOrBlank() -> "mac:${device.mac}"
+            !device.ip.isNullOrBlank() -> "ip:${device.ip}"
+            else -> "host:${device.hostname.orEmpty()}"
+        }
+    }
+
+    fun analyzeDeviceAsync(device: Device) {
+        val deviceKey = buildDeviceKey(device)
+        synchronized(threadLock) {
+            if (!detectedDeviceKeys.add(deviceKey)) {
+                return
+            }
+        }
+
+        val thread = Thread {
+            if (!isScanActive()) {
+                return@Thread
+            }
+
+            try {
+                // 单个设备发现后立即分析并回调，Suspicious 数字就能从扫描开始阶段逐步增长。
+                val wifiDevice = WifiHelper.detectDeviceType(device, localIp)
+                if (!isScanActive()) {
+                    return@Thread
+                }
+                synchronized(resultLock) {
+                    if (wifiDevice.riskLevel > 0) {
+                        suspiciousDevices.add(wifiDevice)
+                    } else {
+                        trustedDevices.add(wifiDevice)
+                    }
+                }
+                onDeviceDetected(wifiDevice)
+            } catch (throwable: Throwable) {
+                Log.w(WIFI_DETECT_TAG, "分析设备失败: ${device.ip}", throwable)
+            }
+        }
+
+        synchronized(threadLock) {
+            threads.removeAll { !it.isAlive }
+            threads.add(thread)
+        }
+        thread.start()
+    }
+
+    fun waitForAnalyzeThreads() {
+        val activeThreads = synchronized(threadLock) {
+            threads.toList()
+        }
+        activeThreads.forEach { thread ->
+            try {
+                thread.join(3_000)
+            } catch (interruptedException: InterruptedException) {
+                Thread.currentThread().interrupt()
+                Log.w(WIFI_DETECT_TAG, "等待设备分析线程被中断", interruptedException)
+            }
+        }
+    }
+
     try {
         SubnetDevices.fromLocalAddress().findDevices(object : SubnetDevices.OnSubnetDeviceFound {
             override fun onDeviceFound(device: Device?) {
+                if (device == null || !isScanActive()) {
+                    return
+                }
+                analyzeDeviceAsync(device)
             }
 
             override fun onFinished(devicesFound: ArrayList<Device?>?) {
-            if (devicesFound == null) {
-                if (isScanActive()) {
-                    onDetectFinished(emptyList(), emptyList())
-                }
-                return
-            }
-            // 并发检测每个IP的类型
-            val threads = mutableListOf<Thread>()
-            for (dev in devicesFound) {
-                val targetDevice = dev ?: continue
-                val t = Thread {
-                    if (!isScanActive()) {
-                        return@Thread
-                    }
-                    val wifiDevice = WifiHelper.detectDeviceType(targetDevice, localIp)
-                    if (!isScanActive()) {
-                        return@Thread
-                    }
-                    synchronized(resultLock) {
-                        if (wifiDevice.riskLevel > 0) {
-                            suspiciousDevices.add(wifiDevice)
-                        } else {
-                            trustedDevices.add(wifiDevice)
+                if (devicesFound != null) {
+                    // 部分机型或库版本可能只在完成时返回列表，这里补漏避免漏掉未触发 onDeviceFound 的设备。
+                    devicesFound.forEach { device ->
+                        if (device != null && isScanActive()) {
+                            analyzeDeviceAsync(device)
                         }
                     }
-                    onDeviceDetected(wifiDevice)
                 }
-                threads.add(t)
-                t.start()
-                if (threads.size >= 10) {
-                    threads.removeAll { !it.isAlive }
+
+                if (devicesFound == null) {
+                    Log.w(WIFI_DETECT_TAG, "子网扫描完成但设备列表为空")
                 }
-            }
-            threads.forEach { it.join(3000) }
 
-            // 扫描完成后保存一次快照，供首页 History 入口回看最近一次结果。
-            if (!isScanActive()) {
-                return
-            }
+                waitForAnalyzeThreads()
 
-            val suspiciousSnapshot: List<WifiDevice>
-            val trustedSnapshot: List<WifiDevice>
-            synchronized(resultLock) {
-                suspiciousSnapshot = suspiciousDevices.toList()
-                trustedSnapshot = trustedDevices.toList()
-            }
+                // 扫描完成后保存一次快照，供首页 History 入口回看最近一次结果。
+                if (!isScanActive()) {
+                    return
+                }
 
-            onDetectFinished(suspiciousSnapshot, trustedSnapshot)
+                val suspiciousSnapshot: List<WifiDevice>
+                val trustedSnapshot: List<WifiDevice>
+                synchronized(resultLock) {
+                    suspiciousSnapshot = suspiciousDevices.toList()
+                    trustedSnapshot = trustedDevices.toList()
+                }
+
+                onDetectFinished(suspiciousSnapshot, trustedSnapshot)
             }
 
         })
-    } catch (_: Throwable) {
+    } catch (throwable: Throwable) {
         // The subnet scan library may throw IllegalAccessError when no local address is available.
+        Log.w(WIFI_DETECT_TAG, "子网扫描启动失败", throwable)
         if (isScanActive()) {
             onDetectFinished(emptyList(), emptyList())
         }
