@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.spyfinder.hiddencamera.detectorapp.R
@@ -52,12 +53,16 @@ fun RadarScannerWithControls() {
         )
 
         if (localMain.isStartDetect.value) {
-            Image(
-                painter = painterResource(R.mipmap.img_radar_detect),
-                contentDescription = "扫描指针",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().rotate(rotationAngle)
-            )
+            Box(modifier = Modifier.fillMaxSize().rotate(rotationAngle)) {
+                Image(
+                    painter = painterResource(R.mipmap.img_radar_detect),
+                    contentDescription = "扫描指针",
+                    contentScale = ContentScale.Crop,
+                    // 仅镜像图片内容本身，避免影响外层旋转动画方向
+                    modifier = Modifier.fillMaxSize()
+                        .scale(scaleX = -1f, scaleY = 1f)
+                )
+            }
         }
     }
 }
