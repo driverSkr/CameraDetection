@@ -18,10 +18,10 @@ object DialogHelper {
         val (binding, dialog) = ComposeNativeDialog.composeBottomDialog(activity)
         binding.composeView.apply {
             setContent {
-                ComposeProjectTheme {
+                ComposeProjectTheme(fillScreen = false) {
                     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
                         WifiInfoDetailsView(dialog, device, onMarkSafe)
-                        Spacer(modifier = Modifier.height(42.dp))
+
                     }
                 }
             }

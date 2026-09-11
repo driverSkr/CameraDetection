@@ -23,60 +23,28 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class SubscribeViewModel: ViewModel() {
-    companion object {
-        private const val DEFAULT_CURRENCY = "$"
-        private const val DEFAULT_MONTH_PRICE = "19.99"
-        private const val DEFAULT_WEEK_PRICE = "6.99"
-        private const val DEFAULT_YEAR_PRICE = "39.99"
-    }
-
     var isBuySuccess: MutableState<Int> = mutableIntStateOf(0)
     var isBuyDiscordSuccess: MutableState<Int> = mutableIntStateOf(0)
 
-    suspend fun querySubProduct(context: Context) = suspendCoroutine { suspendCoroutine ->
-        viewModelScope.launch(Dispatchers.Default) {
-            val goodsList = arrayListOf(SubHelper.getProductId(), SubHelper.getProductId(), SubHelper.getProductId())
-            val planList = arrayListOf(SubHelper.getMonthPlanId(), SubHelper.getWeekPlanId(), SubHelper.getYearPlanId())
-            val offerList = arrayListOf("", "", "")
-            val skuList = arrayListOf(SubHelper.getMonthSkuId(), SubHelper.getWeekSkuId(), SubHelper.getYearSkuId())
-            val list = mutableListOf<SubModel>()
-            for (i in planList.indices) {
-                val planId = planList[i]
-                val model = SubModel()
-                model.goods = goodsList[i]
-                model.id = planId
-                model.offerId = offerList[i]
-                model.sku = skuList[i]
-                model.currency = DEFAULT_CURRENCY
-                model.price = getDefaultPrice(planId)
-                val goods = Goods(goodsList[i], planId, offerList[i], skuList[i])
-                val prices = runCatching {
-                    BillFactory.getSubscribe().getGoodsPrice(context, goods)
-                }.onFailure {
-                    Log.e("subscribe", "Failed to query subscribe price for planId=$planId", it)
-                }.getOrNull()
-                val trial = false
-                model.isFreeTrial = trial
-                val remotePrice = prices?.getOrNull(0)
-                if (!remotePrice.isNullOrBlank() && remotePrice != "0.00") {
-                    model.price = remotePrice
-                    model.currency = prices?.getOrNull(1).orEmpty().ifBlank { DEFAULT_CURRENCY }
-                }
-                list.add(model)
+    // Only offer plans whose current price was returned by the store.
+    suspend fun querySubProduct(context: Context): List<SubModel> = withContext(Dispatchers.IO) {
+        val plans = listOf(SubHelper.getMonthPlanId(), SubHelper.getWeekPlanId(), SubHelper.getYearPlanId())
+        val skus = listOf(SubHelper.getMonthSkuId(), SubHelper.getWeekSkuId(), SubHelper.getYearSkuId())
+        plans.mapIndexedNotNull { index, plan ->
+            val goods = Goods(SubHelper.getProductId(), plan, "", skus[index])
+            val prices = try { BillFactory.getSubscribe().getGoodsPrice(context, goods) }
+                catch (exception: kotlinx.coroutines.CancellationException) { throw exception }
+                catch (exception: Exception) { null }
+            val price = prices?.getOrNull(0)
+            if (price.isNullOrBlank() || price == "0.00") null
+            else SubModel().apply {
+                this.goods = SubHelper.getProductId()
+                id = plan; offerId = ""; sku = skus[index]
+                this.price = price; currency = prices.getOrNull(1).orEmpty()
+                isFreeTrial = false
             }
-            suspendCoroutine.resume(list)
         }
     }
-
-    private fun getDefaultPrice(planId: String?): String {
-        return when (planId) {
-            SubHelper.getMonthPlanId() -> DEFAULT_MONTH_PRICE
-            SubHelper.getWeekPlanId() -> DEFAULT_WEEK_PRICE
-            SubHelper.getYearPlanId() -> DEFAULT_YEAR_PRICE
-            else -> DEFAULT_WEEK_PRICE
-        }
-    }
-
     fun buySubscribe(model: SubModel?, activity: FragmentActivity, dialog: MutableState<Boolean>) {
         viewModelScope.launch {
             val planId = model?.id.toString()
@@ -111,6 +79,7 @@ class SubscribeViewModel: ViewModel() {
                     )
                     // 支付成功后立即更新全局订阅状态，避免等待页面重新进入前台。
                     SubscribeHelper.updateSubscribeState(true)
+                    viewModelScope.launch(Dispatchers.Main) { isBuySuccess.value = 1 }
                     SubscribeHelper.refreshSubscribeState()
                 }
 
@@ -125,6 +94,7 @@ class SubscribeViewModel: ViewModel() {
                     )
                     // 已拥有也视为订阅有效，并后台同步一次真实订单列表。
                     SubscribeHelper.updateSubscribeState(true)
+                    viewModelScope.launch(Dispatchers.Main) { isBuySuccess.value = 1 }
                     SubscribeHelper.refreshSubscribeState()
                 }
 

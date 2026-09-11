@@ -1,5 +1,9 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
 
+import com.spyfinder.hiddencamera.detectorapp.ui.components.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -63,13 +67,13 @@ fun ScannerPage() {
         Pair(R.drawable.svg_icon_tv, "TV"),
         Pair(R.drawable.svg_icon_socket, "Socket"),
         Pair(R.drawable.svg_icon_lampshade, "Lampshade"),
-        Pair(R.drawable.svg_icon_beside_table, "Beside Table"),
+        Pair(R.drawable.svg_icon_beside_table, "Bedside table"),
         Pair(R.drawable.svg_icon_tv_cabinet, "TV Cabinet"),
         Pair(R.drawable.svg_icon_wardrobe, "Wardrobe"),
         Pair(R.drawable.svg_icon_sofa, "Sofa"),
         Pair(R.drawable.svg_icon_smoke_sensor, "Smoke Sensor"),
         Pair(R.drawable.svg_icon_shower_head, "Shower Head"),
-        Pair(R.drawable.svg_icon_vase, "vase"),
+        Pair(R.drawable.svg_icon_vase, "Vase"),
         Pair(R.drawable.svg_icon_air_conditioner, "Air Conditioner"),
         Pair(R.drawable.svg_icon_router, "Router")
     )
@@ -101,25 +105,20 @@ fun ScannerPage() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            Text("Scanner", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Click on the following entry to enter the corresponding location for testing.", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
-        }
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            modifier = Modifier.fillMaxWidth().align(Alignment.Center)
-        ) {
-            items(scannerItemList.size) { index ->
-                ScannerItemView(scannerItemList[index]) {
-                    openScannerWithSubscriptionCheck(scannerItemList[index].second)
+    QuietPage {
+        QuietHeading("Camera inspection", "Where would you\nlike to check?", "Choose a location, then inspect it with your camera.")
+        scannerItemList.chunked(3).forEach { items ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                items.forEach { (icon, title) ->
+                    OutlinedCard(onClick = { openScannerWithSubscriptionCheck(title) }, modifier = Modifier.weight(1f)) {
+                        Column(Modifier.fillMaxWidth().heightIn(min = 108.dp).padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            QuietIcon(icon)
+                            Text(title, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                    }
                 }
             }
         }
+        QuietNote("All locations use the same camera inspection tool.")
     }
 }

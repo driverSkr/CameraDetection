@@ -53,10 +53,6 @@ class SubscribeActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
         }
     }
 
-    override fun onBackPressed() {
-        handleDismiss()
-    }
-
     private fun handleDismiss() {
         if (launchMainOnDismiss && !hasHandledDismissNavigation) {
             hasHandledDismissNavigation = true

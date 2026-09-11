@@ -1,11 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main
 
-import android.Manifest
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
@@ -22,7 +18,6 @@ import com.spyfinder.hiddencamera.detectorapp.ui.main.context.MainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.page.MainPage
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
-import com.spyfinder.hiddencamera.detectorapp.utils.WifiHelper
 import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
@@ -40,19 +35,10 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     private var hasHandledColdStartSubscribeCheck = false
 
-    private val wifiPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true && (Build.VERSION.SDK_INT < 33 || permissions[Manifest.permission.NEARBY_WIFI_DEVICES] == true)
-        if (granted) {
-            Toast.makeText(this, "Permission granted", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkColdStartSubscribeIfNeeded()
-        WifiHelper.checkWifiPermission(this, wifiPermissionLauncher)
+        // Network access is requested from the Wi-Fi check when the user starts it.
         binding.composeView.apply {
             setContent {
                 val mainContextEntity = remember {

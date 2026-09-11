@@ -1,90 +1,44 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.event.Event
+import com.spyfinder.hiddencamera.detectorapp.ui.components.*
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
-import com.spyfinder.hiddencamera.detectorapp.ui.main.view.FeatureItemView
 import com.spyfinder.hiddencamera.detectorapp.ui.setting.SettingActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.tips.TipsActivity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
-/**
- * 功能页
- */
 @Composable
 fun FeaturePage() {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val localMain = LocalMainContextEntity.current
-    val featureItemList = listOf(
-        Triple("Wi-Fi", R.drawable.svg_icon_wifi, "Scan for suspicious devices in the current network"),
-        Triple("Magnetic", R.drawable.svg_icon_magnetic, "Use mobile phones magnetic snsor to detect sneak shots"),
-        Triple("Scanner", R.drawable.svg_icon_scanner_big, "Find the instead point of the camera through the camera"),
-        Triple("Tips", R.drawable.svg_icon_tips, "Practical tips to boost your safety awareness"),
-    )
-
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                Text("Features", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Detection Method", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            Image(painter = painterResource(R.drawable.svg_icon_settings), contentDescription = null, modifier = Modifier.clickable{
-                // 设置入口点击埋点，方便观察功能页的工具入口使用情况。
+    val main = LocalMainContextEntity.current
+    QuietPage {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            QuietBadge("YOUR TOOLKIT")
+            IconButton(onClick = {
                 Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to "settings")
                 SettingActivity.launch(context)
-            })
+            }) { Icon(painterResource(R.drawable.svg_icon_settings), "Settings", Modifier.size(24.dp)) }
         }
-        Spacer(modifier = Modifier.height(18.dp))
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(featureItemList.size) { index ->
-                FeatureItemView(featureItemList[index]) {
-                    val featureName = when (index) {
-                        0 -> "wifi"
-                        1 -> "magnetic"
-                        2 -> "scanner"
-                        else -> "tips"
-                    }
-                    // 功能卡片点击埋点，用于分析用户偏好的检测方式。
-                    Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to featureName)
-                    if (index != 3) {
-                        localMain.pendingWifiAutoScan.value = index == 0
-                        localMain.selectTabIndex.intValue = index
-                    } else {
-                        TipsActivity.launch(context)
-                    }
+        QuietHeading("Different checks", "One calmer space.", "Choose the method that fits your next step.")
+        QuietPanel {
+            val tools = listOf(
+                Triple(R.drawable.svg_icon_wifi, "Wi-Fi check", "Review devices on your network."),
+                Triple(R.drawable.svg_icon_magnetic, "Magnetic check", "Observe magnetic field changes."),
+                Triple(R.drawable.svg_icon_scanner, "Camera inspection", "Look closer with color filters."),
+                Triple(R.drawable.svg_icon_tips, "Safety tips", "A practical guide to your space.")
+            )
+            tools.forEachIndexed { index, (icon, title, description) ->
+                QuietRow(icon, title, description) {
+                    Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to listOf("wifi", "magnetic", "scanner", "tips")[index])
+                    if (index == 3) TipsActivity.launch(context)
+                    else { main.pendingWifiAutoScan.value = index == 0; main.selectTabIndex.intValue = index }
                 }
             }
         }
