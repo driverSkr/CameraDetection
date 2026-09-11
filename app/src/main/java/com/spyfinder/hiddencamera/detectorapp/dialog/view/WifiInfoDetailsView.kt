@@ -1,6 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.dialog.view
 
 import androidx.compose.foundation.layout.*
+import com.spyfinder.hiddencamera.detectorapp.utils.deviceLabel
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -14,22 +15,23 @@ import com.spyfinder.hiddencamera.detectorapp.ui.components.*
 
 @Composable
 fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSafe: (WifiDevice) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        QuietTopBar("Device details") { dialog.dismiss() }
+        QuietTopBar(context.getString(R.string.device_details)) { dialog.dismiss() }
         QuietIcon(R.drawable.svg_icon_wifi_info_router)
-        QuietHeading("Device information", device.name.ifBlank { "Unknown" })
-        QuietBadge(if (device.riskLevel > 0) "Needs review" else "This phone / confirmed", device.riskLevel > 0)
+        QuietHeading(context.getString(R.string.device_information), context.deviceLabel(device.name))
+        QuietBadge(if (device.riskLevel > 0) context.getString(R.string.needs_review) else context.getString(R.string.phone_or_confirmed), device.riskLevel > 0)
         QuietPanel {
-            listOf("IP address" to device.ip, "MAC address" to device.mac,
-                "Device model" to device.brandModel, "Estimated type" to device.type).forEach { (label, value) ->
+            listOf(context.getString(R.string.ip_address) to device.ip, context.getString(R.string.mac_address) to device.mac,
+                context.getString(R.string.device_model) to device.brandModel, context.getString(R.string.estimated_type) to context.deviceLabel(device.type)).forEach { (label, value) ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     QuietBody(label, true)
-                    Text(value.ifBlank { "Not available" })
+                    Text(value.ifBlank { context.getString(R.string.not_available) })
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
-        QuietNote("Check that this is a device you recognize before confirming it.")
-        if (device.riskLevel > 0) QuietButton("I recognize this device") { onMarkSafe(device); dialog.dismiss() }
+        QuietNote(context.getString(R.string.confirm_device_note))
+        if (device.riskLevel > 0) QuietButton(context.getString(R.string.recognize_device)) { onMarkSafe(device); dialog.dismiss() }
     }
 }

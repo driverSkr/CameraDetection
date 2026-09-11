@@ -77,7 +77,7 @@ fun QuietIcon(@DrawableRes icon: Int, modifier: Modifier = Modifier) {
 @Composable
 fun QuietTopBar(title: String, onBack: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onBack) { Icon(painterResource(R.drawable.svg_icon_back), "Back", Modifier.size(24.dp)) }
+        IconButton(onBack) { Icon(painterResource(R.drawable.svg_icon_back), androidx.compose.ui.res.stringResource(R.string.back), Modifier.size(24.dp)) }
         Text(title, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         Spacer(Modifier.width(48.dp))
     }
@@ -136,7 +136,7 @@ fun QuietNote(text: String) {
 @Composable
 fun QuietStats(review: Int, confirmed: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        listOf(review to "Needs review", confirmed to "This phone & confirmed").forEachIndexed { index, (count, label) ->
+        listOf(review to androidx.compose.ui.res.stringResource(R.string.needs_review), confirmed to androidx.compose.ui.res.stringResource(R.string.phone_confirmed)).forEachIndexed { index, (count, label) ->
             Surface(Modifier.weight(1f), shape = RoundedCornerShape(22.dp),
                 color = if (index == 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -131,81 +131,81 @@ fun DetectCheckView() {
     BackHandler(state != "home" && state != "scan" && state != "complete") { state = "home" }
     key(state) {
     QuietPage(footer = if (state == "home") ({
-        QuietButton("Scan this Wi-Fi") { startScan() }
+        QuietButton(context.getString(R.string.scan_wifi)) { startScan() }
         TextButton(onClick = {
             if (main.hasScanHistory) {
                 Event.event(context, Event.WIFI_HISTORY_CLICK)
                 main.openLatestResult()
             } else state = "nohistory"
-        }, modifier = Modifier.fillMaxWidth()) { Text("View last scan") }
+        }, modifier = Modifier.fillMaxWidth()) { Text(context.getString(R.string.view_last_scan)) }
     }) else null) {
         when (state) {
             "home" -> {
-                QuietHeading("SpyFinder", "A little check.\nMore peace of mind.", "Review the devices on your Wi-Fi.")
+                QuietHeading(context.getString(R.string.brand), context.getString(R.string.home_title), context.getString(R.string.home_description))
                 QuietPanel {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         QuietIcon(R.drawable.svg_icon_wifi)
-                        Column { Text(ssid.takeIf { it.isNotBlank() && it != "<unknown ssid>" } ?: "Your Wi-Fi network")
-                            QuietBody(if (WifiHelper.isWifiEnabled(context)) "Connected · Ready to check" else "Connect to Wi-Fi to begin", true) }
+                        Column { Text(ssid.takeIf { it.isNotBlank() && it != "<unknown ssid>" } ?: context.getString(R.string.your_network))
+                            QuietBody(if (WifiHelper.isWifiEnabled(context)) context.getString(R.string.connected_ready) else context.getString(R.string.connect_to_begin), true) }
                     }
                 }
                 QuietOrbit(diameter = 192.dp)
-                QuietNote("A network scan is one part of checking your space.")
-                if (!subscribed) TextButton(onClick = { SubscribeActivity.launch(context) }) { Text("Explore Pro") }
+                QuietNote(context.getString(R.string.network_note))
+                if (!subscribed) TextButton(onClick = { SubscribeActivity.launch(context) }) { Text(context.getString(R.string.explore_pro)) }
             }
             "scan" -> {
-                QuietHeading("Network check", "Checking your\nnetwork.", ssid)
+                QuietHeading(context.getString(R.string.network_check), context.getString(R.string.scanning_title), ssid)
                 val count = main.suspiciousDevices.size + main.trustedDevices.size
-                QuietOrbit(value = count.toString(), label = "devices discovered")
+                QuietOrbit(value = count.toString(), label = context.getString(R.string.devices_discovered))
                 LinearProgressIndicator(Modifier.fillMaxWidth())
                 QuietPanel {
-                    Text("Looking for reachable devices")
-                    QuietBody("Reviewing device types, then preparing your results.")
+                    Text(context.getString(R.string.looking_for_devices))
+                    QuietBody(context.getString(R.string.preparing_results))
                 }
-                QuietNote("Results appear when the check is complete. Leaving this tab stops the current check.")
+                QuietNote(context.getString(R.string.scan_progress_note))
             }
             "complete" -> {
-                QuietHeading("Check complete", "Your network,\nat a glance.", "${main.suspiciousDevices.size + main.trustedDevices.size} devices found.")
+                QuietHeading(context.getString(R.string.check_complete), context.getString(R.string.network_glance), context.getString(R.string.devices_found, main.suspiciousDevices.size + main.trustedDevices.size))
                 QuietStats(main.suspiciousDevices.size, main.trustedDevices.size)
-                QuietPanel { Text("Review unfamiliar devices"); QuietBody("Unrecognized does not mean unsafe. Check the details before deciding.") }
-                QuietButton("View device details") {
+                QuietPanel { Text(context.getString(R.string.review_unfamiliar)); QuietBody(context.getString(R.string.unrecognized_note)) }
+                QuietButton(context.getString(R.string.view_details)) {
                     scope.launch {
                         if (subscribed || SubscribeHelper.isSubscribe()) main.openCurrentResult()
                         else { openAfterSubscribe = true; subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java)) }
                     }
                 }
-                QuietButton("Scan again", secondary = true) { startScan() }
+                QuietButton(context.getString(R.string.scan_again), secondary = true) { startScan() }
             }
             "permission", "denied" -> {
-                QuietTopBar("Network access") { state = "home" }
+                QuietTopBar(context.getString(R.string.network_access)) { state = "home" }
                 QuietOrbit(R.drawable.svg_icon_privacy_policy)
-                QuietHeading("You’re in control", if (state == "denied") "Access is off." else "Allow network access.",
-                    "Android requires network permissions to read your connected Wi-Fi. Allow access to continue this check.")
-                QuietButton(if (state == "denied") "Open app settings" else "Continue") {
+                QuietHeading(context.getString(R.string.your_control), if (state == "denied") context.getString(R.string.access_off) else context.getString(R.string.allow_network),
+                    context.getString(R.string.network_permission_description))
+                QuietButton(if (state == "denied") context.getString(R.string.open_app_settings) else context.getString(R.string.action_continue)) {
                     if (state == "denied") settingsLauncher.launch(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
                     else permissionLauncher.launch(permissions)
                 }
-                QuietButton("Not now", secondary = true) { state = "home" }
+                QuietButton(context.getString(R.string.not_now), secondary = true) { state = "home" }
             }
             "offline" -> {
-                QuietTopBar("Wi-Fi check") { state = "home" }
+                QuietTopBar(context.getString(R.string.wifi_check)) { state = "home" }
                 QuietOrbit(R.drawable.svg_icon_wifi)
-                QuietHeading("Connection needed", "Connect to Wi-Fi.", "Join the network you want to check, then return here.")
-                QuietButton("Open Wi-Fi settings") { settingsLauncher.launch(Intent(Settings.ACTION_WIFI_SETTINGS)) }
-                QuietButton("Try again", secondary = true) { startScan() }
+                QuietHeading(context.getString(R.string.connection_needed), context.getString(R.string.connect_wifi), context.getString(R.string.join_network))
+                QuietButton(context.getString(R.string.open_wifi_settings)) { settingsLauncher.launch(Intent(Settings.ACTION_WIFI_SETTINGS)) }
+                QuietButton(context.getString(R.string.try_again), secondary = true) { startScan() }
             }
             "nohistory" -> {
-                QuietTopBar("Last scan") { state = "home" }
+                QuietTopBar(context.getString(R.string.last_scan)) { state = "home" }
                 QuietOrbit(R.drawable.svg_icon_restore)
-                QuietHeading("A fresh start", "No saved scan yet.", "Your latest completed network check will appear here.")
-                QuietButton("Start a scan") { startScan() }
+                QuietHeading(context.getString(R.string.fresh_start), context.getString(R.string.no_history), context.getString(R.string.history_description))
+                QuietButton(context.getString(R.string.start_scan)) { startScan() }
             }
             else -> {
-                QuietTopBar("Wi-Fi check") { state = "home" }
+                QuietTopBar(context.getString(R.string.wifi_check)) { state = "home" }
                 QuietOrbit(R.drawable.svg_icon_warning_gray)
-                QuietHeading("Check interrupted", "Let’s try that again.", "We couldn’t complete this scan. Your previous saved result is still available.")
-                QuietButton("Retry scan") { startScan() }
-                QuietButton("Back to Wi-Fi", secondary = true) { state = "home" }
+                QuietHeading(context.getString(R.string.check_interrupted), context.getString(R.string.try_again_title), context.getString(R.string.scan_error_description))
+                QuietButton(context.getString(R.string.retry_scan)) { startScan() }
+                QuietButton(context.getString(R.string.back_wifi), secondary = true) { state = "home" }
             }
         }
     }

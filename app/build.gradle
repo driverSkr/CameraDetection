@@ -115,6 +115,7 @@ android {
 }
 
 dependencies {
+    testImplementation libs.junit
 
     implementation "androidx.core:core-ktx:${KTX_CORE_VERSION}"
     implementation "androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}"

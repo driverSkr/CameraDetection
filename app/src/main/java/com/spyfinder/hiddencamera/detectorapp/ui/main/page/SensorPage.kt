@@ -23,6 +23,7 @@ import kotlin.math.sqrt
 @Composable
 fun SensorPage() {
     val context = LocalContext.current
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val main = LocalMainContextEntity.current
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -77,19 +78,19 @@ fun SensorPage() {
         }
     }
     QuietPage(footer = if (!unavailable) ({
-        QuietButton(if (listening) "Stop measurement" else "Start measurement", onClick = ::toggleMeasurement)
+        QuietButton(if (listening) context.getString(R.string.stop_measurement) else context.getString(R.string.start_measurement), onClick = ::toggleMeasurement)
     }) else null) {
         if (unavailable) {
-            QuietHeading("Magnetic check", "This phone can’t measure magnetic fields.", "A working magnetic sensor wasn’t found on this device.")
+            QuietHeading(context.getString(R.string.magnetic_check), context.getString(R.string.magnetic_unsupported), context.getString(R.string.sensor_missing))
             QuietOrbit(R.drawable.svg_icon_magnetic)
-            QuietButton("Use Wi-Fi check") { main.selectTabIndex.intValue = 0 }
-            QuietButton("Try camera inspection", secondary = true) { main.selectTabIndex.intValue = 2 }
+            QuietButton(context.getString(R.string.use_wifi)) { main.selectTabIndex.intValue = 0 }
+            QuietButton(context.getString(R.string.try_camera), secondary = true) { main.selectTabIndex.intValue = 2 }
         } else {
-            QuietHeading("Magnetic check", "Follow the\nfield changes.", if (listening) "Move slowly near the area you’re checking." else "Use your phone’s magnetic sensor as an extra check.")
-            QuietOrbit(value = reading?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: "—", label = "μT · ${if (listening) "Live reading" else "Ready when you are"}")
+            QuietHeading(context.getString(R.string.magnetic_check), context.getString(R.string.field_changes), if (listening) context.getString(R.string.move_slowly) else context.getString(R.string.sensor_description))
+            QuietOrbit(value = reading?.let { String.format(locale, "%.1f", it) } ?: "—", label = "μT · ${if (listening) context.getString(R.string.live_reading) else context.getString(R.string.ready_reading)}")
             QuietPanel(tinted = true) {
-                QuietBody(if (listening) "Reading magnetic strength" else "Start close. Move slowly.")
-                QuietNote("Magnetic changes alone cannot identify a camera. Nearby electronics and metal can affect readings.")
+                QuietBody(if (listening) context.getString(R.string.reading_strength) else context.getString(R.string.start_close))
+                QuietNote(context.getString(R.string.magnetic_note))
             }
         }
     }

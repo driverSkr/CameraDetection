@@ -49,25 +49,25 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
     LaunchedEffect(Unit) { Event.event(context, Event.PAGE_VIEW, Event.PARAM_PAGE to "subscribe") }
     QuietPage(navigationPadding = true) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            QuietBadge("SPYFINDER PRO")
-            IconButton(onClick = close) { Icon(painterResource(R.drawable.svg_icon_close), "Close subscription", Modifier.size(24.dp)) }
+            QuietBadge(context.getString(R.string.pro_badge))
+            IconButton(onClick = close) { Icon(painterResource(R.drawable.svg_icon_close), context.getString(R.string.close_subscription), Modifier.size(24.dp)) }
         }
-        QuietHeading("A closer look", "More tools.\nClearer details.", "Unlock the full inspection toolkit.")
+        QuietHeading(context.getString(R.string.closer_look), context.getString(R.string.more_tools), context.getString(R.string.unlock_toolkit))
         QuietPanel(tinted = true) {
             QuietIcon(R.drawable.svg_icon_scanner)
-            Text("One plan. All three checks.", style = MaterialTheme.typography.titleMedium)
-            QuietBody("Device details · Magnetic sensor\nCamera filters · No ads")
+            Text(context.getString(R.string.one_plan), style = MaterialTheme.typography.titleMedium)
+            QuietBody(context.getString(R.string.pro_features))
         }
         when {
             loading -> QuietPanel {
-                Text("Loading plans…")
+                Text(context.getString(R.string.loading_plans))
                 LinearProgressIndicator(Modifier.fillMaxWidth())
-                QuietBody("Connecting to Google Play.")
+                QuietBody(context.getString(R.string.connecting_play))
             }
             products.isEmpty() -> QuietPanel {
-                Text("Plans couldn’t be loaded")
-                QuietBody("Check your connection and try again.")
-                QuietButton("Retry") { retry++ }
+                Text(context.getString(R.string.plans_error))
+                QuietBody(context.getString(R.string.check_connection))
+                QuietButton(context.getString(R.string.retry)) { retry++ }
             }
             else -> {
                 products.sortedBy { when (SubscribeHelper.getProductType(it.id)) { "Weekly" -> 0; "Monthly" -> 1; else -> 2 } }.forEach { model ->
@@ -81,7 +81,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                         if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                         color = if (chosen) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface) {
                         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Column(Modifier.weight(1f)) { Text(SubscribeHelper.getProductType(model.id)); QuietBody("Auto-renewing plan", true) }
+                            Column(Modifier.weight(1f)) { Text(context.planLabel(model.id)); QuietBody(context.getString(R.string.auto_plan), true) }
                             Text("${model.currency.orEmpty()}${model.price.orEmpty()}", style = MaterialTheme.typography.titleMedium)
                         }
                     }
@@ -89,14 +89,14 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
             }
         }
         if (purchaseState in 2..4) QuietNote(when (purchaseState) {
-            4 -> "Purchase canceled. You haven’t activated a new plan."
-            3 -> "The store disconnected. Check your connection and try again."
-            else -> "Purchase was not completed. Please try again."
+            4 -> context.getString(R.string.purchase_cancelled_note)
+            3 -> context.getString(R.string.store_disconnected_note)
+            else -> context.getString(R.string.purchase_failed_note)
         })
         error?.let { QuietNote(it) }
-        QuietButton(if (purchaseState == 5) "Waiting for Google Play…" else selected?.let {
-            "Continue · ${it.currency.orEmpty()}${it.price.orEmpty()} / ${when (SubscribeHelper.getProductType(it.id)) { "Weekly" -> "week"; "Monthly" -> "month"; else -> "year" }}"
-        } ?: "Continue", enabled = !loading && selected != null && purchaseState != 5) {
+        QuietButton(if (purchaseState == 5) context.getString(R.string.waiting_play) else selected?.let {
+            context.getString(R.string.continue_price, "${it.currency.orEmpty()}${it.price.orEmpty()}", context.planLabel(it.id, period = true))
+        } ?: context.getString(R.string.action_continue), enabled = !loading && selected != null && purchaseState != 5) {
             context.findBaseActivityVBind()?.let { activity ->
                 error = null
                 vm.isBuySuccess.value = 5
@@ -104,10 +104,10 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                 vm.buySubscribe(selected, activity, dialog)
             }
         }
-        QuietBody("Auto-renews until canceled in Google Play. Your selected plan’s price is shown above.", true)
+        QuietBody(context.getString(R.string.auto_renew_note), true)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            TextButton(onClick = { LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", "Privacy policy") }) { Text("Privacy") }
-            TextButton(onClick = { LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-terms-of-use/home", "Terms of use") }) { Text("Terms") }
+            TextButton(onClick = { LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.privacy_policy)) }) { Text(context.getString(R.string.privacy)) }
+            TextButton(onClick = { LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-terms-of-use/home", context.getString(R.string.terms_of_use)) }) { Text(context.getString(R.string.terms)) }
         }
         RestorePurchases()
     }

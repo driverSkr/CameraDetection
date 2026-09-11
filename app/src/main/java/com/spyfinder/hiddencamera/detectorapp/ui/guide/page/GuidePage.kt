@@ -10,19 +10,20 @@ import com.spyfinder.hiddencamera.detectorapp.ui.components.*
 
 @Composable
 fun GuidePage(onComplete: (() -> Unit)? = null) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var page by rememberSaveable { mutableIntStateOf(0) }
     val icons = listOf(R.drawable.svg_icon_wifi, R.drawable.svg_icon_scanner, R.drawable.svg_icon_magnetic)
-    val titles = listOf("Know what’s\nconnected.", "Take a\ncloser look.", "Notice the\nfield changes.")
-    val descriptions = listOf("Review devices connected to your current Wi-Fi network.", "Use your camera and color filters to inspect unfamiliar objects.", "Use the magnetic sensor as an additional check around your space.")
+    val titles = listOf(context.getString(R.string.guide_network_title), context.getString(R.string.guide_camera_title), context.getString(R.string.guide_sensor_title))
+    val descriptions = listOf(context.getString(R.string.guide_network_description), context.getString(R.string.guide_camera_description), context.getString(R.string.guide_sensor_description))
     key(page) {
         QuietPage(navigationPadding = true) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("SpyFinder"); QuietBadge("GETTING STARTED") }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(context.getString(R.string.brand)); QuietBadge(context.getString(R.string.getting_started)) }
             QuietOrbit(icons[page])
-            QuietHeading(listOf("01 / Network", "02 / Camera", "03 / Magnetic")[page], titles[page], descriptions[page])
+            QuietHeading(listOf(context.getString(R.string.guide_network), context.getString(R.string.guide_camera), context.getString(R.string.guide_magnetic))[page], titles[page], descriptions[page])
             LinearProgressIndicator(progress = { (page + 1) / 3f }, modifier = Modifier.fillMaxWidth())
-            QuietBody("${page + 1} of 3", true)
-            QuietButton(if (page == 2) "Get started" else "Continue") { if (page < 2) page++ else onComplete?.invoke() }
-            if (page > 0) QuietButton("Back", secondary = true) { page-- }
+            QuietBody(context.getString(R.string.guide_progress, page + 1, 3), true)
+            QuietButton(if (page == 2) context.getString(R.string.get_started) else context.getString(R.string.action_continue)) { if (page < 2) page++ else onComplete?.invoke() }
+            if (page > 0) QuietButton(context.getString(R.string.back), secondary = true) { page-- }
         }
     }
 }

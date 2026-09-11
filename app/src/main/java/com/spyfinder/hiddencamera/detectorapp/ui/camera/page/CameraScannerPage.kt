@@ -39,18 +39,18 @@ fun CameraScannerPage() {
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it; denied = !it }
     val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { granted = hasAccess() }
     QuietPage(navigationPadding = true) {
-        QuietTopBar("Camera inspection") { context.findActivity()?.finish() }
+        QuietTopBar(context.getString(R.string.camera_inspection)) { context.findActivity()?.finish() }
         if (!granted) {
             QuietOrbit(R.drawable.svg_icon_scanner)
-            QuietHeading("Camera access", if (denied) "Camera access is off." else "See your space\nmore closely.", "Allow the camera to show a live preview with color filters.")
-            QuietButton(if (denied) "Open app settings" else "Allow camera") {
+            QuietHeading(context.getString(R.string.camera_access), if (denied) context.getString(R.string.camera_access_off) else context.getString(R.string.see_space), context.getString(R.string.allow_camera_description))
+            QuietButton(if (denied) context.getString(R.string.open_app_settings) else context.getString(R.string.allow_camera)) {
                 if (denied) settingsLauncher.launch(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
                 else permissionLauncher.launch(Manifest.permission.CAMERA)
             }
-            QuietButton("Not now", secondary = true) { context.findActivity()?.finish() }
+            QuietButton(context.getString(R.string.not_now), secondary = true) { context.findActivity()?.finish() }
         } else if (cameraError) {
-            QuietHeading("Camera unavailable", "Couldn’t open the camera.", "Close other apps using your camera, then try again.")
-            QuietButton("Retry camera") { retry++; cameraError = false }
+            QuietHeading(context.getString(R.string.camera_unavailable), context.getString(R.string.camera_open_error), context.getString(R.string.close_other_cameras))
+            QuietButton(context.getString(R.string.retry_camera)) { retry++; cameraError = false }
         } else {
             Box(Modifier.fillMaxWidth().height(355.dp).clip(RoundedCornerShape(24.dp)).background(Color.Black)) {
                 key(retry) {
@@ -58,16 +58,16 @@ fun CameraScannerPage() {
                 }
                 Box(Modifier.fillMaxSize().background(colors[filter].copy(alpha = .25f)))
                 Box(Modifier.align(Alignment.Center).padding(40.dp).fillMaxWidth().height(190.dp).border(1.dp, Color.White.copy(alpha = .6f), RoundedCornerShape(22.dp)))
-                Text("Move slowly and inspect bright points", Modifier.align(Alignment.BottomCenter).background(Color.Black.copy(alpha = .65f)).padding(12.dp), color = Color.White)
+                Text(context.getString(R.string.inspect_bright_points), Modifier.align(Alignment.BottomCenter).background(Color.Black.copy(alpha = .65f)).padding(12.dp), color = Color.White)
             }
-            Text("Color filter", style = MaterialTheme.typography.titleMedium)
+            Text(context.getString(R.string.color_filter), style = MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Red", "Green", "Blue").forEachIndexed { index, label ->
+                listOf(context.getString(R.string.red), context.getString(R.string.green), context.getString(R.string.blue)).forEachIndexed { index, label ->
                     FilterChip(selected = filter == index, onClick = { filter = index }, label = { Text(label) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp))
                 }
             }
-            QuietButton("Reset filter", secondary = true) { filter = 0 }
-            QuietNote("Filters aid visual inspection. Bright spots are not automatically identified as cameras.")
+            QuietButton(context.getString(R.string.reset_filter), secondary = true) { filter = 0 }
+            QuietNote(context.getString(R.string.camera_note))
         }
     }
 }

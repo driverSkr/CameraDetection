@@ -1,6 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
 import android.content.Intent
+import com.spyfinder.hiddencamera.detectorapp.utils.deviceLabel
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,36 +32,36 @@ fun DetectResultView() {
     val all = review + trusted
     BackHandler { main.closeDetectResult() }
     QuietPage(navigationPadding = true) {
-        QuietTopBar(if (main.isShowingLatestHistoryResult) "Last scan" else "Scan results") { main.closeDetectResult() }
-        QuietHeading(if (main.isShowingLatestHistoryResult) "Saved on this phone" else "Network overview",
-            if (all.isEmpty()) "No devices found." else "Review your devices.",
-            if (main.isShowingLatestHistoryResult) "Your most recent saved result." else "${all.size} devices found in this check.")
+        QuietTopBar(if (main.isShowingLatestHistoryResult) context.getString(R.string.last_scan) else context.getString(R.string.scan_results)) { main.closeDetectResult() }
+        QuietHeading(if (main.isShowingLatestHistoryResult) context.getString(R.string.saved_on_phone) else context.getString(R.string.network_overview),
+            if (all.isEmpty()) context.getString(R.string.no_devices) else context.getString(R.string.review_devices),
+            if (main.isShowingLatestHistoryResult) context.getString(R.string.recent_saved_result) else context.getString(R.string.devices_found_check, all.size))
         if (all.isEmpty()) {
             QuietOrbit(R.drawable.svg_icon_wifi)
-            QuietNote("No reachable devices were returned. This does not confirm that a space is free of cameras. Devices may be offline or on another network.")
-            QuietButton("Back to Wi-Fi") { main.closeDetectResult() }
+            QuietNote(context.getString(R.string.empty_result_note))
+            QuietButton(context.getString(R.string.back_wifi)) { main.closeDetectResult() }
         } else {
             QuietStats(review.size, trusted.size)
             if (!subscribed) {
                 QuietPanel(tinted = true) {
                     QuietIcon(R.drawable.svg_icon_safety)
-                    Text("Device details are Pro")
-                    QuietBody("Unlock device names, addresses and manual confirmation.")
+                    Text(context.getString(R.string.details_pro))
+                    QuietBody(context.getString(R.string.unlock_description))
                 }
-                QuietButton("Unlock device details") { launcher.launch(Intent(context, SubscribeActivity::class.java)) }
-                QuietButton("Back to Wi-Fi", secondary = true) { main.closeDetectResult() }
+                QuietButton(context.getString(R.string.unlock_details)) { launcher.launch(Intent(context, SubscribeActivity::class.java)) }
+                QuietButton(context.getString(R.string.back_wifi), secondary = true) { main.closeDetectResult() }
             } else {
                 QuietPanel {
                     all.forEach { device ->
-                        QuietRow(R.drawable.svg_icon_wifi_info_router, device.name.ifBlank { "Unknown" },
-                            "${device.ip} · ${if (device.riskLevel > 0) "Needs review" else "This phone / confirmed"}") {
+                        QuietRow(R.drawable.svg_icon_wifi_info_router, context.deviceLabel(device.name),
+                            "${device.ip} · ${if (device.riskLevel > 0) context.getString(R.string.needs_review) else context.getString(R.string.phone_or_confirmed)}") {
                             (context.findActivity() as? FragmentActivity)?.let { activity ->
                                 DialogHelper.showWifiInfoDialog(activity, device) { main.markDeviceAsSafe(it) }
                             }
                         }
                     }
                 }
-                QuietNote("Device types are estimates. Confirmation is your own assessment, not a safety certification.")
+                QuietNote(context.getString(R.string.type_estimate_note))
             }
         }
     }

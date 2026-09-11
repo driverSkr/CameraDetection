@@ -15,27 +15,27 @@ fun SettingPage() {
     val subscribed by SubscribeHelper.isSubscribedFlow.collectAsState()
     var message by remember { mutableStateOf<String?>(null) }
     QuietPage(navigationPadding = true) {
-        QuietTopBar("Settings") { context.findActivity()?.finish() }
-        QuietHeading("SpyFinder", "Make it yours.")
+        QuietTopBar(context.getString(R.string.settings)) { context.findActivity()?.finish() }
+        QuietHeading(context.getString(R.string.brand), context.getString(R.string.make_yours))
         if (!subscribed) QuietPanel(tinted = true) {
-            QuietBadge("SPYFINDER PRO")
-            Text("Every check.\nMore detail.", style = MaterialTheme.typography.headlineSmall)
-            QuietButton("Explore Pro") { SubscribeActivity.launch(context) }
-        } else QuietBadge("PRO ACTIVE")
+            QuietBadge(context.getString(R.string.pro_badge))
+            Text(context.getString(R.string.every_check), style = MaterialTheme.typography.headlineSmall)
+            QuietButton(context.getString(R.string.explore_pro)) { SubscribeActivity.launch(context) }
+        } else QuietBadge(context.getString(R.string.pro_active))
         QuietPanel {
-            QuietRow(R.drawable.svg_icon_share_app, "Share app", "Send the app link.") {
-                ShareUtils.shareTextWithHighlightedLinks(context, "SpyFinder", "https://play.google.com/store/apps/details?id=${context.packageName}")
+            QuietRow(R.drawable.svg_icon_share_app, context.getString(R.string.share_app), context.getString(R.string.send_link)) {
+                ShareUtils.shareTextWithHighlightedLinks(context, context.getString(R.string.brand), "https://play.google.com/store/apps/details?id=${context.packageName}")
             }
-            QuietRow(R.drawable.svg_icon_privacy_policy, "Privacy policy", "Read how data is handled.") {
-                LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", "Privacy policy")
+            QuietRow(R.drawable.svg_icon_privacy_policy, context.getString(R.string.privacy_policy), context.getString(R.string.privacy_description)) {
+                LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.privacy_policy))
             }
             RestorePurchases()
-            QuietRow(R.drawable.svg_icon_rate_us, "Rate SpyFinder", "Share your experience.") {
+            QuietRow(R.drawable.svg_icon_rate_us, context.getString(R.string.rate_app), context.getString(R.string.share_experience)) {
                 context.findActivity()?.let { activity ->
                     val manager = ReviewManagerFactory.create(context)
                     manager.requestReviewFlow().addOnCompleteListener { task ->
                         if (task.isSuccessful) manager.launchReviewFlow(activity, task.result)
-                        else message = "The review prompt is unavailable right now. Please try again later."
+                        else message = context.getString(R.string.review_unavailable)
                     }
                 }
             }

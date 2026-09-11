@@ -17,13 +17,13 @@ import com.spyfinder.hiddencamera.detectorapp.utils.findActivity
 fun TipsPage() {
     val context = LocalContext.current
     QuietPage(navigationPadding = true) {
-        QuietTopBar("Safety tips") { context.findActivity()?.finish() }
-        QuietHeading("A little know-how", "Look closer.\nStay aware.", "Practical checks, at your own pace.")
-        QuietPanel(tinted = true) { QuietIcon(R.drawable.svg_icon_tips); Text("Start with what faces the room.", style = MaterialTheme.typography.headlineSmall) }
+        QuietTopBar(context.getString(R.string.safety_tips)) { context.findActivity()?.finish() }
+        QuietHeading(context.getString(R.string.know_how), context.getString(R.string.tips_title), context.getString(R.string.tips_description))
+        QuietPanel(tinted = true) { QuietIcon(R.drawable.svg_icon_tips); Text(context.getString(R.string.tips_hero), style = MaterialTheme.typography.headlineSmall) }
         listOf(
-            "Hotel & rental rooms" to "Look over objects facing the bed or changing area. Check unfamiliar holes or unusual placements without opening electrical equipment.",
-            "Public spaces" to "Pay attention to unfamiliar objects near changing areas. If something concerns you, ask staff for help.",
-            "Personal precautions" to "Combine network review with a visual check. If you remain concerned, leave the area and contact the property operator."
+            context.getString(R.string.tips_hotel) to context.getString(R.string.tips_hotel_body),
+            context.getString(R.string.tips_public) to context.getString(R.string.tips_public_body),
+            context.getString(R.string.tips_personal) to context.getString(R.string.tips_personal_body)
         ).forEachIndexed { index, (title, description) ->
             var expanded by rememberSaveable { mutableStateOf(index == 0) }
             QuietPanel {

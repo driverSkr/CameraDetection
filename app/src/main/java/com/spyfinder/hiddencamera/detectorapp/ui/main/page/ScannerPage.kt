@@ -1,6 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
 
 import com.spyfinder.hiddencamera.detectorapp.ui.components.*
+import com.spyfinder.hiddencamera.detectorapp.utils.scannerLocationLabel
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 
@@ -106,19 +107,19 @@ fun ScannerPage() {
     }
 
     QuietPage {
-        QuietHeading("Camera inspection", "Where would you\nlike to check?", "Choose a location, then inspect it with your camera.")
+        QuietHeading(context.getString(R.string.camera_inspection), context.getString(R.string.where_check), context.getString(R.string.choose_location))
         scannerItemList.chunked(3).forEach { items ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items.forEach { (icon, title) ->
                     OutlinedCard(onClick = { openScannerWithSubscriptionCheck(title) }, modifier = Modifier.weight(1f)) {
                         Column(Modifier.fillMaxWidth().heightIn(min = 108.dp).padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             QuietIcon(icon)
-                            Text(title, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Text(context.scannerLocationLabel(title), fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         }
                     }
                 }
             }
         }
-        QuietNote("All locations use the same camera inspection tool.")
+        QuietNote(context.getString(R.string.same_camera_tool))
     }
 }

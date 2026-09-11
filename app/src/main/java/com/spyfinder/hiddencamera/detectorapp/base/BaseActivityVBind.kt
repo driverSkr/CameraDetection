@@ -11,11 +11,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.viewbinding.ViewBinding
 import com.blankj.utilcode.util.BarUtils
 import com.ethan.base.component.BaseActivityVB
-import com.spyfinder.hiddencamera.detectorapp.utils.DataHelper
-import com.spyfinder.hiddencamera.detectorapp.utils.LanguageUtils
 import com.ethan.permission.PermissionUtils
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
-import java.util.Locale
+import com.spyfinder.hiddencamera.detectorapp.utils.AppLanguage
 
 open class BaseActivityVBind<T: ViewBinding>: BaseActivityVB<T>() {
     var permissionUtils = PermissionUtils()
@@ -29,6 +27,10 @@ open class BaseActivityVBind<T: ViewBinding>: BaseActivityVB<T>() {
 
     override fun onResume() {
         super.onResume()
+        if (resources.configuration.locales[0].language != AppLanguage.systemLocale().language) {
+            recreate()
+            return
+        }
         // 页面回到前台时刷新订阅状态，覆盖支付完成、退款、取消订阅等外部变化。
         SubscribeHelper.refreshSubscribeState()
     }
@@ -53,36 +55,8 @@ open class BaseActivityVBind<T: ViewBinding>: BaseActivityVB<T>() {
         super.onNewIntent(intent)
     }
 
-    fun setLocale(languageCode: String) {
-        val resources = resources
-        val configuration = resources.configuration
-        val displayMetrics = resources.displayMetrics
-        if (languageCode == "tw") {
-            configuration.setLocale(Locale("zh", "TW", "TW"))
-        } else {
-            configuration.setLocale(Locale(languageCode))
-        }
-        createConfigurationContext(configuration)
-        resources.updateConfiguration(configuration, displayMetrics)
-    }
-
     override fun attachBaseContext(newBase: Context?) {
-        super.attachBaseContext(newBase)
-        val localLanguage = DataHelper.getLanguage(this)
-        localLanguage?.let {
-            if (localLanguage != LanguageUtils.getLocaleLanguage(this)) {
-                setLocale(localLanguage)
-            }
-            currLanguage = if (it == "tw") {
-                Locale("zh", "TW", "TW")
-            } else {
-                Locale(it)
-            }
-        }
-    }
-
-    companion object {
-        var currLanguage: Locale = com.blankj.utilcode.util.LanguageUtils.getSystemLanguage()
+        super.attachBaseContext(newBase?.let(AppLanguage::wrap))
     }
 
     fun <T> getIntent(name: String, classF: Class<T>): T? {

@@ -31,7 +31,7 @@ fun MainPage() {
 fun NavigationBarView(modifier: Modifier = Modifier) {
     val main = LocalMainContextEntity.current
     val context = LocalContext.current
-    val labels = listOf("Wi-Fi", "Magnetic", "Scanner", "Tools")
+    val labels = listOf(context.getString(R.string.nav_wifi), context.getString(R.string.nav_magnetic), context.getString(R.string.nav_scanner), context.getString(R.string.nav_tools))
     val names = listOf("detect", "magnetic", "scanner", "feature")
     val icons = listOf(R.drawable.svg_icon_detect, R.drawable.svg_icon_sensor, R.drawable.svg_icon_scanner, R.drawable.svg_icon_feature)
     NavigationBar(modifier, containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {

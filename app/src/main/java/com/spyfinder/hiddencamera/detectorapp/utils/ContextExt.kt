@@ -23,7 +23,6 @@ fun Context.findBaseActivityVBind(): BaseActivityVBind<*>? = when (this) {
 fun Context.getEnglishResources(): Context {
     val config = Configuration(resources.configuration)
     val locale = Locale("en")
-    Locale.setDefault(locale)
     config.setLocale(locale)
     return createConfigurationContext(config)
 }

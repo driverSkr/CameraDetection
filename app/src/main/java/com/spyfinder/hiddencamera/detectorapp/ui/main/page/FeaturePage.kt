@@ -20,19 +20,19 @@ fun FeaturePage() {
     val main = LocalMainContextEntity.current
     QuietPage {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            QuietBadge("YOUR TOOLKIT")
+            QuietBadge(context.getString(R.string.toolkit))
             IconButton(onClick = {
                 Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to "settings")
                 SettingActivity.launch(context)
-            }) { Icon(painterResource(R.drawable.svg_icon_settings), "Settings", Modifier.size(24.dp)) }
+            }) { Icon(painterResource(R.drawable.svg_icon_settings), context.getString(R.string.settings), Modifier.size(24.dp)) }
         }
-        QuietHeading("Different checks", "One calmer space.", "Choose the method that fits your next step.")
+        QuietHeading(context.getString(R.string.different_checks), context.getString(R.string.calmer_space), context.getString(R.string.choose_method))
         QuietPanel {
             val tools = listOf(
-                Triple(R.drawable.svg_icon_wifi, "Wi-Fi check", "Review devices on your network."),
-                Triple(R.drawable.svg_icon_magnetic, "Magnetic check", "Observe magnetic field changes."),
-                Triple(R.drawable.svg_icon_scanner, "Camera inspection", "Look closer with color filters."),
-                Triple(R.drawable.svg_icon_tips, "Safety tips", "A practical guide to your space.")
+                Triple(R.drawable.svg_icon_wifi, context.getString(R.string.wifi_check), context.getString(R.string.review_network_devices)),
+                Triple(R.drawable.svg_icon_magnetic, context.getString(R.string.magnetic_check), context.getString(R.string.observe_magnetic)),
+                Triple(R.drawable.svg_icon_scanner, context.getString(R.string.camera_inspection), context.getString(R.string.look_filters)),
+                Triple(R.drawable.svg_icon_tips, context.getString(R.string.safety_tips), context.getString(R.string.practical_guide))
             )
             tools.forEachIndexed { index, (icon, title, description) ->
                 QuietRow(icon, title, description) {

@@ -54,7 +54,7 @@ object WifiHelper {
     // 检测WI-FI权限
     fun checkWifiPermission(context: Context, wifiPermissionLauncher: ActivityResultLauncher<Array<String>>) {
         if (!isWifiEnabled(context)) {
-            Toast.makeText(context, "Please connect to wifi first", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.connect_wifi_first), Toast.LENGTH_LONG).show()
             return
         }
         // 权限检查

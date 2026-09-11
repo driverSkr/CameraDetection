@@ -24,6 +24,8 @@ import java.io.File
 class QuietUiTest {
     @get:Rule val compose = createComposeRule()
 
+    private fun label(id: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(id)
+
     private fun snapshot(name: String) {
         compose.waitForIdle()
         val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "ui-redesign").apply { mkdirs() }
@@ -35,14 +37,14 @@ class QuietUiTest {
     @Test fun guideContinuesAndReturnsBeforeCompleting() {
         var completed = false
         compose.setContent { ComposeProjectTheme(darkTheme = false) { GuidePage { completed = true } } }
-        compose.onNodeWithText("Know what’s\nconnected.").assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.guide_network_title)).assertIsDisplayed()
         snapshot("01-guide-light")
-        compose.onNodeWithText("Continue").performScrollTo().performClick()
-        compose.onNodeWithText("Take a\ncloser look.").assertExists()
-        compose.onNodeWithText("Back").performScrollTo().performClick()
-        compose.onNodeWithText("Know what’s\nconnected.").assertExists()
-        repeat(2) { compose.onNodeWithText("Continue").performScrollTo().performClick() }
-        compose.onNodeWithText("Get started").performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.action_continue)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.guide_camera_title)).assertExists()
+        compose.onNodeWithText(label(R.string.back)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.guide_network_title)).assertExists()
+        repeat(2) { compose.onNodeWithText(label(R.string.action_continue)).performScrollTo().performClick() }
+        compose.onNodeWithText(label(R.string.get_started)).performScrollTo().performClick()
         compose.runOnIdle { assertTrue(completed) }
     }
 
@@ -51,18 +53,18 @@ class QuietUiTest {
         compose.setContent { ComposeProjectTheme(darkTheme = false) {
             CompositionLocalProvider(LocalMainContextEntity provides main) { MainPage() }
         } }
-        compose.onNodeWithText("Scan this Wi-Fi").assertExists()
+        compose.onNodeWithText(label(R.string.scan_wifi)).assertExists()
         snapshot("02-wifi-light")
-        compose.onNodeWithText("Magnetic").performClick()
+        compose.onNodeWithText(label(R.string.nav_magnetic)).performClick()
         snapshot("03-magnetic-light")
-        compose.onNodeWithText("Scanner").performClick()
-        compose.onNodeWithText("TV").assertExists()
-        compose.onNodeWithText("Router").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.nav_scanner)).performClick()
+        compose.onNodeWithText(label(R.string.location_tv)).assertExists()
+        compose.onNodeWithText(label(R.string.location_router)).performScrollTo().assertIsDisplayed()
         snapshot("04-scanner-light")
-        compose.onNodeWithText("Tools").performClick()
-        compose.onNodeWithText("Safety tips").assertExists()
+        compose.onNodeWithText(label(R.string.nav_tools)).performClick()
+        compose.onNodeWithText(label(R.string.safety_tips)).assertExists()
         snapshot("05-tools-light")
-        compose.onNodeWithText("Magnetic check").performClick()
+        compose.onNodeWithText(label(R.string.magnetic_check)).performClick()
         compose.runOnIdle { assertEquals(1, main.selectTabIndex.intValue) }
     }
 
@@ -73,9 +75,9 @@ class QuietUiTest {
         compose.setContent { ComposeProjectTheme(darkTheme = false) {
             CompositionLocalProvider(LocalMainContextEntity provides main) { DetectResultView() }
         } }
-        compose.onNodeWithText("Unlock device details").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(label(R.string.unlock_details)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("private-device-name").assertDoesNotExist()
-        compose.onNodeWithText("Needs review").assertExists()
+        compose.onNodeWithText(label(R.string.needs_review)).assertExists()
         snapshot("06-locked-results-light")
     }
 
@@ -86,8 +88,8 @@ class QuietUiTest {
                 ComposeProjectTheme(darkTheme = true) { TipsPage() }
             }
         }
-        compose.onNodeWithText("Personal precautions").performScrollTo().performClick()
-        compose.onNodeWithText("Combine network review with a visual check. If you remain concerned, leave the area and contact the property operator.")
+        compose.onNodeWithText(label(R.string.tips_personal)).performScrollTo().performClick()
+        compose.onNodeWithText(label(R.string.tips_personal_body))
             .performScrollTo().assertIsDisplayed()
         snapshot("07-tips-dark-large-text")
     }

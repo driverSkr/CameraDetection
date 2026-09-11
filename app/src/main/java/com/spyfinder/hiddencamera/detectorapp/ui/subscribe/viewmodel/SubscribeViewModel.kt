@@ -1,5 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.subscribe.viewmodel
 
+import com.spyfinder.hiddencamera.detectorapp.R
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -100,7 +101,7 @@ class SubscribeViewModel: ViewModel() {
 
                 override fun onFailed(msg: String?) {
                     viewModelScope.launch(Dispatchers.Main) {
-                        Toast.makeText(activity, "purchase failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, activity.getString(R.string.purchase_failed), Toast.LENGTH_SHORT).show()
                     }
                     if (model?.offerId.isNullOrBlank()) {
                         isBuySuccess.value = 2
@@ -120,7 +121,7 @@ class SubscribeViewModel: ViewModel() {
 
                 override fun onDisconnect() {
                     viewModelScope.launch(Dispatchers.Main) {
-                        Toast.makeText(activity, "store disconnected", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, activity.getString(R.string.store_disconnected), Toast.LENGTH_SHORT).show()
                     }
                     if (model?.offerId.isNullOrBlank()) {
                         isBuySuccess.value = 3
@@ -144,7 +145,7 @@ class SubscribeViewModel: ViewModel() {
                         isBuyDiscordSuccess.value = 4
                     }
                     viewModelScope.launch(Dispatchers.Main) {
-                        Toast.makeText(activity, "purchase cancelled", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, activity.getString(R.string.purchase_cancelled), Toast.LENGTH_SHORT).show()
                     }
                     Event.event(
                         activity,
