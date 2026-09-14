@@ -14,6 +14,7 @@ class ScanStringsTest {
         R.string.evidence_source_local -> "本机"
         R.string.current_phone -> "当前手机"
         R.string.scan_discovery_progress -> "已检查 ${args[0]}/${args[1]}"
+        R.string.scan_unresolved_services -> "${args[0]} 条公告未解析。"
         else -> error("Unexpected resource $id")
     }
 
@@ -36,5 +37,8 @@ class ScanStringsTest {
 
     @Test fun progressUsesActualCounts() {
         assertEquals("已检查 128/1024", ScanStrings.format("Discovering: 128/1024 addresses checked", ::lookup))
+    }
+    @Test fun unresolvedServiceCountIsLocalized() {
+        assertEquals("扫描完成。2 条公告未解析。", ScanStrings.format("Scan completed. 2 service announcements could not be resolved to an in-scope IPv4 endpoint.", ::lookup))
     }
 }

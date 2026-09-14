@@ -28,6 +28,16 @@ object ScanRules {
         val mask = if (prefix == 0) 0L else (0xffffffffL shl (32 - prefix)) and 0xffffffffL
         return a and mask == b and mask
     }
+    fun usableHost(ip: String, local: String, prefix: Int): Boolean {
+        if (!inSubnet(ip, local, prefix)) return false
+        val value = ipv4(ip) ?: return false
+        val firstOctet = value ushr 24
+        if (firstOctet == 0L || firstOctet == 127L || firstOctet >= 224) return false
+        if (prefix >= 31) return true
+        val mask = if (prefix == 0) 0L else (0xffffffffL shl (32 - prefix)) and 0xffffffffL
+        val network = value and mask
+        return value != network && value != (network or (mask xor 0xffffffffL))
+    }
 
     data class Targets(val addresses: List<String>, val total: Long, val limited: Boolean)
     fun targets(local: String, prefix: Int, gateway: String?, limit: Int = MAX_TARGETS): Targets {

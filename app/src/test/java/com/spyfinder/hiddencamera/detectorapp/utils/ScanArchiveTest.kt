@@ -7,6 +7,38 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ScanArchiveTest {
+    @Test fun readsV2AndWritesOneSharedV3Record() {
+        val value = record("A", ScanStatus.COMPLETE)
+        val archive = ScanArchive(value, value)
+        val v3 = org.json.JSONObject(ScanHistoryStore.encode(archive))
+        assertEquals(1, v3.getJSONObject("records").length())
+        val body = v3.getJSONObject("records").getJSONObject("A")
+        val v2 = org.json.JSONObject().put("version", 2).put("recent", body).put("complete", body).toString()
+        assertEquals(archive, ScanHistoryStore.decode(v2))
+        val restored = ScanHistoryStore.decode(v3.toString())
+        assertSame(restored.recent, restored.complete)
+    }
+    @Test fun cachedEncoderPreservesChangingMetadataAndTrust() {
+        val encoder = ScanHistoryStore.ArchiveEncoder()
+        val complete = record("A\\\"中文", ScanStatus.COMPLETE)
+        val running = record("B", ScanStatus.RUNNING)
+        val archive = ScanArchive(running, complete)
+        assertEquals(archive, ScanHistoryStore.decode(encoder.encode(archive)))
+        val progressed = archive.copy(recent = running.copy(coverage = running.coverage.copy(checked = 20), summary = "new\nsummary"))
+        assertEquals(progressed, ScanHistoryStore.decode(encoder.encode(progressed)))
+        val trusted = progressed.trust("B", "192.168.1.3", true)
+        assertEquals(trusted, ScanHistoryStore.decode(encoder.encode(trusted)))
+    }
+    @Test fun recordDeviceCacheChangesWhenTrustChanges() {
+        val state = MainContextEntity(null)
+        val value = record("A", ScanStatus.COMPLETE)
+        state.currentRecordId = "A"; state.trustedDevices.addAll(value.devices); state.saveRecord(value)
+        val first = state.recordDevices()
+        assertSame(first, state.recordDevices())
+        state.markDeviceAsSafe(value.devices.single())
+        assertTrue(state.recordDevices().single().userTrusted)
+        assertFalse(first.single().userTrusted)
+    }
     private fun record(id: String, status: ScanStatus) = ScanRecord(id, 123, 456, "192.168.1.2/24",
         status, ScanCoverage(254, 254, 10, 1), "summary",
         listOf(WifiDevice("Device", "Unknown", "192.168.1.3", 1, 0, 0, connected = false, analysisComplete = false)))

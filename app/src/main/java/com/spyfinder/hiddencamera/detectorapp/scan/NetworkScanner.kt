@@ -41,21 +41,32 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     private var progress = ScanWorkProgress(emptySet())
     private val liveness = ScanLiveness(SystemClock::elapsedRealtime)
     private val uncertainAddresses = AtomicInteger()
+    private val unresolvedServices = AtomicInteger()
+    private val advertisedProbes = mutableMapOf<String, Set<ServiceProbe>>()
+    private val rows = DeviceSnapshotCache()
     fun stalled() = liveness.stalled()
     private var target: WifiTarget? = null
     fun coverage() = ScanCoverage(planned, total, discoveryCount.get(), analyzed.size)
-    fun snapshot(): List<WifiDevice> = synchronized(found) {
-        found.map { (ip, advertised) ->
-            val result = analyzed[ip]
-            device(ip, (advertised + result?.evidence.orEmpty()).distinct(), result?.complete == true, result?.complete != true)
-        }.sortedBy { ScanRules.ipv4(it.ip) }
+    fun snapshot(): List<WifiDevice> = rows.snapshot()
+    private fun refreshRow(ip: String) {
+        val result = analyzed[ip]
+        rows.update(device(ip, (found[ip].orEmpty() + result?.evidence.orEmpty()).distinct(), result?.complete == true, result?.complete != true))
     }
-    private fun discovered(ip: String, evidence: List<Evidence>) = synchronized(found) {
+    private fun discovered(ip: String, evidence: List<Evidence>, probe: ServiceProbe? = null) = synchronized(found) {
         val old = found[ip]
         if (old == null && found.size >= ScanRules.MAX_TARGETS) { limited.set(true); return@synchronized }
         val combined = (old.orEmpty() + evidence).distinct()
         if (combined.size > 64) limited.set(true)
         found[ip] = combined.sortedByDescending { it.cameraRelated }.take(64)
+        if (probe != null) {
+            val previous = advertisedProbes[ip].orEmpty()
+            if (probe !in previous && previous.size >= 8) limited.set(true)
+            else if (probe !in previous) {
+                advertisedProbes[ip] = previous + probe
+                if (analyzed.remove(ip) != null) pending.offer(Pending(ip, 0, sequence.incrementAndGet()))
+            }
+        }
+        refreshRow(ip)
         progress.discovered(ip)
         liveness.activity()
         if (old == null) pending.offer(Pending(ip, if (evidence.any { it.cameraRelated }) 0 else 1, sequence.incrementAndGet()))
@@ -117,8 +128,18 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                         progress.checked(ip)
                         liveness.activity()
                     }, { pending.poll()?.ip }, { ip ->
-                        analyzed[ip] = analyze(t, ip)
-                        progress.analyzed(ip)
+                        val probes = synchronized(found) { advertisedProbes[ip].orEmpty() }
+                        val result = analyze(t, ip, probes)
+                        synchronized(found) {
+                            if (advertisedProbes[ip].orEmpty() != probes) {
+                                // A late announcement must be analyzed even if this address was already in flight.
+                                pending.offer(Pending(ip, 0, sequence.incrementAndGet()))
+                            } else {
+                                analyzed[ip] = result
+                                refreshRow(ip)
+                                progress.analyzed(ip)
+                            }
+                        }
                         liveness.activity()
                     })
             } finally { reporter.cancelAndJoin() }
@@ -131,6 +152,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             append("Checked ${discoveryCount.get()} of ${targets.total} IPv4 addresses; ${devices.size} devices responded.")
             if (incomplete > 0) append(" $incomplete devices could not be fully analyzed.")
             if (uncertainAddresses.get() > 0) append(" ${uncertainAddresses.get()} addresses could not be verified due to network errors.")
+            if (unresolvedServices.get() > 0) append(" ${unresolvedServices.get()} service announcements could not be resolved to an in-scope IPv4 endpoint.")
             if (targets.limited || limited.get()) append(" Coverage or evidence storage was limited; review the recorded scope.")
             append(" Devices that do not respond or are isolated by the network may be missed. No result proves a room is safe.")
         })
@@ -162,20 +184,22 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             analysisComplete = complete, ruleVersion = ScanRules.VERSION)
     }
 
-    private fun analyze(t: WifiTarget, ip: String): Analysis {
+    private fun analyze(t: WifiTarget, ip: String, advertised: Set<ServiceProbe>): Analysis {
         val evidence = mutableListOf<Evidence>()
         if (ip == t.ip) return Analysis(evidence, true)
         if (ip == t.gateway) evidence.add(Evidence("Network", "Configured Wi-Fi gateway"))
         var incomplete = false
-        for (port in ProbeSupport.ports) {
+        val probes = (advertised + ProbeSupport.ports.map { port -> ServiceProbe(port,
+            when (port) { 554, 8554 -> "RTSP"; 80, 5000 -> "HTTP"; else -> "TCP" }) }).distinct()
+        for ((port, protocol) in probes) {
             if (resources.closed) throw CancellationException()
             val socket = resources.track(t.network.socketFactory.createSocket())
             try {
                 socket.soTimeout = 1500
                 socket.connect(InetSocketAddress(ip, port), 1500)
                 evidence.add(Evidence("TCP", "Port $port is open (service not confirmed)"))
-                if (port in listOf(554, 8554, 80, 5000)) {
-                    val request = if (port == 554 || port == 8554) "OPTIONS rtsp://$ip:$port/ RTSP/1.0\r\nCSeq: 1\r\n\r\n"
+                if (protocol != "TCP") {
+                    val request = if (protocol == "RTSP") "OPTIONS rtsp://$ip:$port/ RTSP/1.0\r\nCSeq: 1\r\n\r\n"
                         else "HEAD / HTTP/1.1\r\nHost: $ip\r\nConnection: close\r\n\r\n"
                     socket.getOutputStream().write(request.toByteArray(Charsets.US_ASCII))
                     val response = ProbeSupport.readStatusLine(socket.getInputStream(),
@@ -206,6 +230,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
 
     private fun udp(t: WifiTarget, kind: String) {
         val socket = resources.track(DatagramSocket(null))
+        val mdns = if (kind == "mdns") MdnsDiscovery() else null
         try {
             socket.reuseAddress = true
             t.network.bindSocket(socket)
@@ -227,15 +252,30 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                 val ip = packet.address.hostAddress ?: continue
                 if (!ScanRules.inSubnet(ip, t.ip, t.prefix)) continue
                 val payload = packet.data.copyOf(packet.length)
+                if (mdns != null) {
+                    mdns.accept(payload)
+                    mdns.endpoints(t.ip, t.prefix).forEach { discovered(it.ip, listOf(it.evidence), it.probe) }
+                    val questions = mdns.questions()
+                    if (questions.isNotEmpty()) {
+                        val query = runCatching { MdnsPacket.query(questions) }.getOrNull()
+                        if (query != null) socket.send(DatagramPacket(query, query.size, InetAddress.getByName(host), port))
+                    }
+                    continue
+                }
                 val evidence = when (kind) {
-                    "mdns" -> DiscoveryProtocols.mdnsEvidence(payload)
                     "ssdp" -> DiscoveryProtocols.ssdpEvidence(String(payload, Charsets.UTF_8))
                     else -> onvifEvidence(String(payload, Charsets.UTF_8), requestId)
                 }
                 if (evidence.isNotEmpty()) discovered(ip, evidence)
             }
         } catch (_: java.io.IOException) { /* No multicast response does not imply no devices. */ }
-        finally { resources.release(socket); liveness.activity() }
+        finally {
+            if (mdns != null) {
+                unresolvedServices.set(mdns.unresolved(t.ip, t.prefix))
+                if (mdns.limited) limited.set(true)
+            }
+            resources.release(socket); liveness.activity()
+        }
     }
 
     private fun onvifEvidence(xml: String, requestId: String): List<Evidence> = runCatching {

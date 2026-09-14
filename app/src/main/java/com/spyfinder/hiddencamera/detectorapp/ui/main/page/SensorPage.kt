@@ -85,6 +85,10 @@ fun SensorPage() {
     var reading by remember { mutableStateOf<MagneticReading?>(null) }
     val magneticGauge = reading?.gauge ?: 0f
     var sensorError by remember { mutableStateOf(false) }
+    var sampleStartedAt by remember { mutableStateOf<Long?>(null) }
+    var lastSampleAt by remember { mutableStateOf<Long?>(null) }
+    var sampleStale by remember { mutableStateOf(false) }
+    var sampleAccuracy by remember { mutableStateOf(SensorManager.SENSOR_STATUS_UNRELIABLE) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val selectedTab = com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity.current.selectTabIndex.intValue
     var isListening by remember { mutableStateOf(false) } // 控制是否监听传感器
@@ -111,21 +115,34 @@ fun SensorPage() {
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent?) {
                 if (registered && event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD && event.values.size >= 3) {
-                    MagneticReading.from(event.values[0], event.values[1], event.values[2])?.let { reading = it }
+                    MagneticReading.from(event.values[0], event.values[1], event.values[2])?.let {
+                        reading = it
+                        lastSampleAt = android.os.SystemClock.elapsedRealtime()
+                        sampleAccuracy = event.accuracy
+                        sampleStale = false
+                    }
                 }
             }
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+                if (registered) sampleAccuracy = accuracy
+            }
         }
         fun unregister() {
             registered = false
             sensorManager.unregisterListener(listener)
             reading = null
+            sampleStartedAt = null
+            lastSampleAt = null
+            sampleStale = false
         }
         fun sync() {
             val shouldRegister = isListening && selectedTab == 1 && lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
             if (!shouldRegister) unregister()
             else if (!registered) {
                 reading = null
+                sampleStartedAt = android.os.SystemClock.elapsedRealtime()
+                lastSampleAt = null
+                sampleAccuracy = SensorManager.SENSOR_STATUS_UNRELIABLE
                 registered = magneticSensor != null && runCatching {
                     sensorManager.registerListener(listener, magneticSensor, SensorManager.SENSOR_DELAY_NORMAL)
                 }.getOrDefault(false)
@@ -137,6 +154,17 @@ fun SensorPage() {
         lifecycleOwner.lifecycle.addObserver(observer)
         sync()
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer); unregister() }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(sampleStartedAt) {
+        val start = sampleStartedAt ?: return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(500)
+            if (com.spyfinder.hiddencamera.detectorapp.utils.MagneticSampleHealth.stale(start, lastSampleAt, android.os.SystemClock.elapsedRealtime())) {
+                sampleStale = true
+                reading = null
+            }
+        }
     }
 
     // One displayed physical value drives both text and needle, with no spring overshoot.
@@ -267,7 +295,12 @@ fun SensorPage() {
                 Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = context.getString(if (sensorError) R.string.magnetic_sensor_failed else R.string.magnetic_help),
+                    text = context.getString(when {
+                        sensorError -> R.string.magnetic_sensor_failed
+                        sampleStale -> R.string.magnetic_sample_stale
+                        reading != null && com.spyfinder.hiddencamera.detectorapp.utils.MagneticSampleHealth.unreliable(sampleAccuracy) -> R.string.magnetic_accuracy_low
+                        else -> R.string.magnetic_help
+                    }),
                     color = Color(0xFFFFFFFF).copy(0.6f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W400,

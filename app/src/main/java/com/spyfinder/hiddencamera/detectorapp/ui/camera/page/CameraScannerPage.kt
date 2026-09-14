@@ -139,6 +139,11 @@ fun CameraScannerPage() {
                     .background(if (currentFilterColorIndex >= 0) colors[currentFilterColorIndex].copy(alpha = 0.3f) else Transparent)
             )
 
+            if (granted && camera == null && error.isEmpty()) {
+                Text(context.getString(R.string.camera_starting), color = White60, fontSize = 14.sp,
+                    modifier = Modifier.align(Alignment.Center))
+            }
+
             if (!granted || error.isNotEmpty()) {
                 Column(Modifier.align(Alignment.Center).padding(16.dp).fillMaxWidth().background(Color(0xFF161618), RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(if (!granted) context.getString(R.string.camera_permission_required) else error, color = White60, fontSize = 14.sp)

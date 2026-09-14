@@ -23,8 +23,12 @@ object LaunchUtils {
             intent.setPackage("com.android.vending")
             context.startActivity(intent)
         } catch (e: Exception) {
-            launchWeb(context, "https://play.google.com/store/apps/details?id=" + context.packageName, context.getString(
-                R.string.app_name))
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=" + context.packageName)))
+            } catch (_: Exception) {
+                android.widget.Toast.makeText(context, context.getString(R.string.store_open_failed), android.widget.Toast.LENGTH_LONG).show()
+            }
         }
     }
 }

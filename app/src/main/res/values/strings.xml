@@ -203,4 +203,13 @@
     <string name="scan_stalled">"Scan stopped because no probe made progress for 60 seconds. Results are incomplete. Please retry."</string>
     <string name="scan_unverified_addresses">" %1$s addresses could not be verified due to network errors."</string>
     <string name="scan_scope_limited">" Coverage or evidence storage was limited; review the recorded scope."</string>
+    <string name="store_open_failed">Unable to open the store or browser. Please try again.</string>
+    <string name="magnetic_sample_stale">No fresh sensor data. Stop and restart detection to retry.</string>
+    <string name="magnetic_accuracy_low">Low sensor accuracy. Move away from magnets and move the phone in a figure-eight to calibrate.</string>
+    <string name="camera_preview_timeout">The camera preview did not start. Please retry.</string>
+    <string name="camera_runtime_error">The camera stopped unexpectedly. Please retry.</string>
+    <string name="camera_busy">The camera is busy or unavailable. Close other camera apps and retry.</string>
+    <string name="camera_starting">Opening camera…</string>
+    <string name="scan_foreground_hint">Keep this app in the foreground. The screen stays on during scanning.</string>
+    <string name="scan_unresolved_services"> %1$s service announcements could not be resolved to an in-scope IPv4 endpoint.</string>
 </resources>

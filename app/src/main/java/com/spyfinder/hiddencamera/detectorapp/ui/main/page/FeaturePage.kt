@@ -80,8 +80,11 @@ fun FeaturePage() {
                     // 功能卡片点击埋点，用于分析用户偏好的检测方式。
                     Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to featureName)
                     if (index != 3) {
-                        localMain.pendingWifiAutoScan.value = index == 0
-                        localMain.selectTabIndex.intValue = index
+                        if (index == 0) localMain.openWifiFeature()
+                        else {
+                            localMain.pendingWifiAutoScan.value = false
+                            localMain.selectTabIndex.intValue = index
+                        }
                     } else {
                         TipsActivity.launch(context)
                     }

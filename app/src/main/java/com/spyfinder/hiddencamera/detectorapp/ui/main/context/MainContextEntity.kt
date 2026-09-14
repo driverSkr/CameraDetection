@@ -45,6 +45,18 @@ class MainContextEntity(
         get() = if (isShowingLatestHistoryResult) latestTrustedDevices else trustedDevices
 
     var currentRecordId = ""
+    private var recordSuspicious: List<WifiDevice>? = null
+    private var recordTrusted: List<WifiDevice>? = null
+    private var recordSnapshot = emptyList<WifiDevice>()
+    fun recordDevices(): List<WifiDevice> {
+        val suspicious = suspiciousDevices.toList()
+        val trusted = trustedDevices.toList()
+        if (suspicious !== recordSuspicious || trusted !== recordTrusted) {
+            recordSuspicious = suspicious; recordTrusted = trusted
+            recordSnapshot = (suspicious + trusted).map { it.copy() }
+        }
+        return recordSnapshot
+    }
     var archive by mutableStateOf(ScanArchive())
         private set
     var showingCompleteHistory by mutableStateOf(false)
@@ -101,6 +113,10 @@ class MainContextEntity(
     fun openCurrentResult() {
         isShowingLatestHistoryResult = false
         isShowResult.value = true
+    }
+    fun openWifiFeature() {
+        pendingWifiAutoScan.value = scanStatus != ScanStatus.RUNNING
+        selectTabIndex.intValue = 0
     }
     fun closeDetectResult() {
         isShowingLatestHistoryResult = false

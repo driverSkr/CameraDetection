@@ -25,6 +25,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
     private var job: Job? = null
     private var scanner: NetworkScanner? = null
     private var generation = 0L
+    private var lastPublished: List<com.spyfinder.hiddencamera.detectorapp.model.WifiDevice>? = null
     init {
         if (prefs.getBoolean("running", false)) {
             state.scanStatus = ScanStatus.CANCELLED
@@ -39,6 +40,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
     override fun onStop(owner: LifecycleOwner) { cancel("Scan interrupted while the app was in the background.") }
     fun start() {
         cancel("Scan replaced.")
+        lastPublished = null
         val id = ++generation
         startedAt = System.currentTimeMillis()
         lastCheckpoint = SystemClock.elapsedRealtime()
@@ -123,6 +125,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         }
     }
     private fun publish(devices: List<com.spyfinder.hiddencamera.detectorapp.model.WifiDevice>) {
+        if (devices === lastPublished) return
+        lastPublished = devices
         val trust = (state.suspiciousDevices + state.trustedDevices).associate { it.ip to it.userTrusted }
         val annotated = devices.map { it.copy(userTrusted = trust[it.ip] ?: false) }
         state.suspiciousDevices.replaceDevices(annotated.filter { it.riskLevel == 1 })
@@ -133,7 +137,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         state.saveRecord(ScanRecord(state.currentRecordId, startedAt,
             if (state.scanStatus == ScanStatus.RUNNING) null else System.currentTimeMillis(),
             state.networkLabel, state.scanStatus, worker.coverage(), state.scanMessage,
-            (state.suspiciousDevices + state.trustedDevices).map { it.copy() }))
+            state.recordDevices()))
     }
     fun cancel(reason: String = "Scan cancelled. Results are incomplete.") {
         if (state.scanStatus != ScanStatus.RUNNING) return

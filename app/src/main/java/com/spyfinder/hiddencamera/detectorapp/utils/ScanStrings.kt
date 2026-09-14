@@ -40,6 +40,7 @@ object ScanStrings {
         "Current phone" to R.string.current_phone
     )
     private val templates = listOf(
+        Regex(" (\\d+) service announcements could not be resolved to an in-scope IPv4 endpoint\\.") to R.string.scan_unresolved_services,
         Regex(" (\\d+) addresses could not be verified due to network errors\\.") to R.string.scan_unverified_addresses,
         Regex("Discovering devices in (.+)…") to R.string.scan_discovering_network,
         Regex("Discovering: (\\d+)/(\\d+) addresses checked") to R.string.scan_discovery_progress,
@@ -65,15 +66,16 @@ object ScanStrings {
         // Timestamp/network metadata is retained verbatim; only the summary is translated.
         if ('\n' in value) return value.split('\n').joinToString("\n") { format(it, lookup) }
         if (value.startsWith("Scan completed. ") || value.startsWith("Partially completed. ")) {
-            var result = value
+            val prefix = if (value.startsWith("Scan completed. ")) "Scan completed. " else "Partially completed. "
+            var result = " " + value.removePrefix(prefix)
             templates.forEach { (pattern, id) ->
                 result = pattern.replace(result) { lookup(id, it.groupValues.drop(1)) }
             }
-            listOf("Scan completed. ", "Partially completed. ", " Coverage or evidence storage was limited; review the recorded scope.",
+            listOf(" Coverage or evidence storage was limited; review the recorded scope.",
                 " Devices that do not respond or are isolated by the network may be missed. No result proves a room is safe.").forEach {
                 if (it in result) result = result.replace(it, lookup(exact.getValue(it), emptyList()))
             }
-            return result
+            return lookup(exact.getValue(prefix), emptyList()) + result.trimStart()
         }
         val source = value.substringBefore(": ", "")
         if (source in setOf("Local", "Network", "TCP", "RTSP", "HTTP", "SSDP", "ONVIF", "mDNS")) {

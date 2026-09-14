@@ -7,6 +7,22 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 
 class ScanPipelineTest {
+    @Test fun lateMulticastWorkIsDrainedAfterTheFirstAnalysis() = runBlocking {
+        val queue = ConcurrentLinkedQueue<String>()
+        val firstAnalysis = CompletableDeferred<Unit>()
+        val completed = mutableListOf<String>()
+        withTimeout(2000) {
+            ScanPipeline({ false }, 1, 1).run(1, {
+                firstAnalysis.await()
+                queue.add("advertised-port-9554")
+            }, { queue.add("default-ports") }, { queue.poll() }, { device ->
+                completed.add(device)
+                firstAnalysis.complete(Unit)
+            })
+        }
+        assertEquals(listOf("default-ports", "advertised-port-9554"), completed)
+        assertTrue(queue.isEmpty())
+    }
     @Test fun analyzesBeforeDiscoveryHasFinished() = runBlocking {
         val queue = ConcurrentLinkedQueue<String>()
         val analyzed = CompletableDeferred<Unit>()

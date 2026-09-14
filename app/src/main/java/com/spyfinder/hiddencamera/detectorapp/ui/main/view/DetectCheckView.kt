@@ -6,6 +6,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -94,11 +98,15 @@ fun DetectCheckView() {
     LaunchedEffect(localMain.pendingWifiAutoScan.value, localMain.selectTabIndex.intValue) {
         if (localMain.pendingWifiAutoScan.value && localMain.selectTabIndex.intValue == 0) {
             localMain.pendingWifiAutoScan.value = false
-            vm.start()
+            if (localMain.scanStatus != ScanStatus.RUNNING) vm.start()
         }
     }
-    Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
+        // Preserve the original radar size when space permits; keep text and controls outside it.
+        val radarSize = minOf(313.dp, maxWidth, (maxHeight - 304.dp).coerceAtLeast(0.dp))
+        val headerHeight = ((maxHeight - radarSize) / 2 - 8.dp).coerceAtLeast(0.dp)
+        Column(modifier = Modifier.fillMaxWidth().heightIn(max = headerHeight)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(context.getString(R.string.title_wifi_scan), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 if (localMain.hasScanHistory && localMain.isStartDetect.value && localMain.scanStatus != ScanStatus.RUNNING) {
@@ -124,13 +132,17 @@ fun DetectCheckView() {
             Spacer(Modifier.height(8.dp))
             Text(ScanStrings.text(context, localMain.scanMessage), color = White60, fontSize = 12.sp,
                 lineHeight = 18.sp, softWrap = true, modifier = Modifier.fillMaxWidth())
+            if (localMain.scanStatus == ScanStatus.RUNNING) {
+                Text(context.getString(R.string.scan_foreground_hint), color = White60, fontSize = 10.sp,
+                    lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+            }
         }
 
-        Box(modifier = Modifier.size(313.dp).align(Alignment.Center)) {
+        Box(modifier = Modifier.size(radarSize).align(Alignment.Center)) {
             RadarScannerWithControls()
             if (localMain.isStartDetect.value) {
                 if (localMain.suspiciousDevices.isNotEmpty()) {
-                    RandomRedDotsWithVisibility(isAnimating = localMain.isAnimating, maxDots = localMain.suspiciousDevices.size.coerceAtMost(5))
+                    RandomRedDotsWithVisibility(isAnimating = localMain.isAnimating, maxDots = localMain.suspiciousDevices.size.coerceAtMost(5), areaWidth = radarSize, areaHeight = radarSize)
                 }
                 Text(
                     buildAnnotatedString {

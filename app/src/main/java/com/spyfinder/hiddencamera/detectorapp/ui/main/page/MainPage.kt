@@ -33,6 +33,13 @@ import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEn
 @Composable
 fun MainPage() {
     val localMain = LocalMainContextEntity.current
+    val view = androidx.compose.ui.platform.LocalView.current
+    val scanning = localMain.scanStatus == com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus.RUNNING
+    androidx.compose.runtime.DisposableEffect(view, scanning) {
+        val previous = view.keepScreenOn
+        view.keepScreenOn = previous || scanning
+        onDispose { view.keepScreenOn = previous }
+    }
 //    val pagerState = rememberPagerState { 4 }
 
     Box(modifier = Modifier
