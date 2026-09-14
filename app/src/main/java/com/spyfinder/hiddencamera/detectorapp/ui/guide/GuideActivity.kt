@@ -15,6 +15,7 @@ import com.spyfinder.hiddencamera.detectorapp.ui.guide.page.GuidePage
 import com.spyfinder.hiddencamera.detectorapp.ui.main.MainActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.DataHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 
 class GuideActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
@@ -42,7 +43,7 @@ class GuideActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
                             GuidePage(
                                 onComplete = {
                                     DataHelper.setFirstCompleted(this@GuideActivity, "open")
-                                    if (isFirstLaunch) {
+                                    if (isFirstLaunch && !SubscriptionGate.TEMPORARILY_BYPASS_SUBSCRIPTION) {
                                         SubscribeActivity.launch(
                                             context = this@GuideActivity,
                                             launchMainOnDismiss = true

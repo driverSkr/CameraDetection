@@ -1,6 +1,12 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
 import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,40 +63,49 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DetectResultView() {
-    val hazeState = HazeState()
+    val hazeState = remember { HazeState() }
     val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
     val resultSuspiciousDevices = localMain.resultSuspiciousDevices
     val resultTrustedDevices = localMain.resultTrustedDevices
-    val allDevices = resultSuspiciousDevices + resultTrustedDevices
+    val allDevices = (resultSuspiciousDevices + resultTrustedDevices).distinctBy { it.ip }
     val scope = rememberCoroutineScope()
-    val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
-    val shouldRefreshSubscribeStateAfterSubscribe = remember { mutableStateOf(false) }
+    val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
+    var checking by remember { mutableStateOf(false) }
+    val shouldRefreshSubscribeStateAfterSubscribe = rememberSaveable { mutableStateOf(false) }
     val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (!shouldRefreshSubscribeStateAfterSubscribe.value) {
             return@rememberLauncherForActivityResult
         }
         scope.launch {
-            SubscribeHelper.isSubscribe()
+            SubscriptionGate.hasAccess()
             shouldRefreshSubscribeStateAfterSubscribe.value = false
         }
     }
 
     fun openSubscribeWithResultRefresh() {
+        if (checking) return
+        checking = true
         scope.launch {
-            val subscribed = if (isSubscribed) {
-                true
-            } else {
-                SubscribeHelper.isSubscribe()
-            }
+            try {
+                val subscribed = if (isSubscribed) {
+                    true
+                } else {
+                    SubscriptionGate.hasAccess()
+                }
 
-            if (subscribed) {
-                shouldRefreshSubscribeStateAfterSubscribe.value = false
-                return@launch
-            }
+                if (subscribed) {
+                    shouldRefreshSubscribeStateAfterSubscribe.value = false
+                    return@launch
+                }
 
-            shouldRefreshSubscribeStateAfterSubscribe.value = true
-            subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
+                if (!SubscribeHelper.canOfferPurchase) {
+                    Toast.makeText(context, "Store unavailable. Please retry to confirm your access.", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+                shouldRefreshSubscribeStateAfterSubscribe.value = true
+                subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
+            } finally { checking = false }
         }
     }
 
@@ -102,7 +117,7 @@ fun DetectResultView() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .statusBarsPadding().navigationBarsPadding()
                 .padding(horizontal = 12.dp)
                 .haze(hazeState)
         ) {
@@ -115,7 +130,7 @@ fun DetectResultView() {
                     }
                 )
                 Text(
-                    "Result",
+                    if (localMain.isShowingLatestHistoryResult) "History" else "Result",
                     color = White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.W500,
@@ -126,7 +141,7 @@ fun DetectResultView() {
             Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 Image(painter = painterResource(R.drawable.svg_icon_sensor), modifier = Modifier.size(20.dp), contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Risky devices Found", color = White, fontSize = 14.sp, fontWeight = FontWeight.W400)
+                Text("Device inspection results", color = White, fontSize = 14.sp, fontWeight = FontWeight.W400)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth().height(92.dp)) {
@@ -139,7 +154,7 @@ fun DetectResultView() {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("${resultSuspiciousDevices.size}", color = Color(0xFFFE2D3F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Suspicious", color = Color(0xFFFE2D3F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text("Camera clues", color = Color(0xFFFE2D3F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -152,7 +167,7 @@ fun DetectResultView() {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("${resultTrustedDevices.size}", color = Color(0xFF00C46F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Safe", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text("Other devices", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
             }
@@ -173,12 +188,22 @@ fun DetectResultView() {
                 }
             }
             LazyColumn(
+                modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(allDevices.size) { index ->
+                item {
+                    Text(if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage, color = White60, fontSize = 12.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Clues need manual verification. Other devices include incomplete checks and this phone.", color = White60, fontSize = 12.sp)
+                    if (localMain.isShowingLatestHistoryResult) {
+                        Text("History does not show current online status.", color = White60, fontSize = 12.sp)
+                    }
+                }
+                items(allDevices.size, key = { allDevices[it].ip }) { index ->
                     WifiInfoItemView(allDevices[index]) {
-                        DialogHelper.showWifiInfoDialog(context as FragmentActivity, allDevices[index]) { device ->
+                        if (!isSubscribed) return@WifiInfoItemView
+                        DialogHelper.showWifiInfoDialog(context as? FragmentActivity ?: return@WifiInfoItemView, allDevices[index]) { device ->
                             localMain.markDeviceAsSafe(device)
                         }
                     }
@@ -201,9 +226,9 @@ fun DetectResultView() {
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Warning:", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
+                        Text("Camera clues: ", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
                         Text("${resultSuspiciousDevices.size}", fontSize = 12.sp, fontWeight = FontWeight.W400, color = Orange)
-                        Text("suspicious devices found", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
+                        Text(" devices to review", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -219,7 +244,7 @@ fun DetectResultView() {
                             .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                     ) {
                         Text(
-                            text = "View Results",
+                            text = if (checking) "Checking…" else "View Results",
                             color = Color(0xFFFFFFFF),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,

@@ -4,6 +4,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +26,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import com.spyfinder.hiddencamera.detectorapp.scan.Finding
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
@@ -37,6 +43,9 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(color = Color(0xFF161618), shape = RoundedCornerShape(48.dp))
+        .heightIn(max = 620.dp)
+        .verticalScroll(rememberScrollState())
+        .navigationBarsPadding()
         .padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
         Box(modifier = Modifier
@@ -51,24 +60,42 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
                 Image(painter = painterResource(R.drawable.svg_icon_wifi_info_router), modifier = Modifier.size(36.dp).align(Alignment.Center), contentDescription = null)
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(device.name, color = White, fontSize = 18.sp, fontWeight = FontWeight.W600)
-            Spacer(modifier = Modifier.weight(1f))
+            Text(device.name, modifier = Modifier.weight(1f), color = White, fontSize = 18.sp, fontWeight = FontWeight.W600, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Spacer(modifier = Modifier.width(8.dp))
             Image(painter = painterResource(R.drawable.svg_icon_close_30), contentDescription = null, modifier = Modifier.clickable{ dialog.dismiss() })
         }
         Spacer(modifier = Modifier.height(20.dp))
         Box(modifier = Modifier.fillMaxWidth().height(42.dp)) {
-            Text("ID Address", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
+            Text("IP Address", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
             Text(device.ip, color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
         }
         Box(modifier = Modifier.fillMaxWidth().height(42.dp)) {
             Text("MAC Address", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
-            Text(device.mac, color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
+            Text(device.mac.ifBlank { "Unavailable" }, color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
         }
         Box(modifier = Modifier.fillMaxWidth().height(42.dp)) {
             Text("Device Model", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
             Text("Unknown", color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
         }
-        if (device.riskLevel == 1) {
+        Spacer(Modifier.height(12.dp))
+        Text("Detection finding", color = White60, fontSize = 14.sp)
+        Spacer(Modifier.height(6.dp))
+        Text(if (device.isCurrentPhone) "Current phone" else when (device.finding) {
+            Finding.CAMERA_FEATURES -> "Camera-related features — verify manually"
+            Finding.NO_CAMERA_FEATURES -> "No camera features in checked services"
+            Finding.INSUFFICIENT -> "Insufficient information"
+            Finding.LEGACY -> "Legacy result — scan again"
+        }, color = White, fontSize = 14.sp)
+        if (!device.analysisComplete) Text("Analysis incomplete", color = White60, fontSize = 12.sp)
+        device.evidence.forEach {
+            Spacer(Modifier.height(6.dp))
+            Text(it, color = White60, fontSize = 12.sp)
+        }
+        if (device.userTrusted) {
+            Spacer(Modifier.height(8.dp))
+            Text("User trusted · detection evidence is unchanged", color = White60, fontSize = 12.sp)
+        }
+        if (!device.isCurrentPhone && device.finding != Finding.LEGACY) {
             Spacer(modifier = Modifier.height(20.dp))
             Box(modifier = Modifier
                 .fillMaxWidth()
@@ -83,7 +110,7 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
                 Row(modifier = Modifier.align(Alignment.Center)) {
                     Image(painter = painterResource(R.drawable.svg_icon_correct_white), contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Mark as safe", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                    Text(if (device.userTrusted) "Remove trust" else "Mark as user trusted", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
                 }
             }
         }

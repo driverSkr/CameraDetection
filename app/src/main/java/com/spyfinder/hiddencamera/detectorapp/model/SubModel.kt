@@ -11,7 +11,8 @@ class SubModel {
     var price: String? = null
     var offerprice: String? = null
 
-    // var formattedPrice: String? = null
+    var formattedPrice: String = ""
+    var billingPeriod: String = ""
     var currency: String? = null
     var isFreeTrial: Boolean = false
 }

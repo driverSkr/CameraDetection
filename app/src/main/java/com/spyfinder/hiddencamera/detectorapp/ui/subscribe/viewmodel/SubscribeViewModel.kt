@@ -1,14 +1,13 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.subscribe.viewmodel
 
 import android.content.Context
-import android.util.Log
-import android.widget.Toast
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.billingclient.api.BillingClient
 import com.ethan.pay.BillFactory
+import com.ethan.pay.impl.ClientController
 import com.ethan.pay.model.Goods
 import com.ethan.pay.model.OnPayResultCallback
 import com.ethan.pay.model.OrderInfo
@@ -16,175 +15,136 @@ import com.ethan.pay.utils.SubHelper
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.model.SubModel
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import com.spyfinder.hiddencamera.detectorapp.utils.PurchaseAttemptGate
+import kotlinx.coroutines.*
 
-class SubscribeViewModel: ViewModel() {
-    companion object {
-        private const val DEFAULT_CURRENCY = "$"
-        private const val DEFAULT_MONTH_PRICE = "19.99"
-        private const val DEFAULT_WEEK_PRICE = "6.99"
-        private const val DEFAULT_YEAR_PRICE = "39.99"
-    }
+enum class PurchaseUiState { IDLE, LAUNCHING, PENDING, SUCCESS, CANCELLED, FAILED }
 
-    var isBuySuccess: MutableState<Int> = mutableIntStateOf(0)
-    var isBuyDiscordSuccess: MutableState<Int> = mutableIntStateOf(0)
-
-    suspend fun querySubProduct(context: Context) = suspendCoroutine { suspendCoroutine ->
-        viewModelScope.launch(Dispatchers.Default) {
-            val goodsList = arrayListOf(SubHelper.getProductId(), SubHelper.getProductId(), SubHelper.getProductId())
-            val planList = arrayListOf(SubHelper.getMonthPlanId(), SubHelper.getWeekPlanId(), SubHelper.getYearPlanId())
-            val offerList = arrayListOf("", "", "")
-            val skuList = arrayListOf(SubHelper.getMonthSkuId(), SubHelper.getWeekSkuId(), SubHelper.getYearSkuId())
-            val list = mutableListOf<SubModel>()
-            for (i in planList.indices) {
-                val planId = planList[i]
-                val model = SubModel()
-                model.goods = goodsList[i]
-                model.id = planId
-                model.offerId = offerList[i]
-                model.sku = skuList[i]
-                model.currency = DEFAULT_CURRENCY
-                model.price = getDefaultPrice(planId)
-                val goods = Goods(goodsList[i], planId, offerList[i], skuList[i])
-                val prices = runCatching {
-                    BillFactory.getSubscribe().getGoodsPrice(context, goods)
-                }.onFailure {
-                    Log.e("subscribe", "Failed to query subscribe price for planId=$planId", it)
-                }.getOrNull()
-                val trial = false
-                model.isFreeTrial = trial
-                val remotePrice = prices?.getOrNull(0)
-                if (!remotePrice.isNullOrBlank() && remotePrice != "0.00") {
-                    model.price = remotePrice
-                    model.currency = prices?.getOrNull(1).orEmpty().ifBlank { DEFAULT_CURRENCY }
-                }
-                list.add(model)
-            }
-            suspendCoroutine.resume(list)
-        }
-    }
-
-    private fun getDefaultPrice(planId: String?): String {
-        return when (planId) {
-            SubHelper.getMonthPlanId() -> DEFAULT_MONTH_PRICE
-            SubHelper.getWeekPlanId() -> DEFAULT_WEEK_PRICE
-            SubHelper.getYearPlanId() -> DEFAULT_YEAR_PRICE
-            else -> DEFAULT_WEEK_PRICE
-        }
-    }
-
-    fun buySubscribe(model: SubModel?, activity: FragmentActivity, dialog: MutableState<Boolean>) {
+class SubscribeViewModel : ViewModel() {
+    var products by mutableStateOf<List<SubModel>>(emptyList())
+        private set
+    var selected by mutableStateOf<SubModel?>(null)
+        private set
+    var loading by mutableStateOf(false)
+        private set
+    var purchaseState by mutableStateOf(PurchaseUiState.IDLE)
+        private set
+    var message by mutableStateOf("")
+        private set
+    private var loaded = false
+    private val attempts = PurchaseAttemptGate()
+    fun select(model: SubModel) { if (purchaseState != PurchaseUiState.LAUNCHING) selected = model }
+    fun load(context: Context, force: Boolean = false) {
+        if (loading || (loaded && !force)) return
+        loaded = true
+        loading = true
+        products = emptyList(); selected = null
         viewModelScope.launch {
-            val planId = model?.id.toString()
-            Log.d("subscribe", "购买订阅 planId：$planId")
-            val goods = Goods(model?.goods ?: SubHelper.getProductId(), planId, model?.offerId ?: "", model?.sku ?: SubHelper.getWeekSkuId())
-            withContext(Dispatchers.Main) {
-                dialog.value = false
-            }
-            println("ethan: $goods")
-            BillFactory.getSubscribe().launchBilling(activity, goods, object : OnPayResultCallback {
-                override fun begin() {
-                    Log.d("subscribe", "InApp Billing 购买订阅开始")
-                    // 支付开始埋点，记录拉起 Google Play Billing 的商品信息。
-                    Event.event(
-                        activity,
-                        Event.PURCHASE_BEGIN,
-                        Event.PARAM_PLAN_ID to planId,
-                        Event.PARAM_GOODS_ID to goods.productId,
-                        Event.PARAM_SKU to goods.skuId,
-                        Event.PARAM_OFFER_ID to goods.offerId
-                    )
-                }
-
-                override fun onSuccess(orderList: MutableList<OrderInfo>) {
-                    Log.d("subscribe", "InApp Billing 购买订阅成功")
-                    Event.event(
-                        activity,
-                        Event.PURCHASE_SUCCESS,
-                        Event.PARAM_PLAN_ID to planId,
-                        Event.PARAM_GOODS_ID to goods.productId,
-                        Event.PARAM_ORDER_COUNT to orderList.size
-                    )
-                    // 支付成功后立即更新全局订阅状态，避免等待页面重新进入前台。
-                    SubscribeHelper.updateSubscribeState(true)
-                    SubscribeHelper.refreshSubscribeState()
-                }
-
-                override fun onOwned(orderList: MutableList<OrderInfo>) {
-                    Log.d("subscribe", "InApp Billing 已拥有订阅")
-                    Event.event(
-                        activity,
-                        Event.PURCHASE_OWNED,
-                        Event.PARAM_PLAN_ID to planId,
-                        Event.PARAM_GOODS_ID to goods.productId,
-                        Event.PARAM_ORDER_COUNT to orderList.size
-                    )
-                    // 已拥有也视为订阅有效，并后台同步一次真实订单列表。
-                    SubscribeHelper.updateSubscribeState(true)
-                    SubscribeHelper.refreshSubscribeState()
-                }
-
-                override fun onFailed(msg: String?) {
-                    viewModelScope.launch(Dispatchers.Main) {
-                        Toast.makeText(activity, "purchase failed", Toast.LENGTH_SHORT).show()
-                    }
-                    if (model?.offerId.isNullOrBlank()) {
-                        isBuySuccess.value = 2
-                    } else {
-                        isBuyDiscordSuccess.value = 2
-                    }
-
-                    Event.event(
-                        activity,
-                        Event.PURCHASE_FAILED,
-                        Event.PARAM_PLAN_ID to planId,
-                        Event.PARAM_GOODS_ID to goods.productId,
-                        Event.PARAM_REASON to msg.orEmpty()
-                    )
-                    Log.d("subscribe", "InApp Billing 购买订阅失败: $msg")
-                }
-
-                override fun onDisconnect() {
-                    viewModelScope.launch(Dispatchers.Main) {
-                        Toast.makeText(activity, "store disconnected", Toast.LENGTH_SHORT).show()
-                    }
-                    if (model?.offerId.isNullOrBlank()) {
-                        isBuySuccess.value = 3
-                    } else {
-                        isBuyDiscordSuccess.value = 3
-                    }
-                    Event.event(
-                        activity,
-                        Event.PURCHASE_DISCONNECT,
-                        Event.PARAM_PLAN_ID to planId,
-                        Event.PARAM_GOODS_ID to goods.productId,
-                        Event.PARAM_REASON to "billing_disconnect"
-                    )
-                    Log.d("subscribe", "InApp Billing GooglePlay连接中断")
-                }
-
-                override fun onCancel() {
-                    if (model?.offerId.isNullOrBlank()) {
-                        isBuySuccess.value = 4
-                    } else {
-                        isBuyDiscordSuccess.value = 4
-                    }
-                    viewModelScope.launch(Dispatchers.Main) {
-                        Toast.makeText(activity, "purchase cancelled", Toast.LENGTH_SHORT).show()
-                    }
-                    Event.event(
-                        activity,
-                        Event.PURCHASE_CANCEL,
-                        Event.PARAM_PLAN_ID to planId,
-                        Event.PARAM_GOODS_ID to goods.productId
-                    )
-                    Log.d("subscribe", "InApp Billing 购买订阅取消")
-                }
-            })
+            try {
+                products = withTimeout(15_000) { queryProducts(context) }
+                selected = products.firstOrNull { it.id == SubHelper.getWeekPlanId() } ?: products.firstOrNull()
+                if (products.isEmpty()) message = "No subscription plans are available. Please retry."
+            } catch (e: CancellationException) {
+                if (e !is TimeoutCancellationException) throw e
+                message = "The store did not respond. Please retry."
+            } catch (_: Exception) { message = "Unable to load store prices. Check your connection and retry." }
+            finally { loading = false }
         }
     }
+    private suspend fun queryProducts(context: Context): List<SubModel> {
+        check(BillFactory.init(context.applicationContext) == BillingClient.BillingResponseCode.OK)
+        val plans = listOf(SubHelper.getMonthPlanId(), SubHelper.getWeekPlanId(), SubHelper.getYearPlanId())
+        val skus = listOf(SubHelper.getMonthSkuId(), SubHelper.getWeekSkuId(), SubHelper.getYearSkuId())
+        if (ClientController.isSupport()) {
+            val details = ClientController.queryProductDetails(SubHelper.getProductId(), BillingClient.ProductType.SUBS) ?: return emptyList()
+            return plans.mapIndexedNotNull { i, plan ->
+                val offer = details.subscriptionOfferDetails?.firstOrNull { it.basePlanId == plan && it.offerId == null } ?: return@mapIndexedNotNull null
+                // The current product UI sells base plans only. Do not silently display one phase of a multi-phase offer.
+                val phase = offer.pricingPhases.pricingPhaseList.singleOrNull() ?: return@mapIndexedNotNull null
+                SubModel().apply {
+                    goods = details.productId; id = plan; offerId = ""; sku = skus[i]
+                    formattedPrice = phase.formattedPrice; price = phase.formattedPrice
+                    currency = phase.priceCurrencyCode; billingPeriod = phase.billingPeriod
+                }
+            }
+        }
+        return skus.mapIndexedNotNull { i, skuId ->
+            val result = ClientController.querySkuDetails(skuId, BillingClient.SkuType.SUBS)
+            check(result?.billingResult?.responseCode == BillingClient.BillingResponseCode.OK)
+            val details = result?.skuDetailsList?.firstOrNull { it.sku == skuId } ?: return@mapIndexedNotNull null
+            // Avoid hiding legacy trials or introductory phases behind a base-price card.
+            if (details.freeTrialPeriod.isNotEmpty() || details.introductoryPrice.isNotEmpty()) return@mapIndexedNotNull null
+            SubModel().apply {
+                goods = SubHelper.getProductId(); id = plans[i]; offerId = ""; sku = skuId
+                formattedPrice = details.price; price = details.price; currency = details.priceCurrencyCode; billingPeriod = details.subscriptionPeriod
+            }
+        }
+    }
+    fun buy(activity: FragmentActivity) {
+        val model = selected ?: return
+        if (loading || purchaseState == PurchaseUiState.LAUNCHING || purchaseState == PurchaseUiState.PENDING || purchaseState == PurchaseUiState.SUCCESS) return
+        val id = attempts.begin()
+        purchaseState = PurchaseUiState.LAUNCHING
+        message = "Opening Google Play…"
+        fun update(state: PurchaseUiState, text: String) { viewModelScope.launch {
+            if (attempts.accepts(id)) { purchaseState = state; message = text }
+        } }
+        fun success() { viewModelScope.launch {
+            if (!attempts.complete(id)) return@launch
+            SubscribeHelper.updateSubscribeState(true)
+            purchaseState = PurchaseUiState.SUCCESS
+            Event.event(activity.applicationContext, Event.PURCHASE_SUCCESS, Event.PARAM_PLAN_ID to model.id)
+        } }
+        viewModelScope.launch {
+            try {
+                withTimeout(15_000) {
+                    val goods = Goods(model.goods!!, model.id!!, model.offerId.orEmpty(), model.sku!!, model.formattedPrice, model.billingPeriod)
+                    BillFactory.getSubscribe().launchBilling(activity, goods, object : OnPayResultCallback {
+                        override fun begin() { Event.event(activity.applicationContext, Event.PURCHASE_BEGIN, Event.PARAM_PLAN_ID to model.id) }
+                        override fun onSuccess(orderList: MutableList<OrderInfo>) {
+                            if (orderList.any { it.goodsId == model.goods || it.goodsId == model.sku }) success()
+                            else update(PurchaseUiState.FAILED, "Unable to match the purchase. Use Restore to check your access.")
+                        }
+                        override fun onOwned(orderList: MutableList<OrderInfo>) { viewModelScope.launch {
+                            if (!attempts.accepts(id)) return@launch
+                            if (SubscribeHelper.refreshSubscribeStateSuspend(force = true)) success()
+                            else update(PurchaseUiState.FAILED, "Unable to confirm this purchase. Use Restore to retry.")
+                        } }
+                        override fun onFailed(msg: String?) { update(PurchaseUiState.FAILED, "Purchase could not be completed. Please retry.") }
+                        override fun onDisconnect() { update(PurchaseUiState.FAILED, "Store disconnected. Please retry.") }
+                        override fun onCancel() { update(PurchaseUiState.CANCELLED, "Purchase cancelled.") }
+                        override fun onPending() { update(PurchaseUiState.PENDING, "Payment is pending. Access will unlock after payment completes.") }
+                        override fun onPriceChanged() { viewModelScope.launch {
+                            if (!attempts.accepts(id)) return@launch
+                            purchaseState = PurchaseUiState.IDLE
+                            message = "The price or plan changed. Review the updated plan and tap Continue again."
+                            load(activity.applicationContext, true)
+                        } }
+                    })
+                }
+            } catch (e: CancellationException) {
+                if (e !is TimeoutCancellationException) throw e
+                update(PurchaseUiState.FAILED, "The store did not respond. Check purchase status with Restore before retrying.")
+            } catch (_: Exception) { update(PurchaseUiState.FAILED, "Store unavailable. Please retry.") }
+        }
+    }
+    fun restore(context: Context) { viewModelScope.launch {
+        if (SubscribeHelper.refreshSubscribeStateSuspend(force = true)) {
+            purchaseState = PurchaseUiState.SUCCESS
+        } else {
+            purchaseState = PurchaseUiState.IDLE
+            message = if (SubscribeHelper.lastQueryFailed) "Unable to query purchases. Please retry." else "No active purchase found. If a payment is pending, wait for Google Play to finish it."
+        }
+    } }
+    fun refreshOnResume() { viewModelScope.launch {
+        if (SubscribeHelper.refreshSubscribeStateSuspend(force = true)) purchaseState = PurchaseUiState.SUCCESS
+        else if (purchaseState == PurchaseUiState.LAUNCHING) {
+            // A missing callback must not leave the button locked indefinitely.
+            delay(1500)
+            if (purchaseState == PurchaseUiState.LAUNCHING) {
+                purchaseState = PurchaseUiState.IDLE
+                message = "If payment completed, use Restore to confirm your access."
+            }
+        }
+    } }
 }

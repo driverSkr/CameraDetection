@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import com.spyfinder.hiddencamera.detectorapp.scan.Finding
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
@@ -42,12 +44,16 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
     ) {
         Image(painter = painterResource(deviceType), contentDescription = null)
         Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(info.name, color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+        Column(Modifier.weight(1f)) {
+            Text(info.name, color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(3.dp))
             Text(info.ip, color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
         }
-        Spacer(modifier = Modifier.weight(1f))
-        Image(painter = painterResource(if (info.riskLevel == 0) R.drawable.svg_icon_safety else R.drawable.svg_icon_risk), contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Image(painter = painterResource(when {
+            info.isCurrentPhone || info.userTrusted -> R.drawable.svg_icon_safety
+            info.finding == Finding.CAMERA_FEATURES -> R.drawable.svg_icon_risk
+            else -> R.drawable.svg_icon_warning_gray
+        }), contentDescription = if (info.userTrusted) "User trusted" else if (info.isCurrentPhone) "Current phone" else "View detection details")
     }
 }

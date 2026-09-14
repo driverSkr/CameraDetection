@@ -2,6 +2,7 @@ package com.spyfinder.hiddencamera.detectorapp.ui.subscribe
 
 import android.content.Context
 import android.os.Bundle
+import androidx.activity.addCallback
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
@@ -35,6 +36,7 @@ class SubscribeActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this) { handleDismiss() }
         launchMainOnDismiss = intent.getBooleanExtra(EXTRA_LAUNCH_MAIN_ON_DISMISS, false)
         binding.composeView.apply {
             setContent {
@@ -53,11 +55,7 @@ class SubscribeActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
         }
     }
 
-    override fun onBackPressed() {
-        handleDismiss()
-    }
-
-    private fun handleDismiss() {
+private fun handleDismiss() {
         if (launchMainOnDismiss && !hasHandledDismissNavigation) {
             hasHandledDismissNavigation = true
             MainActivity.launch(context = this)

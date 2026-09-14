@@ -12,8 +12,10 @@ class OrderInfo {
     var token: String? = null
     var signature: String? = null
     var json: String? = null
+    var acknowledged: Boolean = true
 
     fun createOrderInfo(purchase: Purchase): OrderInfo {
+        acknowledged = purchase.isAcknowledged
         this.orderId = purchase.orderId
         this.goodsId = if (purchase.products.isNotEmpty()) purchase.products[0] else null
         this.token = purchase.purchaseToken
@@ -35,6 +37,7 @@ class OrderInfo {
     }
 
     fun createSkuOrderInfo(purchase: Purchase): OrderInfo {
+        acknowledged = purchase.isAcknowledged
         this.orderId = purchase.orderId
         this.goodsId = if (purchase.skus.isNotEmpty()) purchase.skus[0] else null
         this.token = purchase.purchaseToken

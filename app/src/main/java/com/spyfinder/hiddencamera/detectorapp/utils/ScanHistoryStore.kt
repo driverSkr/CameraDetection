@@ -6,10 +6,12 @@ import androidx.core.content.edit
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
 import org.json.JSONArray
 import org.json.JSONObject
+import com.spyfinder.hiddencamera.detectorapp.scan.Finding
 
 data class LatestScanHistory(
     val suspiciousDevices: List<WifiDevice>,
-    val trustedDevices: List<WifiDevice>
+    val trustedDevices: List<WifiDevice>,
+    val summary: String = "Legacy scan record — rescan to obtain evidence."
 )
 
 object ScanHistoryStore {
@@ -21,7 +23,8 @@ object ScanHistoryStore {
     fun saveLatestScanResult(
         context: Context,
         suspiciousDevices: List<WifiDevice>,
-        trustedDevices: List<WifiDevice>
+        trustedDevices: List<WifiDevice>,
+        summary: String = ""
     ) {
         runCatching {
             val sharedPreferences = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -30,6 +33,7 @@ object ScanHistoryStore {
             sharedPreferences.edit {
                 putString(KEY_SUSPICIOUS_DEVICES, suspiciousJson)
                 putString(KEY_TRUSTED_DEVICES, trustedJson)
+                putString("summary", summary)
             }
             Log.d(TAG, "最近一次扫描记录已保存，suspicious=${suspiciousDevices.size} trusted=${trustedDevices.size}")
         }.onFailure { throwable ->
@@ -48,7 +52,9 @@ object ScanHistoryStore {
 
             LatestScanHistory(
                 suspiciousDevices = deserializeDeviceList(suspiciousJson),
-                trustedDevices = deserializeDeviceList(trustedJson)
+                trustedDevices = deserializeDeviceList(trustedJson),
+                summary = sharedPreferences.getString("summary", null)?.takeIf { it.isNotBlank() }
+                    ?: "Legacy scan record — rescan to obtain evidence."
             )
         }.onFailure { throwable ->
             Log.e(TAG, "读取最近一次扫描记录失败，已忽略损坏数据", throwable)
@@ -71,6 +77,12 @@ object ScanHistoryStore {
                     put("connected", device.connected)
                     put("rssi", device.rssi)
                     put("riskLevel", device.riskLevel)
+                    put("finding", device.finding.name)
+                    put("evidence", JSONArray(device.evidence))
+                    put("userTrusted", device.userTrusted)
+                    put("isCurrentPhone", device.isCurrentPhone)
+                    put("analysisComplete", device.analysisComplete)
+                    put("ruleVersion", device.ruleVersion)
                 }
             )
         }
@@ -92,9 +104,15 @@ object ScanHistoryStore {
                     signalColor = jsonObject.optInt("signalColor"),
                     brandModel = jsonObject.optString("brandModel"),
                     mac = jsonObject.optString("mac"),
-                    connected = jsonObject.optBoolean("connected", true),
+                    connected = false,
                     rssi = jsonObject.optInt("rssi"),
-                    riskLevel = jsonObject.optInt("riskLevel")
+                    riskLevel = if (jsonObject.optString("finding") == Finding.CAMERA_FEATURES.name) 1 else 0,
+                    finding = runCatching { Finding.valueOf(jsonObject.optString("finding")) }.getOrDefault(Finding.LEGACY),
+                    evidence = jsonObject.optJSONArray("evidence")?.let { array -> (0 until array.length()).map { array.optString(it) } }.orEmpty(),
+                    userTrusted = jsonObject.optBoolean("userTrusted", false),
+                    isCurrentPhone = jsonObject.optBoolean("isCurrentPhone", false),
+                    analysisComplete = jsonObject.optBoolean("analysisComplete", false),
+                    ruleVersion = jsonObject.optInt("ruleVersion", 0)
                 )
             )
         }

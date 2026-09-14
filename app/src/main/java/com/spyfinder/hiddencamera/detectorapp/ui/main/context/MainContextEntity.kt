@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import com.spyfinder.hiddencamera.detectorapp.DetectorApp
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanHistoryStore
+import com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus
 
 class MainContextEntity(
     private val appContext: Context? = DetectorApp.INSTANCE?.applicationContext
@@ -30,6 +31,10 @@ class MainContextEntity(
 
     val selectTabIndex = mutableIntStateOf(0)
     val pendingWifiAutoScan = mutableStateOf(false)
+    var scanStatus by mutableStateOf(ScanStatus.IDLE)
+    var scanMessage by mutableStateOf("Ready to check your Wi-Fi network")
+    var latestMessage by mutableStateOf("")
+    var networkLabel by mutableStateOf("")
 
     val resultSuspiciousDevices: SnapshotStateList<WifiDevice>
         get() = if (isShowingLatestHistoryResult) latestSuspiciousDevices else suspiciousDevices
@@ -38,19 +43,17 @@ class MainContextEntity(
         get() = if (isShowingLatestHistoryResult) latestTrustedDevices else trustedDevices
 
     fun markDeviceAsSafe(device: WifiDevice) {
-        val updatedDevice = device.copy(riskLevel = 0)
+        val updatedDevice = device.copy(userTrusted = !device.userTrusted)
 
-        if (isShowingLatestHistoryResult) {
-            moveDeviceToSafeList(device, updatedDevice, latestSuspiciousDevices, latestTrustedDevices)
-            persistLatestScanResult()
-            return
+        // Trust is a user annotation, not evidence that changes the detection conclusion.
+        val lists = if (isShowingLatestHistoryResult) listOf(latestSuspiciousDevices, latestTrustedDevices)
+            else if (scanStatus == ScanStatus.COMPLETE) listOf(suspiciousDevices, trustedDevices, latestSuspiciousDevices, latestTrustedDevices)
+            else listOf(suspiciousDevices, trustedDevices)
+        lists.forEach { list ->
+            val index = list.indexOfFirst { isSameDevice(it, device) }
+            if (index >= 0) list[index] = updatedDevice
         }
-
-        moveDeviceToSafeList(device, updatedDevice, suspiciousDevices, trustedDevices)
-        if (hasScanHistory) {
-            moveDeviceToSafeList(device, updatedDevice, latestSuspiciousDevices, latestTrustedDevices)
-            persistLatestScanResult()
-        }
+        if (hasScanHistory) persistLatestScanResult()
     }
 
     fun saveLatestScanResult(suspiciousList: List<WifiDevice>, trustedList: List<WifiDevice>) {
@@ -59,6 +62,7 @@ class MainContextEntity(
         latestTrustedDevices.clear()
         latestTrustedDevices.addAll(trustedList.map { it.copy() })
         hasScanHistory = true
+        latestMessage = scanMessage
         persistLatestScanResult()
     }
 
@@ -71,6 +75,7 @@ class MainContextEntity(
         latestTrustedDevices.clear()
         latestTrustedDevices.addAll(latestScanHistory.trustedDevices.map { it.copy() })
         hasScanHistory = true
+        latestMessage = latestScanHistory.summary
     }
 
     fun openLatestResult() {
@@ -91,29 +96,6 @@ class MainContextEntity(
         isShowResult.value = false
     }
 
-    private fun moveDeviceToSafeList(
-        device: WifiDevice,
-        updatedDevice: WifiDevice,
-        suspiciousList: SnapshotStateList<WifiDevice>,
-        trustedList: SnapshotStateList<WifiDevice>
-    ) {
-        val suspiciousIndex = suspiciousList.indexOfFirst { currentDevice ->
-            isSameDevice(currentDevice, device)
-        }
-        if (suspiciousIndex != -1) {
-            suspiciousList.removeAt(suspiciousIndex)
-        }
-
-        val trustedIndex = trustedList.indexOfFirst { currentDevice ->
-            isSameDevice(currentDevice, updatedDevice)
-        }
-        if (trustedIndex != -1) {
-            trustedList[trustedIndex] = updatedDevice
-        } else {
-            trustedList.add(updatedDevice)
-        }
-    }
-
     private fun isSameDevice(left: WifiDevice, right: WifiDevice): Boolean {
         return when {
             left.mac.isNotBlank() && right.mac.isNotBlank() -> left.mac == right.mac
@@ -127,7 +109,8 @@ class MainContextEntity(
         ScanHistoryStore.saveLatestScanResult(
             context = context,
             suspiciousDevices = latestSuspiciousDevices,
-            trustedDevices = latestTrustedDevices
+            trustedDevices = latestTrustedDevices,
+            summary = latestMessage
         )
     }
 }

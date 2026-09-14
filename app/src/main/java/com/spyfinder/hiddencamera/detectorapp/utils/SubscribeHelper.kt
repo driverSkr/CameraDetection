@@ -1,116 +1,97 @@
 package com.spyfinder.hiddencamera.detectorapp.utils
 
 import android.content.Context
-import android.util.Log
 import com.ethan.pay.BillFactory
 import com.ethan.pay.model.OrderInfo
 import com.ethan.pay.utils.SubHelper
-import com.ethan.pay.utils.SubHelper.listLifeGoodsList
 import com.spyfinder.hiddencamera.detectorapp.DetectorApp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-/**
- * 订阅状态工具类
- *
- * 用法：
- * 普通页面直接判断当前缓存状态
- * if (SubscribeHelper.isSubscribed) {
- *     // 已订阅
- * }
- * Compose 页面实时监听
- * val isSubscribed by SubscribeHelper.isSubscribedFlow.collectAsState()
- */
 object SubscribeHelper {
-    private const val TAG = "SubscribeHelper"
-    private val subscribeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val _isSubscribedFlow = MutableStateFlow(false)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mutex = Mutex()
+    private val subscribed = MutableStateFlow(false)
+    private val access = MutableStateFlow(AccessStatus.UNKNOWN)
+    val isSubscribedFlow = subscribed.asStateFlow()
+    val accessFlow = access.asStateFlow()
+    val isSubscribed get() = subscribed.value
+    val canOfferPurchase get() = access.value == AccessStatus.INACTIVE && !lastQueryFailed
+    @Volatile var lastQueryFailed = false
+        private set
+    private var subscriptionActive: Boolean? = null
+    private var lifetimeActive: Boolean? = null
+    private var revision = 0L
+    private var lastRefresh = 0L
+    private var appContext: Context? = null
 
-    @Volatile
-    private var isBillingInitialized = false
+    fun init(context: Context) { appContext = context.applicationContext; refreshSubscribeState() }
+    fun refreshSubscribeState() { scope.launch { refreshSubscribeStateSuspend(force = true) } }
+    suspend fun isSubscribe(): Boolean = refreshSubscribeStateSuspend()
 
-    // 全局实时订阅状态：普通页面可直接读取，Compose 页面可 collectAsState() 自动刷新。
-    val isSubscribedFlow: StateFlow<Boolean> = _isSubscribedFlow.asStateFlow()
-    val isSubscribed: Boolean
-        get() = _isSubscribedFlow.value
-
-    fun init(context: Context) {
-        subscribeScope.launch {
-            initBillingIfNeeded(context.applicationContext)
-            refreshSubscribeStateSuspend()
+    suspend fun refreshSubscribeStateSuspend(force: Boolean = false): Boolean = mutex.withLock {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!force && now - lastRefresh < 2_000) return@withLock isSubscribed
+        val queryRevision = synchronized(this) { revision }
+        val context = appContext ?: DetectorApp.INSTANCE?.applicationContext
+        val connected = if (context == null) false else querySafely { BillFactory.init(context) == 0 } == true
+        var sub: Boolean? = null
+        var life: Boolean? = null
+        if (connected) {
+            sub = querySafely { queryPurchaseOnlySub().isNotEmpty() }
+            life = querySafely { queryPurchaseOnlyLifeTime().isNotEmpty() }
         }
-    }
-
-    fun refreshSubscribeState() {
-        subscribeScope.launch {
-            refreshSubscribeStateSuspend()
+        synchronized(this) {
+            if (queryRevision == revision) {
+                if (sub != null) subscriptionActive = sub
+                if (life != null) lifetimeActive = life
+                lastQueryFailed = sub == null || life == null
+                access.value = EntitlementPolicy.resolve(subscriptionActive, lifetimeActive)
+                subscribed.value = access.value == AccessStatus.ACTIVE
+            }
+            lastRefresh = android.os.SystemClock.elapsedRealtime()
         }
+        isSubscribed
     }
+    private suspend fun querySafely(block: suspend () -> Boolean): Boolean? = try {
+        withTimeoutOrNull(8_000) { block() }
+    } catch (e: CancellationException) { throw e } catch (_: Exception) { null }
 
-    suspend fun refreshSubscribeStateSuspend(): Boolean {
-        initBillingIfNeeded()
-        return runCatching {
-            val subscribed = queryPurchase().isNotEmpty()
-            updateSubscribeState(subscribed)
-            subscribed
-        }.getOrElse { throwable ->
-            // 查询失败时保留上一次状态，避免网络/商店短暂异常导致页面误判为未订阅。
-            Log.e(TAG, "刷新订阅状态失败", throwable)
-            isSubscribed
-        }
+    @Synchronized fun updateSubscribeState(isSubscribed: Boolean) {
+        revision++
+        subscriptionActive = isSubscribed
+        access.value = EntitlementPolicy.resolve(subscriptionActive, lifetimeActive)
+        subscribed.value = access.value == AccessStatus.ACTIVE
+        lastRefresh = android.os.SystemClock.elapsedRealtime()
     }
-
-    fun updateSubscribeState(isSubscribed: Boolean) {
-        _isSubscribedFlow.value = isSubscribed
-        Log.d(TAG, "订阅状态更新：$isSubscribed")
-    }
-
-    suspend fun isSubscribe(): Boolean {
-        return refreshSubscribeStateSuspend()
-    }
-
-    suspend fun queryPurchase(): MutableList<OrderInfo> {
-        val sub = queryPurchaseOnlySub()
-        val lifetime = queryPurchaseOnlyLifeTime()
-        return mutableListOf<OrderInfo>().apply {
-            this.addAll(sub)
-            this.addAll(lifetime)
-        }
-    }
-
+    suspend fun queryPurchase(): MutableList<OrderInfo> = (queryPurchaseOnlySub() + queryPurchaseOnlyLifeTime()).toMutableList()
     suspend fun queryPurchaseOnlySub(): MutableList<OrderInfo> {
-        return BillFactory.getSubscribe().queryPurchase()
+        val handler = BillFactory.getSubscribe()
+        val orders = handler.queryPurchase().filter { it.goodsId == SubHelper.getProductId() || it.goodsId in listOf(SubHelper.getWeekSkuId(), SubHelper.getMonthSkuId(), SubHelper.getYearSkuId()) }.toMutableList()
+        acknowledgeOutstanding(orders, handler)
+        return orders
     }
-
     suspend fun queryPurchaseOnlyLifeTime(): MutableList<OrderInfo> {
-        val list = BillFactory.getLifeTime().queryPurchase().filter {
-            return@filter listLifeGoodsList.contains(it.goodsId)
-        }.toMutableList()
-        return list
+        val handler = BillFactory.getLifeTime()
+        val orders = handler.queryPurchase().filter { it.goodsId in SubHelper.listLifeGoodsList }.toMutableList()
+        acknowledgeOutstanding(orders, handler)
+        return orders
     }
-
-    private suspend fun initBillingIfNeeded(context: Context? = DetectorApp.INSTANCE?.applicationContext) {
-        if (isBillingInitialized) {
-            return
+    private suspend fun acknowledgeOutstanding(orders: List<OrderInfo>, handler: com.ethan.pay.impl.GPayImpl) {
+        for (order in orders) {
+            if (!order.acknowledged && order.token != null) {
+                try { withTimeoutOrNull(2_000) { handler.handlePurchase(order.token!!) } }
+                catch (e: CancellationException) { throw e }
+                catch (_: Exception) { /* Retry on the next foreground query, without revoking a purchased entitlement. */ }
+            }
         }
-        if (context == null) {
-            Log.w(TAG, "初始化订阅状态失败：Context为空")
-            return
-        }
-        val resultCode = BillFactory.init(context)
-        isBillingInitialized = resultCode == 0
-        Log.d(TAG, "Google Play Billing初始化结果：$resultCode")
     }
-
-    fun getProductType(planId: String?) = when(planId) {
+    fun getProductType(planId: String?) = when (planId) {
         SubHelper.getWeekPlanId() -> "Weekly"
         SubHelper.getMonthPlanId() -> "Monthly"
         SubHelper.getYearPlanId() -> "Yearly"
-        else -> ""
+        else -> "Subscription"
     }
 }

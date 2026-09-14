@@ -21,6 +21,9 @@ import com.ethan.pay.model.OrderInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -32,6 +35,7 @@ import kotlin.math.min
  * Date: 2023/1/5
  */
 object ClientController {
+    private val connectionMutex = Mutex()
 
     var client: BillingClient? = null
     private var onPurchaseListener: OnPurchaseListener? = null
@@ -40,8 +44,9 @@ object ClientController {
         Log.i("TAG", "globalSuccessCallBack : def callback")
     }
 
-    suspend fun connect(context: Context): Int {
-        return suspendCancellableCoroutine { continuation ->
+    suspend fun connect(context: Context): Int = connectionMutex.withLock {
+        if (client?.isReady == true) return@withLock BillingClient.BillingResponseCode.OK
+        withTimeoutOrNull(10_000) { suspendCancellableCoroutine<Int> { continuation ->
             if (client == null) {
                 client = BillingClient.newBuilder(context).setListener { result, purchases ->
                     onPurchaseListener?.onPurchase(result, purchases)
@@ -56,7 +61,7 @@ object ClientController {
                     if (continuation.isActive) continuation.resume(-1)
                 }
             })
-        }
+        } } ?: BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE
     }
 
     suspend fun isConnect(context: Context): Boolean {
@@ -87,6 +92,7 @@ object ClientController {
         val productDetailsResult = withContext(Dispatchers.IO) {
             client?.queryProductDetails(params.build())
         }
+        check(productDetailsResult?.billingResult?.responseCode == BillingClient.BillingResponseCode.OK) { "Product query failed" }
         productDetailsResult?.productDetailsList?.forEach {
             if (it.productId == goodsId) {
                 return it
@@ -98,6 +104,7 @@ object ClientController {
     suspend fun queryPurchase(productType: String): MutableList<OrderInfo> { // 新版本product模式
         val params = QueryPurchasesParams.newBuilder().setProductType(productType)
         val purchasesResult = client?.queryPurchasesAsync(params.build())
+        check(purchasesResult?.billingResult?.responseCode == BillingClient.BillingResponseCode.OK) { "Purchase query failed" }
         val list = mutableListOf<OrderInfo>()
 
         Log.d("queryPurchase", (purchasesResult?.purchasesList?.size?:"none").toString())
@@ -139,6 +146,7 @@ object ClientController {
     suspend fun querySkuPurchase(skuType: String): MutableList<OrderInfo> { // 老版本sku模式
         val purchaseResult = client?.queryPurchasesAsync(skuType)
         val result = purchaseResult?.billingResult
+        check(result?.responseCode == BillingClient.BillingResponseCode.OK) { "Purchase query failed" }
         val purchaseList = purchaseResult?.purchasesList
         val list = mutableListOf<OrderInfo>()
         if (result?.responseCode == BillingClient.BillingResponseCode.OK && purchaseList != null) {

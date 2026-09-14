@@ -51,6 +51,10 @@ class SubscribeSkuImpl : GPayImpl {
                         if (list.isNotEmpty()) {
                             ClientController.globalSuccessCallBack.invoke(list, PurchaseType.SUB)
                             payCallback?.onSuccess(list)
+                        } else if (purchases.any { it.purchaseState == Purchase.PurchaseState.PENDING }) {
+                            payCallback?.onPending()
+                        } else {
+                            payCallback?.onFailed("No completed purchase was returned")
                         }
                     }
                 } else if (result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
@@ -68,7 +72,7 @@ class SubscribeSkuImpl : GPayImpl {
                                 }
                             }
                         }
-                        if (list.isNotEmpty()) payCallback?.onOwned(list)
+                        payCallback?.onOwned(list)
                     }
                 } else {
                     payCallback?.onFailed(result.responseCode.toString())
@@ -80,6 +84,7 @@ class SubscribeSkuImpl : GPayImpl {
     override suspend fun launchBilling(activity: Activity, goods: Goods, callback: OnPayResultCallback) {
         init()
         payCallback = callback
+        callback.begin()
         withContext(Dispatchers.Main) {
             if (activity is FragmentActivity) {
                 activity.lifecycle.addObserver(object : LifecycleEventObserver {
@@ -101,17 +106,23 @@ class SubscribeSkuImpl : GPayImpl {
         if (billingResult?.responseCode == BillingClient.BillingResponseCode.OK && skuDetailsList != null) {
             for (skuDetail in skuDetailsList) {
                 if (skuDetail.sku == goods.skuId) {
+                    if (goods.expectedPrice != null && (skuDetail.price != goods.expectedPrice || skuDetail.subscriptionPeriod != goods.expectedPeriod)) {
+                        callback.onPriceChanged(); return
+                    }
                     val flowParams = BillingFlowParams.newBuilder().setSkuDetails(skuDetail).build()
                     withContext(Dispatchers.Main) {
                         val responseCode = ClientController.client?.launchBillingFlow(activity, flowParams)?.responseCode
-                        if (responseCode != 0) {
+                        if (responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {
+                            callback.onOwned(mutableListOf())
+                        } else if (responseCode != 0) {
                             callback.onFailed("not support")
                         }
                     }
-                    break
+                    return
                 }
             }
         }
+        callback.onFailed("Product is unavailable")
     }
 
     override suspend fun getGoodsPrice(context: Context, goods: Goods): Array<String?> {

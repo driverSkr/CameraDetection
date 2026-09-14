@@ -44,8 +44,8 @@ fun FeaturePage() {
     val localMain = LocalMainContextEntity.current
     val featureItemList = listOf(
         Triple("Wi-Fi", R.drawable.svg_icon_wifi, "Scan for suspicious devices in the current network"),
-        Triple("Magnetic", R.drawable.svg_icon_magnetic, "Use mobile phones magnetic snsor to detect sneak shots"),
-        Triple("Scanner", R.drawable.svg_icon_scanner_big, "Find the instead point of the camera through the camera"),
+        Triple("Magnetic", R.drawable.svg_icon_magnetic, "Observe magnetic field changes; readings do not identify cameras"),
+        Triple("Scanner", R.drawable.svg_icon_scanner_big, "Inspect reflections and lights manually using the camera"),
         Triple("Tips", R.drawable.svg_icon_tips, "Practical tips to boost your safety awareness"),
     )
 

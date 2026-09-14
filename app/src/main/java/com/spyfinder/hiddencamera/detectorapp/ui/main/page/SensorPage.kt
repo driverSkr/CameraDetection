@@ -63,6 +63,7 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White10
 import com.spyfinder.hiddencamera.detectorapp.theme.White60
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
@@ -75,17 +76,18 @@ fun SensorPage() {
     val scope = rememberCoroutineScope()
     val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
     val magneticSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) }
-    val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
+    val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
     var magneticGauge by remember { mutableStateOf(0) }
     var isListening by remember { mutableStateOf(false) } // 控制是否监听传感器
 
-    val shouldStartDetectionAfterSubscribe = remember { mutableStateOf(false) }
+    val shouldStartDetectionAfterSubscribe = androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (!shouldStartDetectionAfterSubscribe.value) {
             return@rememberLauncherForActivityResult
         }
+        shouldStartDetectionAfterSubscribe.value = false
         scope.launch {
-            val subscribed = SubscribeHelper.isSubscribe()
+            val subscribed = SubscriptionGate.hasAccess()
             if (subscribed) {
                 Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "after_subscribe")
                 isListening = true
@@ -174,6 +176,10 @@ fun SensorPage() {
     )
 
     fun toggleDetectionWithSubscriptionCheck() {
+        if (magneticSensor == null) {
+            android.widget.Toast.makeText(context, "This phone has no magnetic field sensor.", android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
         if (isListening) {
             shouldStartDetectionAfterSubscribe.value = false
             // 磁场检测停止埋点，记录用户主动结束检测时的读数。
@@ -186,7 +192,7 @@ fun SensorPage() {
             val subscribed = if (isSubscribed) {
                 true
             } else {
-                SubscribeHelper.isSubscribe()
+                SubscriptionGate.hasAccess()
             }
 
             if (subscribed) {
@@ -194,6 +200,10 @@ fun SensorPage() {
                 Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "sensor_page")
                 isListening = true
             } else {
+                if (!SubscribeHelper.canOfferPurchase) {
+                    android.widget.Toast.makeText(context, "Unable to confirm access. Please retry when the store is available.", android.widget.Toast.LENGTH_LONG).show()
+                    return@launch
+                }
                 shouldStartDetectionAfterSubscribe.value = true
                 Event.event(context, Event.SUBSCRIBE_GATE_SHOW, Event.PARAM_SOURCE to "magnetic_detector")
                 subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))

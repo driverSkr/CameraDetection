@@ -12,6 +12,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import androidx.activity.viewModels
+import com.spyfinder.hiddencamera.detectorapp.scan.ScanViewModel
+import com.spyfinder.hiddencamera.detectorapp.scan.LocalScanViewModel
 import com.skydoves.bundler.intentOf
 import com.spyfinder.hiddencamera.detectorapp.base.BaseActivityVBind
 import com.spyfinder.hiddencamera.detectorapp.databinding.LayoutComposeContainerBinding
@@ -22,6 +25,7 @@ import com.spyfinder.hiddencamera.detectorapp.ui.main.context.MainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.page.MainPage
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 import com.spyfinder.hiddencamera.detectorapp.utils.WifiHelper
 import kotlinx.coroutines.launch
 
@@ -40,27 +44,20 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     private var hasHandledColdStartSubscribeCheck = false
 
-    private val wifiPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true && (Build.VERSION.SDK_INT < 33 || permissions[Manifest.permission.NEARBY_WIFI_DEVICES] == true)
-        if (granted) {
-            Toast.makeText(this, "Permission granted", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(this, "Permission denied", Toast.LENGTH_LONG).show()
-        }
+    private val scanViewModel: ScanViewModel by viewModels()
+
+    override fun onResume() {
+        super.onResume()
+        SubscribeHelper.refreshSubscribeState()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        checkColdStartSubscribeIfNeeded()
-        WifiHelper.checkWifiPermission(this, wifiPermissionLauncher)
+        if (savedInstanceState == null) checkColdStartSubscribeIfNeeded()
+
         binding.composeView.apply {
             setContent {
-                val mainContextEntity = remember {
-                    MainContextEntity(applicationContext).apply {
-                        restoreLatestScanResult()
-                    }
-                }
-                CompositionLocalProvider(LocalMainContextEntity provides mainContextEntity) {
+                CompositionLocalProvider(LocalMainContextEntity provides scanViewModel.state, LocalScanViewModel provides scanViewModel) {
                     ComposeProjectTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = Transparent) {
                             MainPage()
@@ -78,8 +75,8 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
         }
         hasHandledColdStartSubscribeCheck = true
         lifecycleScope.launch {
-            val isSubscribed = SubscribeHelper.isSubscribe()
-            if (!isSubscribed && !isFinishing && !isDestroyed) {
+            val isSubscribed = SubscriptionGate.hasAccess()
+            if (!isSubscribed && SubscribeHelper.canOfferPurchase && !isFinishing && !isDestroyed) {
                 SubscribeActivity.launch(this@MainActivity)
             }
         }

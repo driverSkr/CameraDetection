@@ -34,6 +34,7 @@ import com.spyfinder.hiddencamera.detectorapp.ui.camera.CameraScannerActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.view.ScannerItemView
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 import kotlinx.coroutines.launch
 
 /**
@@ -43,14 +44,15 @@ import kotlinx.coroutines.launch
 fun ScannerPage() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
-    val shouldLaunchScannerAfterSubscribe = remember { mutableStateOf(false) }
+    val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
+    val shouldLaunchScannerAfterSubscribe = androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (!shouldLaunchScannerAfterSubscribe.value) {
             return@rememberLauncherForActivityResult
         }
+        shouldLaunchScannerAfterSubscribe.value = false
         scope.launch {
-            val subscribed = SubscribeHelper.isSubscribe()
+            val subscribed = SubscriptionGate.hasAccess()
             if (subscribed) {
                 // 订阅完成后继续打开红外扫描，记录付费门槛后的转化路径。
                 Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to "after_subscribe")
@@ -81,7 +83,7 @@ fun ScannerPage() {
             val subscribed = if (isSubscribed) {
                 true
             } else {
-                SubscribeHelper.isSubscribe()
+                SubscriptionGate.hasAccess()
             }
 
             if (subscribed) {
@@ -89,6 +91,10 @@ fun ScannerPage() {
                 Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to "scanner_grid")
                 CameraScannerActivity.launch(context)
             } else {
+                if (!SubscribeHelper.canOfferPurchase) {
+                    android.widget.Toast.makeText(context, "Unable to confirm access. Please retry when the store is available.", android.widget.Toast.LENGTH_LONG).show()
+                    return@launch
+                }
                 shouldLaunchScannerAfterSubscribe.value = true
                 Event.event(
                     context,
@@ -105,7 +111,7 @@ fun ScannerPage() {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text("Scanner", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Click on the following entry to enter the corresponding location for testing.", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
+            Text("Choose an object to inspect manually with your camera. All entries use the same viewing tools.", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
         }
 
         LazyVerticalGrid(

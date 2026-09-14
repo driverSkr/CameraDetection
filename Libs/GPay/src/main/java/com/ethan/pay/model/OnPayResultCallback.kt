@@ -7,4 +7,6 @@ interface OnPayResultCallback {
     fun onFailed(msg: String?)
     fun onDisconnect()
     fun onCancel()
+    fun onPending() {}
+    fun onPriceChanged() { onFailed("Price changed. Please review the updated price.") }
 }

@@ -43,8 +43,8 @@ fun GuidePage(onComplete: (() -> Unit)? = null) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val bannerInfo = listOf(
-        Triple(R.mipmap.img_guide_1, "Scan for Hidden Cameras", "Find hidden cameras on your Wi-Fi network to protect your privacy."),
-        Triple(R.mipmap.img_guide_2, "Infrared Red Dot Detection", "Identify suspicious cameras using infrared scanning, even in the dark."),
+        Triple(R.mipmap.img_guide_1, "Scan for Hidden Cameras", "Check responding Wi-Fi devices for camera-related service clues."),
+        Triple(R.mipmap.img_guide_2, "Camera-assisted Inspection", "Use your camera to inspect reflections and lights. Infrared visibility depends on your phone."),
         Triple(R.mipmap.img_guide_3, "Identify Suspicious Devices", "Stay protected from hidden cameras and devices where you are")
     )
     val pagerState = rememberPagerState { bannerInfo.size }

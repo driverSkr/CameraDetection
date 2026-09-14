@@ -97,9 +97,9 @@ fun SettingPage() {
                         }
                         "Restore" -> {
                             scope.launch(Dispatchers.Default) {
-                                SubscribeHelper.refreshSubscribeStateSuspend()
+                                SubscribeHelper.refreshSubscribeStateSuspend(force = true)
                                 withContext(Dispatchers.Main) {
-                                    Toast.makeText(context, "订阅状态刷新完成", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, if (SubscribeHelper.lastQueryFailed) "Unable to query purchases. Please retry." else if (SubscribeHelper.isSubscribed) "Purchases restored" else "No active purchase found", Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
