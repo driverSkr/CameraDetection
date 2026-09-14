@@ -38,7 +38,10 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     private val limited = AtomicBoolean()
     @Volatile private var planned = 0
     @Volatile private var total = 0L
-    @Volatile private var scanDeadline = Long.MAX_VALUE
+    private var progress = ScanWorkProgress(emptySet())
+    private val liveness = ScanLiveness(SystemClock::elapsedRealtime)
+    private val uncertainAddresses = AtomicInteger()
+    fun stalled() = liveness.stalled()
     private var target: WifiTarget? = null
     fun coverage() = ScanCoverage(planned, total, discoveryCount.get(), analyzed.size)
     fun snapshot(): List<WifiDevice> = synchronized(found) {
@@ -49,10 +52,12 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     }
     private fun discovered(ip: String, evidence: List<Evidence>) = synchronized(found) {
         val old = found[ip]
-        if (old == null && found.size >= 1024) { limited.set(true); return@synchronized }
+        if (old == null && found.size >= ScanRules.MAX_TARGETS) { limited.set(true); return@synchronized }
         val combined = (old.orEmpty() + evidence).distinct()
         if (combined.size > 64) limited.set(true)
-        found[ip] = combined.take(64)
+        found[ip] = combined.sortedByDescending { it.cameraRelated }.take(64)
+        progress.discovered(ip)
+        liveness.activity()
         if (old == null) pending.offer(Pending(ip, if (evidence.any { it.cameraRelated }) 0 else 1, sequence.incrementAndGet()))
         else if (evidence.any { it.cameraRelated }) {
             pending.firstOrNull { it.ip == ip && it.priority != 0 }?.let {
@@ -80,12 +85,11 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
 
     suspend fun scan(t: WifiTarget, onProgress: (String, List<WifiDevice>, Int) -> Unit): ScanOutput = withContext(Dispatchers.IO) {
         target = t
-        val started = SystemClock.elapsedRealtime()
-        scanDeadline = started + 45_000
-        val discoveryDeadline = started + 33_000
+        liveness.activity()
         val targets = ScanRules.targets(t.ip, t.prefix, t.gateway)
         planned = targets.addresses.size
         total = targets.total
+        progress = ScanWorkProgress(targets.addresses.toSet())
         discovered(t.ip, listOf(Evidence("Local", "Current phone")))
         onProgress("Discovering devices in ${t.ip}/${t.prefix}…", snapshot(), 0)
         coroutineScope {
@@ -94,33 +98,40 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                     delay(200)
                     val coverage = coverage()
                     val message = "Discovering: ${coverage.checked}/$planned addresses checked\nAnalyzing services: ${coverage.analyzed}/${found.size} devices"
-                    val progress = coverage.checked * 60 / planned.coerceAtLeast(1) + coverage.analyzed * 39 / found.size.coerceAtLeast(1)
-                    onProgress(message, snapshot(), progress.coerceAtMost(99))
+                    onProgress(message, snapshot(), progress.percent())
                 }
             }
             try {
-                ScanPipeline(SystemClock::elapsedRealtime, discoveryDeadline, scanDeadline, { resources.closed }).run(
-                    planned, { discoverServices(t) }, { index ->
+                ScanPipeline({ resources.closed }).run(
+                    planned, { try { discoverServices(t) } finally { progress.multicastFinished(); liveness.activity() } }, { index ->
                         val ip = targets.addresses[index]
-                        if (found.containsKey(ip)) discoveryCount.incrementAndGet()
-                        else {
-                            val attempt = ProbeSupport.discover({ !resources.closed && SystemClock.elapsedRealtime() < discoveryDeadline }) {
-                                probe(t, ip, it, discoveryDeadline)
+                        if (!found.containsKey(ip)) {
+                            val attempt = ProbeSupport.discover({ !resources.closed }) {
+                                probe(t, ip, it)
                             }
-                            if (attempt.uncertain) limited.set(true)
+                            if (attempt.uncertain) uncertainAddresses.incrementAndGet()
                             if (attempt.responded) discovered(ip, emptyList())
-                            if (attempt.checked) discoveryCount.incrementAndGet()
+                            if (!attempt.checked) throw CancellationException()
                         }
-                    }, { pending.poll()?.ip }, { ip -> analyzed[ip] = analyze(t, ip) })
+                        discoveryCount.incrementAndGet()
+                        progress.checked(ip)
+                        liveness.activity()
+                    }, { pending.poll()?.ip }, { ip ->
+                        analyzed[ip] = analyze(t, ip)
+                        progress.analyzed(ip)
+                        liveness.activity()
+                    })
             } finally { reporter.cancelAndJoin() }
         }
         val devices = snapshot()
         val incomplete = devices.count { !it.analysisComplete }
-        val partial = targets.limited || limited.get() || discoveryCount.get() < planned || incomplete > 0
+        val partial = targets.limited || limited.get() || discoveryCount.get() < planned
         ScanOutput(devices, partial, buildString {
             append(if (partial) "Partially completed. " else "Scan completed. ")
             append("Checked ${discoveryCount.get()} of ${targets.total} IPv4 addresses; ${devices.size} devices responded.")
             if (incomplete > 0) append(" $incomplete devices could not be fully analyzed.")
+            if (uncertainAddresses.get() > 0) append(" ${uncertainAddresses.get()} addresses could not be verified due to network errors.")
+            if (targets.limited || limited.get()) append(" Coverage or evidence storage was limited; review the recorded scope.")
             append(" Devices that do not respond or are isolated by the network may be missed. No result proves a room is safe.")
         })
     }
@@ -130,15 +141,15 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val errno = causes.filterIsInstance<ErrnoException>().firstOrNull()?.errno
         return ProbeSupport.classify(error, errno, resources.closed)
     }
-    private fun probe(t: WifiTarget, ip: String, port: Int, deadline: Long): ProbeResult {
+    private fun probe(t: WifiTarget, ip: String, port: Int): ProbeResult {
         if (resources.closed) throw CancellationException()
         val socket = resources.track(t.network.socketFactory.createSocket())
         return try {
-            socket.connect(InetSocketAddress(ip, port), (deadline - SystemClock.elapsedRealtime()).coerceIn(1, 450).toInt())
+            socket.connect(InetSocketAddress(ip, port), 450)
             ProbeResult.OPEN
         } catch (e: java.io.IOException) {
             errorResult(e)
-        } finally { resources.release(socket) }
+        } finally { resources.release(socket); liveness.activity() }
     }
 
     private fun device(ip: String, evidence: List<Evidence>, complete: Boolean, incomplete: Boolean): WifiDevice {
@@ -155,23 +166,20 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val evidence = mutableListOf<Evidence>()
         if (ip == t.ip) return Analysis(evidence, true)
         if (ip == t.gateway) evidence.add(Evidence("Network", "Configured Wi-Fi gateway"))
-        val deadline = minOf(scanDeadline, SystemClock.elapsedRealtime() + 8_000)
         var incomplete = false
         for (port in ProbeSupport.ports) {
             if (resources.closed) throw CancellationException()
-            val remaining = deadline - SystemClock.elapsedRealtime()
-            if (remaining <= 0) { incomplete = true; break }
             val socket = resources.track(t.network.socketFactory.createSocket())
             try {
-                socket.soTimeout = minOf(1500L, remaining).toInt()
-                socket.connect(InetSocketAddress(ip, port), minOf(1500L, remaining).toInt())
+                socket.soTimeout = 1500
+                socket.connect(InetSocketAddress(ip, port), 1500)
                 evidence.add(Evidence("TCP", "Port $port is open (service not confirmed)"))
                 if (port in listOf(554, 8554, 80, 5000)) {
                     val request = if (port == 554 || port == 8554) "OPTIONS rtsp://$ip:$port/ RTSP/1.0\r\nCSeq: 1\r\n\r\n"
                         else "HEAD / HTTP/1.1\r\nHost: $ip\r\nConnection: close\r\n\r\n"
                     socket.getOutputStream().write(request.toByteArray(Charsets.US_ASCII))
                     val response = ProbeSupport.readStatusLine(socket.getInputStream(),
-                        minOf(deadline, SystemClock.elapsedRealtime() + 1500), SystemClock::elapsedRealtime,
+                        SystemClock.elapsedRealtime() + 1500, SystemClock::elapsedRealtime,
                         { socket.soTimeout = it }, { resources.closed })
                     if (DiscoveryProtocols.isRtsp(response)) evidence.add(Evidence("RTSP", "Video protocol responded on port $port; verify the device manually", true))
                     else if (response.startsWith("HTTP/1.")) evidence.add(Evidence("HTTP", "Web service responded on port $port"))
@@ -182,7 +190,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                     ProbeResult.CANCELLED -> throw CancellationException()
                     else -> incomplete = true
                 }
-            } finally { resources.release(socket) }
+            } finally { resources.release(socket); liveness.activity() }
         }
         return Analysis(evidence.distinct(), !incomplete)
     }
@@ -227,7 +235,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                 if (evidence.isNotEmpty()) discovered(ip, evidence)
             }
         } catch (_: java.io.IOException) { /* No multicast response does not imply no devices. */ }
-        finally { resources.release(socket) }
+        finally { resources.release(socket); liveness.activity() }
     }
 
     private fun onvifEvidence(xml: String, requestId: String): List<Evidence> = runCatching {

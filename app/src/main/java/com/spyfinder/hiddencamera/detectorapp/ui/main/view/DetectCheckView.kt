@@ -122,8 +122,8 @@ fun DetectCheckView() {
             Spacer(modifier = Modifier.height(8.dp))
             Text(if (localMain.networkLabel.isBlank()) context.getString(R.string.wifi_network_scan) else context.getString(R.string.wifi_network_address, localMain.networkLabel), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
             Spacer(Modifier.height(8.dp))
-            Text(ScanStrings.text(context, localMain.scanMessage), color = White60, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable { Toast.makeText(context, ScanStrings.text(context, localMain.scanMessage), Toast.LENGTH_LONG).show() })
+            Text(ScanStrings.text(context, localMain.scanMessage), color = White60, fontSize = 12.sp,
+                lineHeight = 18.sp, softWrap = true, modifier = Modifier.fillMaxWidth())
         }
 
         Box(modifier = Modifier.size(313.dp).align(Alignment.Center)) {

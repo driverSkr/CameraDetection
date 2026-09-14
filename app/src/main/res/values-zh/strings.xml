@@ -198,4 +198,9 @@
     <string name="history_retry_save">"重新保存"</string>
     <string name="share_body">"试试这个应用，辅助检查周围环境。"</string>
     <string name="history_previous">"此前记录"</string>
+    <string name="magnetic_scale">"量程：0–100 μT"</string>
+    <string name="magnetic_over_range">"超过 100 μT · 指针已到量程上限"</string>
+    <string name="scan_stalled">"连续 60 秒没有探测进展，扫描已停止。结果不完整，请重试。"</string>
+    <string name="scan_unverified_addresses">" 因网络错误，有 %1$s 个地址无法确认。"</string>
+    <string name="scan_scope_limited">" 扫描覆盖或证据存储达到上限，请查看记录中的实际范围。"</string>
 </resources>

@@ -9,9 +9,7 @@ import android.hardware.SensorManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -66,6 +64,9 @@ import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 import kotlinx.coroutines.launch
 import com.spyfinder.hiddencamera.detectorapp.utils.MagneticReading
+import com.spyfinder.hiddencamera.detectorapp.utils.MagneticScale
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -82,7 +83,7 @@ fun SensorPage() {
     val magneticSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) }
     val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
     var reading by remember { mutableStateOf<MagneticReading?>(null) }
-    val magneticGauge = reading?.gauge ?: 0
+    val magneticGauge = reading?.gauge ?: 0f
     var sensorError by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val selectedTab = com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity.current.selectTabIndex.intValue
@@ -138,28 +139,13 @@ fun SensorPage() {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer); unregister() }
     }
 
-    // 计算旋转角度并添加动画
-    // 指针切图默认朝向右上45度（45度）
-    // 我们需要顺时针旋转：
-    // 0%时：指针朝向左下45度（225度）→ 需要旋转225 - 45 = 180度
-    // 100%时：指针朝向右下45度（-45度或315度）→ 从225度顺时针旋转270度
-    // 公式：初始旋转180度 + 百分比对应的顺时针旋转角度
-    val targetRotationAngle = if (magneticGauge == 0) {
-        // 0%时：初始旋转180度使指针朝向左下45度
-        180f
-    } else {
-        // 百分比值转换为角度：初始180度 + 顺时针旋转（每1%旋转2.7度）
-        180f + (magneticGauge.toFloat() * 2.7f)
-    }
-
-    val rotationAngle by animateFloatAsState(
-        targetValue = targetRotationAngle,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "pointerRotation"
+    // One displayed physical value drives both text and needle, with no spring overshoot.
+    val displayedMicroTesla by animateFloatAsState(
+        targetValue = reading?.microTesla ?: 0f,
+        animationSpec = tween(durationMillis = 150, easing = LinearEasing),
+        label = "magneticReading"
     )
+    val rotationAngle = MagneticScale.rotation(displayedMicroTesla)
 
     fun toggleDetectionWithSubscriptionCheck() {
         if (magneticSensor == null) {
@@ -222,12 +208,13 @@ fun SensorPage() {
             Image(
                 painter = painterResource(R.mipmap.img_circular_pointer),
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .offset(x = 30.dp)
+                    .size(70.dp)
+                    .align(Alignment.TopStart)
+                    .offset(x = 140.dp - 70.dp * MagneticScale.PIVOT_X,
+                        y = 170.dp - 70.dp * MagneticScale.PIVOT_Y)
                     .graphicsLayer {
-                        // 设置旋转中心为左下角 (0f, 1f)
-                        // (0,0) 是左上角，(1,1) 是右下角
-                        transformOrigin = TransformOrigin(0f, 1f)
+                        // Anchor the pointer base at the center of the existing scale artwork.
+                        transformOrigin = TransformOrigin(MagneticScale.PIVOT_X, MagneticScale.PIVOT_Y)
                         rotationZ = rotationAngle
                     },
                 contentDescription = null
@@ -243,7 +230,7 @@ fun SensorPage() {
                             baselineShift = BaselineShift(0f) // 调整符号的垂直位置
                         )
                     ) {
-                        append(reading?.let { String.format(readingLocale, "%.1f", it.microTesla) } ?: "—")
+                        append(if (reading != null) String.format(readingLocale, "%.1f", displayedMicroTesla) else "—")
                     }
                     withStyle(
                         style = SpanStyle(
@@ -258,6 +245,10 @@ fun SensorPage() {
                 },
                 modifier = Modifier.align(Alignment.BottomCenter).offset(y = 30.dp)
             )
+            Text(context.getString(if (displayedMicroTesla > MagneticScale.MAX_MICRO_TESLA)
+                R.string.magnetic_over_range else R.string.magnetic_scale),
+                color = White60, fontSize = 10.sp,
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 50.dp))
         }
 
         Column(modifier = Modifier

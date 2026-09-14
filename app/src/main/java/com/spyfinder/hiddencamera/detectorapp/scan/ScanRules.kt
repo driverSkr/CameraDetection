@@ -6,7 +6,8 @@ enum class ScanStatus { IDLE, RUNNING, COMPLETE, PARTIAL, FAILED, CANCELLED }
 data class Evidence(val source: String, val detail: String, val cameraRelated: Boolean = false)
 
 object ScanRules {
-    const val VERSION = 1
+    const val VERSION = 2
+    const val MAX_TARGETS = 4096
     fun finding(evidence: List<Evidence>, incomplete: Boolean): Finding = when {
         evidence.any { it.cameraRelated } -> Finding.CAMERA_FEATURES
         incomplete || evidence.none { it.source != "TCP" } -> Finding.INSUFFICIENT
@@ -29,7 +30,7 @@ object ScanRules {
     }
 
     data class Targets(val addresses: List<String>, val total: Long, val limited: Boolean)
-    fun targets(local: String, prefix: Int, gateway: String?, limit: Int = 1024): Targets {
+    fun targets(local: String, prefix: Int, gateway: String?, limit: Int = MAX_TARGETS): Targets {
         require(prefix in 0..32 && limit > 0)
         val ip = requireNotNull(ipv4(local))
         val mask = if (prefix == 0) 0L else (0xffffffffL shl (32 - prefix)) and 0xffffffffL

@@ -57,7 +57,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         Event.event(getApplication(), Event.WIFI_SCAN_START)
         job = viewModelScope.launch {
             var monitor: Job? = null
-            var deadline: Job? = null
             var forcedMessage: String? = null
             try {
                 historyLoad.join()
@@ -79,22 +78,22 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                 monitor = launch {
                     while (task.isActive) {
                         delay(500)
+                        if (worker.stalled()) {
+                            forcedMessage = "Scan stopped because no probe made progress for 60 seconds. Results are incomplete. Please retry."
+                            worker.resources.close(); task.cancel(); break
+                        }
                         if (!worker.networkUnchanged(target)) {
                             forcedMessage = "Wi-Fi changed or disconnected. Results are incomplete. Reconnect and retry."
                             worker.resources.close(); task.cancel(); break
                         }
                     }
                 }
-                deadline = launch {
-                    delay(45_000)
-                    forcedMessage = "Scan timed out after 45 seconds. Results are incomplete; try again on a smaller network."
-                    worker.resources.close(); task.cancel()
-                }
                 val result = task.await()
                 if (id != generation) return@launch
                 publish(result.devices)
                 state.scanStatus = if (result.partial) ScanStatus.PARTIAL else ScanStatus.COMPLETE
-                if (!result.partial) state.detectProgress.intValue = 100
+                // Work completion is independent of evidence certainty or a declared coverage limit.
+                state.detectProgress.intValue = 100
                 state.scanMessage = "${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(Date())} · ${state.networkLabel}\n${result.message}"
             } catch (e: CancellationException) {
                 if (id == generation && forcedMessage != null) {
@@ -109,7 +108,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                     state.scanMessage = e.message ?: "Scan failed. Reconnect to Wi-Fi and retry."
                 }
             } finally {
-                monitor?.cancel(); deadline?.cancel(); worker.resources.close()
+                monitor?.cancel(); worker.resources.close()
                 if (id == generation) {
                     state.isAnimating.value = false
                     saveSnapshot(worker)

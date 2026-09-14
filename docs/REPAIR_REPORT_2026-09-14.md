@@ -1,5 +1,7 @@
 # 修复完成汇报 · 2026-09-14
 
+后续更新：Wi-Fi 的 33/45 秒预算、扫描进度与磁场指针映射已进一步修复并完成真机验证，详见 [扫描与磁场校准汇报](/C:/Android/driverSkr/CameraDetection/docs/SCAN_PROGRESS_AND_MAGNETIC_CALIBRATION_REPORT.md)。本文以下内容保留为该轮修复记录。
+
 对应 [已确认修复方案](/C:/Android/driverSkr/CameraDetection/docs/REPAIR_PLAN_2026-09-14.md)。11 项均已完成代码修复；构建、单元测试与 Lint 通过。真实商店订单、所有机型的相机/传感器表现，以及完整 UI 回归仍有下述验证边界。
 
 ## 修改结果

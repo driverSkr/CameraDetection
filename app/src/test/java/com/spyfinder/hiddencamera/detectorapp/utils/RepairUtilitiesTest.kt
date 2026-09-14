@@ -7,10 +7,10 @@ class RepairUtilitiesTest {
     @Test fun magneticPhysicalValueIsNotGaugePercentage() {
         val reading = MagneticReading.from(30f, 40f, 0f)!!
         assertEquals(50f, reading.microTesla, 0.001f)
-        assertEquals(3, reading.gauge)
+        assertEquals(50f, reading.gauge, 0.001f)
         val high = MagneticReading.from(0f, 0f, 1200f)!!
         assertEquals(1200f, high.microTesla, 0.001f)
-        assertEquals(100, high.gauge)
+        assertEquals(100f, high.gauge, 0.001f)
         assertNull(MagneticReading.from(Float.NaN, 0f, 0f))
         assertNull(MagneticReading.from(Float.POSITIVE_INFINITY, 0f, 0f))
     }

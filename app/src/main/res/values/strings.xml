@@ -198,4 +198,9 @@
     <string name="history_retry_save">"Retry saving"</string>
     <string name="share_body">"Try this app to help inspect your surroundings."</string>
     <string name="history_previous">"Previous saved"</string>
+    <string name="magnetic_scale">"Scale: 0–100 μT"</string>
+    <string name="magnetic_over_range">"Above 100 μT · needle at scale limit"</string>
+    <string name="scan_stalled">"Scan stopped because no probe made progress for 60 seconds. Results are incomplete. Please retry."</string>
+    <string name="scan_unverified_addresses">" %1$s addresses could not be verified due to network errors."</string>
+    <string name="scan_scope_limited">" Coverage or evidence storage was limited; review the recorded scope."</string>
 </resources>

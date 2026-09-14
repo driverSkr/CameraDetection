@@ -9,6 +9,8 @@ import com.spyfinder.hiddencamera.detectorapp.R
  */
 object ScanStrings {
     private val exact = mapOf(
+        "Scan stopped because no probe made progress for 60 seconds. Results are incomplete. Please retry." to R.string.scan_stalled,
+        " Coverage or evidence storage was limited; review the recorded scope." to R.string.scan_scope_limited,
         "Ready to check your Wi-Fi network" to R.string.scan_ready,
         "Preparing Wi-Fi scan…" to R.string.scan_preparing,
         "The previous scan was interrupted. Start a new scan." to R.string.scan_previous_interrupted,
@@ -38,6 +40,7 @@ object ScanStrings {
         "Current phone" to R.string.current_phone
     )
     private val templates = listOf(
+        Regex(" (\\d+) addresses could not be verified due to network errors\\.") to R.string.scan_unverified_addresses,
         Regex("Discovering devices in (.+)…") to R.string.scan_discovering_network,
         Regex("Discovering: (\\d+)/(\\d+) addresses checked") to R.string.scan_discovery_progress,
         Regex("Analyzing services: (\\d+)/(\\d+) devices") to R.string.scan_analysis_progress,
@@ -66,7 +69,7 @@ object ScanStrings {
             templates.forEach { (pattern, id) ->
                 result = pattern.replace(result) { lookup(id, it.groupValues.drop(1)) }
             }
-            listOf("Scan completed. ", "Partially completed. ",
+            listOf("Scan completed. ", "Partially completed. ", " Coverage or evidence storage was limited; review the recorded scope.",
                 " Devices that do not respond or are isolated by the network may be missed. No result proves a room is safe.").forEach {
                 if (it in result) result = result.replace(it, lookup(exact.getValue(it), emptyList()))
             }
