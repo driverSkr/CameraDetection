@@ -43,18 +43,18 @@ fun FeaturePage() {
     val scope = rememberCoroutineScope()
     val localMain = LocalMainContextEntity.current
     val featureItemList = listOf(
-        Triple("Wi-Fi", R.drawable.svg_icon_wifi, "Scan for suspicious devices in the current network"),
-        Triple("Magnetic", R.drawable.svg_icon_magnetic, "Observe magnetic field changes; readings do not identify cameras"),
-        Triple("Scanner", R.drawable.svg_icon_scanner_big, "Inspect reflections and lights manually using the camera"),
-        Triple("Tips", R.drawable.svg_icon_tips, "Practical tips to boost your safety awareness"),
+        Triple(context.getString(R.string.feature_wifi), R.drawable.svg_icon_wifi, context.getString(R.string.feature_wifi_description)),
+        Triple(context.getString(R.string.feature_magnetic), R.drawable.svg_icon_magnetic, context.getString(R.string.feature_magnetic_description)),
+        Triple(context.getString(R.string.tab_scanner), R.drawable.svg_icon_scanner_big, context.getString(R.string.feature_camera_description)),
+        Triple(context.getString(R.string.title_tips), R.drawable.svg_icon_tips, context.getString(R.string.feature_tips_description)),
     )
 
     Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column {
-                Text("Features", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
+                Text(context.getString(R.string.title_features), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Detection Method", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
+                Text(context.getString(R.string.detection_method), color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
             }
             Spacer(modifier = Modifier.weight(1f))
             Image(painter = painterResource(R.drawable.svg_icon_settings), contentDescription = null, modifier = Modifier.clickable{

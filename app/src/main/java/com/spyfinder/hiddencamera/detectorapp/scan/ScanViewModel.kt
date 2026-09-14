@@ -81,7 +81,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                 publish(result.devices)
                 state.scanStatus = if (result.partial) ScanStatus.PARTIAL else ScanStatus.COMPLETE
                 if (!result.partial) state.detectProgress.intValue = 100
-                state.scanMessage = "${DateFormat.getDateTimeInstance().format(Date())} · ${state.networkLabel}\n${result.message}"
+                state.scanMessage = "${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(Date())} · ${state.networkLabel}\n${result.message}"
                 if (!result.partial) state.saveLatestScanResult(state.suspiciousDevices.toList(), state.trustedDevices.toList())
             } catch (e: CancellationException) {
                 if (id == generation && forcedMessage != null) {

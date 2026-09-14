@@ -1,5 +1,8 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
+import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,6 +32,7 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White60
 
 @Composable
 fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
+    val context = LocalContext.current
     val deviceType = when(info.riskLevel) {
         1 -> R.drawable.svg_icon_wifi_info_router
         else -> R.drawable.svg_icon_wifi_info_router
@@ -45,7 +49,7 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
         Image(painter = painterResource(deviceType), contentDescription = null)
         Spacer(modifier = Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(info.name, color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(ScanStrings.text(context, info.name), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(3.dp))
             Text(info.ip, color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
         }
@@ -54,6 +58,6 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
             info.isCurrentPhone || info.userTrusted -> R.drawable.svg_icon_safety
             info.finding == Finding.CAMERA_FEATURES -> R.drawable.svg_icon_risk
             else -> R.drawable.svg_icon_warning_gray
-        }), contentDescription = if (info.userTrusted) "User trusted" else if (info.isCurrentPhone) "Current phone" else "View detection details")
+        }), contentDescription = if (info.userTrusted) context.getString(R.string.user_trusted) else if (info.isCurrentPhone) context.getString(R.string.current_phone) else context.getString(R.string.view_device_details))
     }
 }

@@ -152,7 +152,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
 
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 110.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Advanced",
+                        text = context.getString(R.string.subscribe_advanced),
                         style = TextStyle(
                             brush = Brush.horizontalGradient(colorStops = arrayOf(0f to Color(0xFF01C587), 1f to Color(0xFFBCF085))),
                             fontWeight = FontWeight.W700,
@@ -162,7 +162,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                         maxLines = 1
                     )
                     Text(
-                        text = "Hidden Camera Finder",
+                        text = context.getString(R.string.subscribe_title),
                         style = TextStyle(
                             brush = Brush.horizontalGradient(colorStops = arrayOf(0f to Color(0xFF01C587), 1f to Color(0xFFBCF085))),
                             fontWeight = FontWeight.W700,
@@ -175,17 +175,17 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                     Column {
                         Row(modifier = Modifier) {
                             Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = 4.dp), contentDescription = null)
-                            Text("Unlock All Pro Features", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                            Text(context.getString(R.string.subscribe_all_features), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(modifier = Modifier) {
                             Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = 4.dp), contentDescription = null)
-                            Text("View Devices‘ Information", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                            Text(context.getString(R.string.subscribe_device_info), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(modifier = Modifier) {
                             Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = 4.dp), contentDescription = null)
-                            Text("No Ads Experience", color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                            Text(context.getString(R.string.subscribe_no_ads), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
                         }
                     }
                 }
@@ -207,12 +207,12 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                             }
                         }
                     }
-                    if (vm.message.isNotBlank()) {
+                    if (vm.messageRes != 0) {
                         Spacer(Modifier.height(8.dp))
-                        Text(vm.message, modifier = Modifier.padding(horizontal = 24.dp), color = Color(0xFF96939E), fontSize = 12.sp, textAlign = TextAlign.Center)
+                        Text(context.getString(vm.messageRes), modifier = Modifier.padding(horizontal = 24.dp), color = Color(0xFF96939E), fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
                     Spacer(modifier = Modifier.height(18.dp))
-                    Text(vm.selected?.let { "${it.formattedPrice} / ${periodLabel(it.billingPeriod)}. Auto-renews. Cancel anytime." } ?: "Auto-Renewable. Cancel anytime.", modifier = Modifier.padding(horizontal = 24.dp), textAlign = TextAlign.Center, color = Color(0xFF96939E), fontSize = 14.sp, fontWeight = FontWeight.W400)
+                    Text(vm.selected?.let { context.getString(R.string.subscription_renewal_price, it.formattedPrice, periodLabel(context, it.billingPeriod)) } ?: context.getString(R.string.subscribe_renewal), modifier = Modifier.padding(horizontal = 24.dp), textAlign = TextAlign.Center, color = Color(0xFF96939E), fontSize = 14.sp, fontWeight = FontWeight.W400)
                     Spacer(modifier = Modifier.height(20.dp))
                     Box(modifier = Modifier
                         .padding(horizontal = 24.dp)
@@ -223,18 +223,18 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                         .alpha(if (canBuy) 1f else 0.5f)
                         .clickable(enabled = canBuy) { vm.buy(activity) }
                     ) {
-                        Text(when (vm.purchaseState) { PurchaseUiState.LAUNCHING -> "Opening Google Play…"; PurchaseUiState.PENDING -> "Payment pending"; else -> "Continue" }, color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+                        Text(when (vm.purchaseState) { PurchaseUiState.LAUNCHING -> context.getString(R.string.opening_store); PurchaseUiState.PENDING -> context.getString(R.string.payment_pending); else -> context.getString(R.string.action_continue) }, color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Restore purchases", color = Color(0xFF00C46F), fontSize = 12.sp, modifier = Modifier.clickable(enabled = vm.purchaseState != PurchaseUiState.LAUNCHING) { vm.restore(context) }.padding(4.dp))
+                    Text(context.getString(R.string.restore_purchases), color = Color(0xFF00C46F), fontSize = 12.sp, modifier = Modifier.clickable(enabled = vm.purchaseState != PurchaseUiState.LAUNCHING) { vm.restore(context) }.padding(4.dp))
                     Spacer(modifier = Modifier.height(8.dp))
                     Row {
-                        Text("Privacy Policy", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
-                            LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", "Privacy Policy")
+                        Text(context.getString(R.string.privacy_policy), color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
+                            LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.privacy_policy))
                         })
-                        Text(" and ", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400)
-                        Text("Terms of Use", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
-                            LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-terms-of-use/home", "Terms of Use")
+                        Text(context.getString(R.string.policy_separator), color = White, fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text(context.getString(R.string.terms_of_use), color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
+                            LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-terms-of-use/home", context.getString(R.string.terms_of_use))
                         })
                     }
                 }
@@ -245,15 +245,16 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
 
 @Composable
 fun EmptyView(modifier: Modifier = Modifier, onRetryClick: () -> Unit) {
+    val context = LocalContext.current
     Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text("No product found", color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.W400)
+        Text(context.getString(R.string.no_product), color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.W400)
         Box(modifier = Modifier
             .padding(top = 20.dp)
             .border(width = 1.dp, color = Color.White, shape = RoundedCornerShape(44.dp))
             .padding(vertical = 10.dp, horizontal = 30.dp)
             .clickable { onRetryClick.invoke() }) {
-            Text("Retry", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.W400)
+            Text(context.getString(R.string.action_retry), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.W400)
         }
     }
 }
-fun periodLabel(period: String) = when (period) { "P1W" -> "week"; "P1M" -> "month"; "P1Y" -> "year"; else -> period }
+fun periodLabel(context: android.content.Context, period: String) = when (period) { "P1W" -> context.getString(R.string.period_week); "P1M" -> context.getString(R.string.period_month); "P1Y" -> context.getString(R.string.period_year); else -> period }

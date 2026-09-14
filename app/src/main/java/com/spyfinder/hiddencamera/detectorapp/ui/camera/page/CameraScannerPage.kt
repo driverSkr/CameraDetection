@@ -97,8 +97,8 @@ fun CameraScannerPage() {
             Image(painter = painterResource(R.drawable.svg_icon_back), contentDescription = null, modifier = Modifier.align(Alignment.CenterStart).clickable{
                 context.findBaseActivityVBind()?.finish()
             })
-            Image(painterResource(R.drawable.svg_icon_warning_gray), contentDescription = "Inspection tips", modifier = Modifier.align(Alignment.CenterEnd).size(24.dp).clickable { showHelp = !showHelp })
-            Text("Scanner", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+            Image(painterResource(R.drawable.svg_icon_warning_gray), contentDescription = context.getString(R.string.inspection_tips), modifier = Modifier.align(Alignment.CenterEnd).size(24.dp).clickable { showHelp = !showHelp })
+            Text(context.getString(R.string.tab_scanner), color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -119,10 +119,10 @@ fun CameraScannerPage() {
 
             if (!granted || error.isNotEmpty()) {
                 Column(Modifier.align(Alignment.Center).padding(16.dp).fillMaxWidth().background(Color(0xFF161618), RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(if (!granted) "Camera permission is required for the preview." else error, color = White60, fontSize = 14.sp)
+                    Text(if (!granted) context.getString(R.string.camera_permission_required) else error, color = White60, fontSize = 14.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CameraControl("Retry") { if (!granted) launcher.launch(Manifest.permission.CAMERA) else { camera = null; retry++ } }
-                        CameraControl("App settings") { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
+                        CameraControl(context.getString(R.string.action_retry)) { if (!granted) launcher.launch(Manifest.permission.CAMERA) else { camera = null; retry++ } }
+                        CameraControl(context.getString(R.string.app_settings)) { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
                     }
                 }
             }
@@ -143,7 +143,7 @@ fun CameraScannerPage() {
                     Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Inspect lens reflections or unusual lights. Test infrared visibility using a working remote control and try both cameras. Colour filters are viewing aids, not automatic detection. No visible light does not rule out a camera.",
+                        text = context.getString(R.string.camera_help),
                         color = White60,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.W400, modifier = Modifier.weight(1f)
@@ -160,8 +160,8 @@ fun CameraScannerPage() {
             })
 
             Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 50.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Box(Modifier.size(58.dp).border(2.dp, if (currentFilterColorIndex == -1) White else Transparent, RoundedCornerShape(999.dp)).padding(5.dp).background(White10, RoundedCornerShape(999.dp)).semantics { contentDescription = "Original view"; selected = currentFilterColorIndex == -1 }.clickable { currentFilterColorIndex = -1 }, contentAlignment = Alignment.Center) {
-                    Text("Original", color = White, fontSize = 10.sp)
+                Box(Modifier.size(58.dp).border(2.dp, if (currentFilterColorIndex == -1) White else Transparent, RoundedCornerShape(999.dp)).padding(5.dp).background(White10, RoundedCornerShape(999.dp)).semantics { contentDescription = context.getString(R.string.original_view); selected = currentFilterColorIndex == -1 }.clickable { currentFilterColorIndex = -1 }, contentAlignment = Alignment.Center) {
+                    Text(context.getString(R.string.original), color = White, fontSize = 10.sp)
                 }
                 colors.forEachIndexed { index, color ->
                     Box(modifier = Modifier
@@ -169,7 +169,7 @@ fun CameraScannerPage() {
                         .border(width = 2.dp, color = if (currentFilterColorIndex == index) White else Transparent, shape = RoundedCornerShape(999.dp))
                         .padding(5.dp)
                         .background(color = color, shape = RoundedCornerShape(999.dp))
-                        .semantics { contentDescription = "${listOf("Red", "Green", "Blue")[index]} colour aid"; selected = currentFilterColorIndex == index }
+                        .semantics { contentDescription = context.getString(listOf(R.string.colour_red, R.string.colour_green, R.string.colour_blue)[index]); selected = currentFilterColorIndex == index }
                         .clickable{ currentFilterColorIndex = index }
                     )
                 }
@@ -177,27 +177,27 @@ fun CameraScannerPage() {
         }
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
-                if (canSwitch) CameraControl("Switch camera", enabled = camera != null) {
+                if (canSwitch) CameraControl(context.getString(R.string.switch_camera), enabled = camera != null) {
                     camera = null; torch = false
                     lens = if (lens == CameraSelector.LENS_FACING_BACK) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
                 }
-                if (camera?.cameraInfo?.hasFlashUnit() == true) CameraControl(if (torch) "Light off" else "Light on") {
+                if (camera?.cameraInfo?.hasFlashUnit() == true) CameraControl(if (torch) context.getString(R.string.light_off) else context.getString(R.string.light_on)) {
                     val next = !torch
                     camera?.cameraControl?.enableTorch(next)?.let { future ->
-                        future.addListener({ try { future.get(); torch = next } catch (_: Exception) { error = "Unable to change the flashlight. Please retry." } }, ContextCompat.getMainExecutor(context))
+                        future.addListener({ try { future.get(); torch = next } catch (_: Exception) { error = context.getString(R.string.flashlight_error) } }, ContextCompat.getMainExecutor(context))
                     }
                 }
             }
             if (camera != null && maxZoom > minZoom) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Zoom", color = White60, fontSize = 12.sp)
+                    Text(context.getString(R.string.zoom), color = White60, fontSize = 12.sp)
                     Spacer(Modifier.width(12.dp))
                     Slider(modifier = Modifier.weight(1f), value = zoom.coerceIn(minZoom, maxZoom), valueRange = minZoom..maxZoom,
                         colors = SliderDefaults.colors(thumbColor = Color(0xFF00C46F), activeTrackColor = Color(0xFF00C46F), inactiveTrackColor = White10),
                         onValueChange = {
                             zoom = it
                             camera?.cameraControl?.setZoomRatio(it)?.let { future ->
-                                future.addListener({ runCatching { future.get() }.onFailure { error = "Unable to adjust zoom. Please retry." } }, ContextCompat.getMainExecutor(context))
+                                future.addListener({ runCatching { future.get() }.onFailure { error = context.getString(R.string.zoom_error) } }, ContextCompat.getMainExecutor(context))
                             }
                         })
                 }

@@ -177,7 +177,7 @@ fun SensorPage() {
 
     fun toggleDetectionWithSubscriptionCheck() {
         if (magneticSensor == null) {
-            android.widget.Toast.makeText(context, "This phone has no magnetic field sensor.", android.widget.Toast.LENGTH_LONG).show()
+            android.widget.Toast.makeText(context, context.getString(R.string.no_magnetic_sensor), android.widget.Toast.LENGTH_LONG).show()
             return
         }
         if (isListening) {
@@ -201,7 +201,7 @@ fun SensorPage() {
                 isListening = true
             } else {
                 if (!SubscribeHelper.canOfferPurchase) {
-                    android.widget.Toast.makeText(context, "Unable to confirm access. Please retry when the store is available.", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(context, context.getString(R.string.access_retry), android.widget.Toast.LENGTH_LONG).show()
                     return@launch
                 }
                 shouldStartDetectionAfterSubscribe.value = true
@@ -212,7 +212,7 @@ fun SensorPage() {
     }
 
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
-        Text("Magnetic Detector", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+        Text(context.getString(R.string.title_magnetic), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
 
         Box(modifier = Modifier
             .size(280.dp)
@@ -289,7 +289,7 @@ fun SensorPage() {
                 Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Bring your phone close to the suspected area to detect magnetic field changes or hidden devices.",
+                    text = context.getString(R.string.magnetic_help),
                     color = Color(0xFFFFFFFF).copy(0.6f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W400,
@@ -310,7 +310,7 @@ fun SensorPage() {
                 },
             ) {
                 Text(
-                    text = if (isListening) "Stop Detection" else "Start Detection",
+                    text = if (isListening) context.getString(R.string.stop_detection) else context.getString(R.string.start_detection),
                     color = if (isListening) White60 else White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.W500,

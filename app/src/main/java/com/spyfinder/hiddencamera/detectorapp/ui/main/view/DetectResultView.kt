@@ -1,5 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -100,7 +101,7 @@ fun DetectResultView() {
                 }
 
                 if (!SubscribeHelper.canOfferPurchase) {
-                    Toast.makeText(context, "Store unavailable. Please retry to confirm your access.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.store_access_unavailable), Toast.LENGTH_LONG).show()
                     return@launch
                 }
                 shouldRefreshSubscribeStateAfterSubscribe.value = true
@@ -130,7 +131,7 @@ fun DetectResultView() {
                     }
                 )
                 Text(
-                    if (localMain.isShowingLatestHistoryResult) "History" else "Result",
+                    if (localMain.isShowingLatestHistoryResult) context.getString(R.string.action_history) else context.getString(R.string.action_result),
                     color = White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.W500,
@@ -141,7 +142,7 @@ fun DetectResultView() {
             Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 Image(painter = painterResource(R.drawable.svg_icon_sensor), modifier = Modifier.size(20.dp), contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Device inspection results", color = White, fontSize = 14.sp, fontWeight = FontWeight.W400)
+                Text(context.getString(R.string.inspection_results), color = White, fontSize = 14.sp, fontWeight = FontWeight.W400)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth().height(92.dp)) {
@@ -154,7 +155,7 @@ fun DetectResultView() {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("${resultSuspiciousDevices.size}", color = Color(0xFFFE2D3F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Camera clues", color = Color(0xFFFE2D3F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text(context.getString(R.string.camera_clues), color = Color(0xFFFE2D3F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -167,7 +168,7 @@ fun DetectResultView() {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("${resultTrustedDevices.size}", color = Color(0xFF00C46F), fontSize = 32.sp, fontWeight = FontWeight.W700)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Other devices", color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text(context.getString(R.string.other_devices), color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
             }
@@ -176,7 +177,7 @@ fun DetectResultView() {
                 modifier = Modifier.fillMaxWidth().height(24.dp).padding(start = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("All Detection List", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
+                Text(context.getString(R.string.all_detection_list), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
                 Spacer(modifier = Modifier.width(4.dp))
                 Box(
                     modifier = Modifier
@@ -193,11 +194,11 @@ fun DetectResultView() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    Text(if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage, color = White60, fontSize = 12.sp)
+                    Text(ScanStrings.text(context, if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage), color = White60, fontSize = 12.sp)
                     Spacer(Modifier.height(6.dp))
-                    Text("Clues need manual verification. Other devices include incomplete checks and this phone.", color = White60, fontSize = 12.sp)
+                    Text(context.getString(R.string.result_explanation), color = White60, fontSize = 12.sp)
                     if (localMain.isShowingLatestHistoryResult) {
-                        Text("History does not show current online status.", color = White60, fontSize = 12.sp)
+                        Text(context.getString(R.string.history_offline_note), color = White60, fontSize = 12.sp)
                     }
                 }
                 items(allDevices.size, key = { allDevices[it].ip }) { index ->
@@ -226,9 +227,9 @@ fun DetectResultView() {
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Camera clues: ", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
+                        Text(context.getString(R.string.camera_clues_prefix), fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
                         Text("${resultSuspiciousDevices.size}", fontSize = 12.sp, fontWeight = FontWeight.W400, color = Orange)
-                        Text(" devices to review", fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
+                        Text(context.getString(R.string.review_devices_suffix), fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -244,7 +245,7 @@ fun DetectResultView() {
                             .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                     ) {
                         Text(
-                            text = if (checking) "Checking…" else "View Results",
+                            text = if (checking) context.getString(R.string.action_checking) else context.getString(R.string.action_view_results),
                             color = Color(0xFFFFFFFF),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,

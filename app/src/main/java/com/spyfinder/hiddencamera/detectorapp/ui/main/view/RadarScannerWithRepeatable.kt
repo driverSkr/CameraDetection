@@ -1,5 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
+import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -23,6 +25,7 @@ import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEn
 
 @Composable
 fun RadarScannerWithControls() {
+    val context = LocalContext.current
     val localMain = LocalMainContextEntity.current
 
     // 使用独立的动画状态
@@ -49,14 +52,14 @@ fun RadarScannerWithControls() {
             painter = painterResource(R.mipmap.img_radar_bg),
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
-            contentDescription = "雷达背景"
+            contentDescription = context.getString(R.string.radar_background)
         )
 
         if (localMain.isStartDetect.value) {
             Box(modifier = Modifier.fillMaxSize().rotate(rotationAngle)) {
                 Image(
                     painter = painterResource(R.mipmap.img_radar_detect),
-                    contentDescription = "扫描指针",
+                    contentDescription = context.getString(R.string.radar_sweep),
                     contentScale = ContentScale.Crop,
                     // 仅镜像图片内容本身，避免影响外层旋转动画方向
                     modifier = Modifier.fillMaxSize()

@@ -1,5 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -85,7 +86,7 @@ fun DetectCheckView() {
                 else if (SubscribeHelper.canOfferPurchase) {
                     waitingForPurchase = true
                     subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
-                } else Toast.makeText(context, "Unable to confirm your subscription. Please retry when the store is available.", Toast.LENGTH_LONG).show()
+                } else Toast.makeText(context, context.getString(R.string.access_unconfirmed), Toast.LENGTH_LONG).show()
             } finally { checking = false }
         }
     }
@@ -99,7 +100,7 @@ fun DetectCheckView() {
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Wifi Scan", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
+                Text(context.getString(R.string.title_wifi_scan), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
                 Spacer(modifier = Modifier.weight(1f))
                 if (!isSubscribed) {
                     // 未订阅时展示皇冠入口，订阅后自动隐藏。
@@ -116,10 +117,10 @@ fun DetectCheckView() {
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(if (localMain.networkLabel.isBlank()) "WI-FI network scan" else "WI-FI: ${localMain.networkLabel}", color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
+            Text(if (localMain.networkLabel.isBlank()) context.getString(R.string.wifi_network_scan) else context.getString(R.string.wifi_network_address, localMain.networkLabel), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
             Spacer(Modifier.height(8.dp))
-            Text(localMain.scanMessage, color = White60, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable { Toast.makeText(context, localMain.scanMessage, Toast.LENGTH_LONG).show() })
+            Text(ScanStrings.text(context, localMain.scanMessage), color = White60, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { Toast.makeText(context, ScanStrings.text(context, localMain.scanMessage), Toast.LENGTH_LONG).show() })
         }
 
         Box(modifier = Modifier.size(313.dp).align(Alignment.Center)) {
@@ -138,7 +139,7 @@ fun DetectCheckView() {
                                 baselineShift = BaselineShift(0f) // 调整符号的垂直位置
                             )
                         ) {
-                            append(if (localMain.scanStatus == ScanStatus.FAILED) "Retry" else "${detectProgress.intValue}")
+                            append(if (localMain.scanStatus == ScanStatus.FAILED) context.getString(R.string.action_retry) else "${detectProgress.intValue}")
                         }
                         withStyle(
                             style = SpanStyle(
@@ -155,7 +156,7 @@ fun DetectCheckView() {
                 )
             } else {
                 Text(
-                    text = "Start",
+                    text = context.getString(R.string.action_start),
                     color = Color(0xFFFFFFFF),
                     fontSize = 44.sp,
                     fontWeight = FontWeight.W700,
@@ -169,7 +170,7 @@ fun DetectCheckView() {
                 Row(modifier = Modifier, verticalAlignment = Alignment.CenterVertically) {
                     Image(painter = painterResource(R.drawable.svg_icon_warning_red), contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Camera clues: ", color = White60, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                    Text(context.getString(R.string.camera_clues_prefix), color = White60, fontSize = 16.sp, fontWeight = FontWeight.W500)
                     Text(
                         "${localMain.suspiciousDevices.size}",
                         color = Color(0xFFFE2D3F),
@@ -199,7 +200,7 @@ fun DetectCheckView() {
                         }
                     ) {
                         Text(
-                            text = "Cancel",
+                            text = context.getString(R.string.action_cancel),
                             color = White60,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,
@@ -222,7 +223,7 @@ fun DetectCheckView() {
                             }
                     ) {
                         Text(
-                            text = "Recheck",
+                            text = context.getString(R.string.action_recheck),
                             color = White60,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
@@ -240,7 +241,7 @@ fun DetectCheckView() {
                             }
                         ) {
                             Text(
-                                text = if (checking) "Checking…" else "Result",
+                                text = if (checking) context.getString(R.string.action_checking) else context.getString(R.string.action_result),
                                 color = Color(0xFFFFFFFF),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
@@ -272,7 +273,7 @@ fun DetectCheckView() {
                             }
                         ) {
                             Text(
-                                text = "History",
+                                text = context.getString(R.string.action_history),
                                 color = White60,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
@@ -289,7 +290,7 @@ fun DetectCheckView() {
                             }
                         ) {
                             Text(
-                                text = "Start",
+                                text = context.getString(R.string.action_start),
                                 color = Color(0xFFFFFFFF),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
@@ -308,7 +309,7 @@ fun DetectCheckView() {
                         .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                     ) {
                         Text(
-                            text = "Start",
+                            text = context.getString(R.string.action_start),
                             color = Color(0xFFFFFFFF),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,

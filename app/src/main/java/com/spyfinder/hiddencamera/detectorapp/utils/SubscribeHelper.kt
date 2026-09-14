@@ -1,5 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.utils
 
+import com.spyfinder.hiddencamera.detectorapp.R
+
 import android.content.Context
 import com.ethan.pay.BillFactory
 import com.ethan.pay.model.OrderInfo
@@ -88,10 +90,10 @@ object SubscribeHelper {
             }
         }
     }
-    fun getProductType(planId: String?) = when (planId) {
-        SubHelper.getWeekPlanId() -> "Weekly"
-        SubHelper.getMonthPlanId() -> "Monthly"
-        SubHelper.getYearPlanId() -> "Yearly"
-        else -> "Subscription"
+    fun getProductType(context: Context, planId: String?) = when (planId) {
+        SubHelper.getWeekPlanId() -> context.getString(R.string.plan_weekly)
+        SubHelper.getMonthPlanId() -> context.getString(R.string.plan_monthly)
+        SubHelper.getYearPlanId() -> context.getString(R.string.plan_yearly)
+        else -> context.getString(R.string.subscription)
     }
 }

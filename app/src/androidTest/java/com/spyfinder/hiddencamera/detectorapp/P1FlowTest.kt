@@ -18,6 +18,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class P1FlowTest {
+    private fun text(id: Int) = com.spyfinder.hiddencamera.detectorapp.utils.AppLanguage.wrap(androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()).getString(id)
     @get:Rule val compose = createEmptyComposeRule()
     @get:Rule val cameraPermission: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
 
@@ -41,16 +42,16 @@ class P1FlowTest {
 
     @Test fun cameraPreviewBindsAndControlsAreUsable() {
         ActivityScenario.launch(CameraScannerActivity::class.java).use {
-            compose.waitUntil(15_000) { compose.onAllNodesWithText("Zoom").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithText("Scanner").assertExists()
-            compose.onNodeWithContentDescription("Red colour aid").performClick()
-            compose.onNodeWithContentDescription("Red colour aid").assertIsSelected()
-            compose.onNodeWithContentDescription("Original view").performClick()
-            compose.onNodeWithContentDescription("Original view").assertIsSelected()
-            if (compose.onAllNodesWithText("Switch camera").fetchSemanticsNodes().isNotEmpty()) {
-                compose.onNodeWithText("Switch camera").performClick()
+            compose.waitUntil(15_000) { compose.onAllNodesWithText(text(R.string.zoom)).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText(text(R.string.tab_scanner)).assertExists()
+            compose.onNodeWithContentDescription(text(R.string.colour_red)).performClick()
+            compose.onNodeWithContentDescription(text(R.string.colour_red)).assertIsSelected()
+            compose.onNodeWithContentDescription(text(R.string.original_view)).performClick()
+            compose.onNodeWithContentDescription(text(R.string.original_view)).assertIsSelected()
+            if (compose.onAllNodesWithText(text(R.string.switch_camera)).fetchSemanticsNodes().isNotEmpty()) {
+                compose.onNodeWithText(text(R.string.switch_camera)).performClick()
                 compose.waitForIdle()
-                compose.waitUntil(15_000) { compose.onAllNodesWithText("Zoom").fetchSemanticsNodes().isNotEmpty() }
+                compose.waitUntil(15_000) { compose.onAllNodesWithText(text(R.string.zoom)).fetchSemanticsNodes().isNotEmpty() }
             }
         }
     }
@@ -58,15 +59,15 @@ class P1FlowTest {
     @Test fun unavailableStoreDisablesPurchaseInsteadOfInventingPrices() {
         ActivityScenario.launch(SubscribeActivity::class.java).use {
             compose.waitUntil(30_000) {
-                compose.onAllNodesWithText("No product found").fetchSemanticsNodes().isNotEmpty() ||
-                    compose.onAllNodesWithText("Subscription").fetchSemanticsNodes().isNotEmpty()
+                compose.onAllNodesWithText(text(R.string.no_product)).fetchSemanticsNodes().isNotEmpty() ||
+                    compose.onAllNodesWithText(text(R.string.subscription)).fetchSemanticsNodes().isNotEmpty()
             }
-            if (compose.onAllNodesWithText("No product found").fetchSemanticsNodes().isNotEmpty()) {
-                compose.onNodeWithText("Retry").assertExists()
-                compose.onNodeWithText("Continue").assertIsNotEnabled()
+            if (compose.onAllNodesWithText(text(R.string.no_product)).fetchSemanticsNodes().isNotEmpty()) {
+                compose.onNodeWithText(text(R.string.action_retry)).assertExists()
+                compose.onNodeWithText(text(R.string.action_continue)).assertIsNotEnabled()
             } else {
                 // When Play is available, the displayed plans must be supplied by the store.
-                compose.onAllNodesWithText("Subscription").onFirst().assertExists()
+                compose.onAllNodesWithText(text(R.string.subscription)).onFirst().assertExists()
             }
         }
     }

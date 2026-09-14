@@ -62,18 +62,18 @@ fun ScannerPage() {
         }
     }
     val scannerItemList = listOf(
-        Pair(R.drawable.svg_icon_tv, "TV"),
-        Pair(R.drawable.svg_icon_socket, "Socket"),
-        Pair(R.drawable.svg_icon_lampshade, "Lampshade"),
-        Pair(R.drawable.svg_icon_beside_table, "Beside Table"),
-        Pair(R.drawable.svg_icon_tv_cabinet, "TV Cabinet"),
-        Pair(R.drawable.svg_icon_wardrobe, "Wardrobe"),
-        Pair(R.drawable.svg_icon_sofa, "Sofa"),
-        Pair(R.drawable.svg_icon_smoke_sensor, "Smoke Sensor"),
-        Pair(R.drawable.svg_icon_shower_head, "Shower Head"),
-        Pair(R.drawable.svg_icon_vase, "vase"),
-        Pair(R.drawable.svg_icon_air_conditioner, "Air Conditioner"),
-        Pair(R.drawable.svg_icon_router, "Router")
+        Pair(R.drawable.svg_icon_tv, context.getString(R.string.object_tv)),
+        Pair(R.drawable.svg_icon_socket, context.getString(R.string.object_socket)),
+        Pair(R.drawable.svg_icon_lampshade, context.getString(R.string.object_lampshade)),
+        Pair(R.drawable.svg_icon_beside_table, context.getString(R.string.object_bedside_table)),
+        Pair(R.drawable.svg_icon_tv_cabinet, context.getString(R.string.object_tv_cabinet)),
+        Pair(R.drawable.svg_icon_wardrobe, context.getString(R.string.object_wardrobe)),
+        Pair(R.drawable.svg_icon_sofa, context.getString(R.string.object_sofa)),
+        Pair(R.drawable.svg_icon_smoke_sensor, context.getString(R.string.object_smoke_sensor)),
+        Pair(R.drawable.svg_icon_shower_head, context.getString(R.string.object_shower_head)),
+        Pair(R.drawable.svg_icon_vase, context.getString(R.string.object_vase)),
+        Pair(R.drawable.svg_icon_air_conditioner, context.getString(R.string.object_air_conditioner)),
+        Pair(R.drawable.svg_icon_router, context.getString(R.string.object_router))
     )
 
     fun openScannerWithSubscriptionCheck(scannerItem: String) {
@@ -92,7 +92,7 @@ fun ScannerPage() {
                 CameraScannerActivity.launch(context)
             } else {
                 if (!SubscribeHelper.canOfferPurchase) {
-                    android.widget.Toast.makeText(context, "Unable to confirm access. Please retry when the store is available.", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(context, context.getString(R.string.access_retry), android.widget.Toast.LENGTH_LONG).show()
                     return@launch
                 }
                 shouldLaunchScannerAfterSubscribe.value = true
@@ -109,9 +109,9 @@ fun ScannerPage() {
 
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            Text("Scanner", color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
+            Text(context.getString(R.string.tab_scanner), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Choose an object to inspect manually with your camera. All entries use the same viewing tools.", color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
+            Text(context.getString(R.string.scanner_description), color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
         }
 
         LazyVerticalGrid(

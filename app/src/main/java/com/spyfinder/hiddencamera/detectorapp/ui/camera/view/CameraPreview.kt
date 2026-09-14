@@ -1,5 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.camera.view
 
+import com.spyfinder.hiddencamera.detectorapp.R
+
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
@@ -34,7 +36,7 @@ fun CameraPreview(modifier: Modifier = Modifier, lensFacing: Int, retry: Int,
                         val p = future.get(); provider = p
                         val hasFront = p.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)
                         val hasBack = p.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)
-                        check(hasFront || hasBack) { "No camera is available on this device." }
+                        check(hasFront || hasBack) { context.getString(R.string.no_camera) }
                         val selected = when {
                             lensFacing == CameraSelector.LENS_FACING_FRONT && hasFront -> CameraSelector.DEFAULT_FRONT_CAMERA
                             hasBack -> CameraSelector.DEFAULT_BACK_CAMERA
@@ -44,10 +46,10 @@ fun CameraPreview(modifier: Modifier = Modifier, lensFacing: Int, retry: Int,
                         preview = ownedPreview
                         camera = p.bindToLifecycle(owner, selected, ownedPreview)
                         ready(camera!!, hasFront && hasBack)
-                    } catch (_: Exception) { error("Camera unavailable. Close other camera apps, check permission, then retry.") }
+                    } catch (_: Exception) { error(context.getString(R.string.camera_unavailable)) }
                 }
             }, ContextCompat.getMainExecutor(context))
-        } catch (_: Exception) { error("Unable to initialize the camera. Please retry.") }
+        } catch (_: Exception) { error(context.getString(R.string.camera_init_error)) }
         onDispose {
             disposed = true
             camera?.cameraControl?.enableTorch(false)

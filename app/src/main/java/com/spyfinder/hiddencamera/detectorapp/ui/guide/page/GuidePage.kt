@@ -43,9 +43,9 @@ fun GuidePage(onComplete: (() -> Unit)? = null) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val bannerInfo = listOf(
-        Triple(R.mipmap.img_guide_1, "Scan for Hidden Cameras", "Check responding Wi-Fi devices for camera-related service clues."),
-        Triple(R.mipmap.img_guide_2, "Camera-assisted Inspection", "Use your camera to inspect reflections and lights. Infrared visibility depends on your phone."),
-        Triple(R.mipmap.img_guide_3, "Identify Suspicious Devices", "Stay protected from hidden cameras and devices where you are")
+        Triple(R.mipmap.img_guide_1, context.getString(R.string.guide_title_wifi), context.getString(R.string.guide_body_wifi)),
+        Triple(R.mipmap.img_guide_2, context.getString(R.string.guide_title_camera), context.getString(R.string.guide_body_camera)),
+        Triple(R.mipmap.img_guide_3, context.getString(R.string.guide_title_devices), context.getString(R.string.guide_body_devices))
     )
     val pagerState = rememberPagerState { bannerInfo.size }
 
@@ -109,7 +109,7 @@ fun GuidePage(onComplete: (() -> Unit)? = null) {
                 }
             ) {
                 Text(
-                    text = "Continue",
+                    text = context.getString(R.string.action_continue),
                     color = Color(0xFFFFFFFF),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.W500,

@@ -5,6 +5,7 @@ import androidx.multidex.MultiDex
 import com.ethan.base.component.BaseApp
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.AppLanguage
 
 class DetectorApp: BaseApp() {
     companion object {
@@ -21,7 +22,7 @@ class DetectorApp: BaseApp() {
     }
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(base)
+        super.attachBaseContext(AppLanguage.wrap(base))
         MultiDex.install(base.applicationContext)
     }
 }

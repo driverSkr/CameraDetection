@@ -1,5 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.utils
 
+import com.spyfinder.hiddencamera.detectorapp.R
+
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -15,13 +17,13 @@ object ShareUtils {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)  // 纯文本
             putExtra(Intent.EXTRA_HTML_TEXT, highlightedHtml)  // HTML 高亮版
-            putExtra(Intent.EXTRA_SUBJECT, "分享")
+            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.share_subject))
         }
 
         try {
-            context.startActivity(Intent.createChooser(shareIntent, "分享到"))
+            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_chooser)))
         } catch (e: Exception) {
-            Toast.makeText(context, "分享失败", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.share_failed), Toast.LENGTH_SHORT).show()
         }
     }
 

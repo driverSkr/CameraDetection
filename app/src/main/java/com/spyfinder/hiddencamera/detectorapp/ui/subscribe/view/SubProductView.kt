@@ -1,5 +1,9 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.subscribe.view
 
+import androidx.compose.ui.platform.LocalContext
+
+import com.spyfinder.hiddencamera.detectorapp.R
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,6 +31,7 @@ import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 
 @Composable
 fun SubProductView(modifier: Modifier = Modifier, isSelected: Boolean, model: SubModel, onClick: () -> Unit) {
+    val context = LocalContext.current
 
     Column(modifier = modifier.fillMaxWidth()) {
         if (isSelected && model.id == SubHelper.getWeekPlanId()) {
@@ -35,7 +40,7 @@ fun SubProductView(modifier: Modifier = Modifier, isSelected: Boolean, model: Su
                 .height(28.dp)
                 .background(brush = Brush.horizontalGradient(colorStops = arrayOf(0f to Color(0xFF01C587), 1f to Color(0xFFBCF085))), shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
             ) {
-                Text("Best Choose", color = Color(0xFF010101), fontSize = 12.sp, fontWeight = FontWeight.W600, modifier = Modifier.align(Alignment.Center))
+                Text(context.getString(R.string.best_choice), color = Color(0xFF010101), fontSize = 12.sp, fontWeight = FontWeight.W600, modifier = Modifier.align(Alignment.Center))
             }
         }
         Box(modifier = Modifier
@@ -66,11 +71,11 @@ fun SubProductView(modifier: Modifier = Modifier, isSelected: Boolean, model: Su
         ) {
             Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 // todo 乱写的，得沟通清楚
-                Text("Subscription", color = Color(0xFF96939E), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                Text(context.getString(R.string.subscription), color = Color(0xFF96939E), fontSize = 12.sp, fontWeight = FontWeight.W400)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(model.formattedPrice, color = White, fontSize = 20.sp, fontWeight = FontWeight.W700)
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(SubscribeHelper.getProductType(model.id), modifier = Modifier.align(Alignment.CenterHorizontally), color = Color(0xFF96939E), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                Text(SubscribeHelper.getProductType(context, model.id), modifier = Modifier.align(Alignment.CenterHorizontally), color = Color(0xFF96939E), fontSize = 12.sp, fontWeight = FontWeight.W400)
             }
         }
     }

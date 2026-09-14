@@ -1,5 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.subscribe.viewmodel
 
+import com.spyfinder.hiddencamera.detectorapp.R
+
 import android.content.Context
 import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
@@ -29,7 +31,7 @@ class SubscribeViewModel : ViewModel() {
         private set
     var purchaseState by mutableStateOf(PurchaseUiState.IDLE)
         private set
-    var message by mutableStateOf("")
+    var messageRes by mutableIntStateOf(0)
         private set
     private var loaded = false
     private val attempts = PurchaseAttemptGate()
@@ -43,11 +45,11 @@ class SubscribeViewModel : ViewModel() {
             try {
                 products = withTimeout(15_000) { queryProducts(context) }
                 selected = products.firstOrNull { it.id == SubHelper.getWeekPlanId() } ?: products.firstOrNull()
-                if (products.isEmpty()) message = "No subscription plans are available. Please retry."
+                if (products.isEmpty()) messageRes = R.string.store_no_plans
             } catch (e: CancellationException) {
                 if (e !is TimeoutCancellationException) throw e
-                message = "The store did not respond. Please retry."
-            } catch (_: Exception) { message = "Unable to load store prices. Check your connection and retry." }
+                messageRes = R.string.store_timeout
+            } catch (_: Exception) { messageRes = R.string.store_prices_error }
             finally { loading = false }
         }
     }
@@ -85,9 +87,9 @@ class SubscribeViewModel : ViewModel() {
         if (loading || purchaseState == PurchaseUiState.LAUNCHING || purchaseState == PurchaseUiState.PENDING || purchaseState == PurchaseUiState.SUCCESS) return
         val id = attempts.begin()
         purchaseState = PurchaseUiState.LAUNCHING
-        message = "Opening Google Play…"
-        fun update(state: PurchaseUiState, text: String) { viewModelScope.launch {
-            if (attempts.accepts(id)) { purchaseState = state; message = text }
+        messageRes = R.string.opening_store
+        fun update(state: PurchaseUiState, text: Int) { viewModelScope.launch {
+            if (attempts.accepts(id)) { purchaseState = state; messageRes = text }
         } }
         fun success() { viewModelScope.launch {
             if (!attempts.complete(id)) return@launch
@@ -103,29 +105,29 @@ class SubscribeViewModel : ViewModel() {
                         override fun begin() { Event.event(activity.applicationContext, Event.PURCHASE_BEGIN, Event.PARAM_PLAN_ID to model.id) }
                         override fun onSuccess(orderList: MutableList<OrderInfo>) {
                             if (orderList.any { it.goodsId == model.goods || it.goodsId == model.sku }) success()
-                            else update(PurchaseUiState.FAILED, "Unable to match the purchase. Use Restore to check your access.")
+                            else update(PurchaseUiState.FAILED, R.string.purchase_mismatch)
                         }
                         override fun onOwned(orderList: MutableList<OrderInfo>) { viewModelScope.launch {
                             if (!attempts.accepts(id)) return@launch
                             if (SubscribeHelper.refreshSubscribeStateSuspend(force = true)) success()
-                            else update(PurchaseUiState.FAILED, "Unable to confirm this purchase. Use Restore to retry.")
+                            else update(PurchaseUiState.FAILED, R.string.purchase_unconfirmed)
                         } }
-                        override fun onFailed(msg: String?) { update(PurchaseUiState.FAILED, "Purchase could not be completed. Please retry.") }
-                        override fun onDisconnect() { update(PurchaseUiState.FAILED, "Store disconnected. Please retry.") }
-                        override fun onCancel() { update(PurchaseUiState.CANCELLED, "Purchase cancelled.") }
-                        override fun onPending() { update(PurchaseUiState.PENDING, "Payment is pending. Access will unlock after payment completes.") }
+                        override fun onFailed(msg: String?) { update(PurchaseUiState.FAILED, R.string.purchase_failed) }
+                        override fun onDisconnect() { update(PurchaseUiState.FAILED, R.string.store_disconnected) }
+                        override fun onCancel() { update(PurchaseUiState.CANCELLED, R.string.purchase_cancelled) }
+                        override fun onPending() { update(PurchaseUiState.PENDING, R.string.purchase_pending) }
                         override fun onPriceChanged() { viewModelScope.launch {
                             if (!attempts.accepts(id)) return@launch
                             purchaseState = PurchaseUiState.IDLE
-                            message = "The price or plan changed. Review the updated plan and tap Continue again."
+                            messageRes = R.string.purchase_price_changed
                             load(activity.applicationContext, true)
                         } }
                     })
                 }
             } catch (e: CancellationException) {
                 if (e !is TimeoutCancellationException) throw e
-                update(PurchaseUiState.FAILED, "The store did not respond. Check purchase status with Restore before retrying.")
-            } catch (_: Exception) { update(PurchaseUiState.FAILED, "Store unavailable. Please retry.") }
+                update(PurchaseUiState.FAILED, R.string.purchase_timeout)
+            } catch (_: Exception) { update(PurchaseUiState.FAILED, R.string.store_unavailable) }
         }
     }
     fun restore(context: Context) { viewModelScope.launch {
@@ -133,7 +135,7 @@ class SubscribeViewModel : ViewModel() {
             purchaseState = PurchaseUiState.SUCCESS
         } else {
             purchaseState = PurchaseUiState.IDLE
-            message = if (SubscribeHelper.lastQueryFailed) "Unable to query purchases. Please retry." else "No active purchase found. If a payment is pending, wait for Google Play to finish it."
+            messageRes = if (SubscribeHelper.lastQueryFailed) R.string.restore_query_error else R.string.purchase_not_found
         }
     } }
     fun refreshOnResume() { viewModelScope.launch {
@@ -143,7 +145,7 @@ class SubscribeViewModel : ViewModel() {
             delay(1500)
             if (purchaseState == PurchaseUiState.LAUNCHING) {
                 purchaseState = PurchaseUiState.IDLE
-                message = "If payment completed, use Restore to confirm your access."
+                messageRes = R.string.purchase_restore_hint
             }
         }
     } }

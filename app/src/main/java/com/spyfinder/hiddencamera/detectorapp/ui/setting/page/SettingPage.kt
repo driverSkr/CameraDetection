@@ -22,8 +22,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,12 +50,13 @@ import kotlinx.coroutines.withContext
 fun SettingPage() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val isChinese = LocalConfiguration.current.locales[0].language == "zh"
     val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
     val settingItemList = listOf(
-        Pair(R.drawable.svg_icon_share_app, "Share App"),
-        Pair(R.drawable.svg_icon_privacy_policy, "Privacy Policy"),
-        Pair(R.drawable.svg_icon_restore, "Restore"),
-        Pair(R.drawable.svg_icon_rate_us, "Rate us"),
+        Pair(R.drawable.svg_icon_share_app, R.string.share_app),
+        Pair(R.drawable.svg_icon_privacy_policy, R.string.privacy_policy),
+        Pair(R.drawable.svg_icon_restore, R.string.restore),
+        Pair(R.drawable.svg_icon_rate_us, R.string.rate_us),
     )
 
     Column(modifier = Modifier.fillMaxSize().background(color = Black).statusBarsPadding()) {
@@ -64,7 +68,7 @@ fun SettingPage() {
                     .align(Alignment.CenterStart)
                     .clickable{ context.findBaseActivityVBind()?.finish() }
             )
-            Text("Setting", color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+            Text(context.getString(R.string.title_setting), color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }
 
         if (!isSubscribed) {
@@ -77,6 +81,7 @@ fun SettingPage() {
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
                     .fillMaxWidth()
+                    .then(if (isChinese) Modifier.clip(RoundedCornerShape(percent = 30)) else Modifier)
                     .clickable{ SubscribeActivity.launch(context) }
             )
         }
@@ -87,23 +92,23 @@ fun SettingPage() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(settingItemList.size) { index ->
-                SettingItemView(settingItemList[index]) {
+                SettingItemView(settingItemList[index].let { it.first to context.getString(it.second) }) {
                     when(settingItemList[index].second) {
-                        "Share App" -> {
-                            ShareUtils.shareTextWithHighlightedLinks(context, "应用分享", "https://play.google.com/store/apps/details?id=" + context.packageName)
+                        R.string.share_app -> {
+                            ShareUtils.shareTextWithHighlightedLinks(context, context.getString(R.string.share_app), "https://play.google.com/store/apps/details?id=" + context.packageName)
                         }
-                        "Privacy Policy" -> {
+                        R.string.privacy_policy -> {
                             LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.app_name))
                         }
-                        "Restore" -> {
+                        R.string.restore -> {
                             scope.launch(Dispatchers.Default) {
                                 SubscribeHelper.refreshSubscribeStateSuspend(force = true)
                                 withContext(Dispatchers.Main) {
-                                    Toast.makeText(context, if (SubscribeHelper.lastQueryFailed) "Unable to query purchases. Please retry." else if (SubscribeHelper.isSubscribed) "Purchases restored" else "No active purchase found", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, if (SubscribeHelper.lastQueryFailed) context.getString(R.string.restore_query_error) else if (SubscribeHelper.isSubscribed) context.getString(R.string.purchases_restored) else context.getString(R.string.no_active_purchase), Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
-                        "Rate us" -> {
+                        R.string.rate_us -> {
                             /**
                              * TODO Google Play 内评（In-App Review）有严格限制，满足下面任意一条，就绝对不会显示：
                              ** 1.调试 / 测试包（debug 包、非 Google Play 安装的包、本地直接运行的 APK、模拟器）
