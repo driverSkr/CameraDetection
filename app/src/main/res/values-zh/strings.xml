@@ -184,4 +184,18 @@
     <string name="evidence_rtsp">"端口 %1$s 响应视频协议，请人工核实设备"</string>
     <string name="evidence_http">"端口 %1$s 的网页服务有响应"</string>
     <string name="evidence_ssdp">"设备声明的服务：%1$s"</string>
+    <string name="magnetic_sensor_failed">"无法启动磁场传感器，请重试。"</string>
+    <string name="history_recent">"最近一次"</string>
+    <string name="history_complete">"上次完整"</string>
+    <string name="history_meta">"%1$s · %2$s\n已检查 %3$d/%4$d 个地址；已分析 %5$d 台设备"</string>
+    <string name="history_status_complete">"已完成"</string>
+    <string name="history_status_partial">"部分完成"</string>
+    <string name="history_status_cancelled">"已中断或取消"</string>
+    <string name="history_status_failed">"扫描失败，结果可能不完整"</string>
+    <string name="history_status_running">"扫描中，已保存检查点"</string>
+    <string name="history_status_legacy">"旧记录，完成状态未知"</string>
+    <string name="history_save_failed">"历史记录保存失败，请保留当前页面并重试。"</string>
+    <string name="history_retry_save">"重新保存"</string>
+    <string name="share_body">"试试这个应用，辅助检查周围环境。"</string>
+    <string name="history_previous">"此前记录"</string>
 </resources>

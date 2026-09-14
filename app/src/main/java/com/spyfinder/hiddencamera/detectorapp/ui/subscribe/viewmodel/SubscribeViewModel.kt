@@ -139,7 +139,7 @@ class SubscribeViewModel : ViewModel() {
         }
     } }
     fun refreshOnResume() { viewModelScope.launch {
-        if (SubscribeHelper.refreshSubscribeStateSuspend(force = true)) purchaseState = PurchaseUiState.SUCCESS
+        if (SubscribeHelper.refreshSubscribeStateSuspend()) purchaseState = PurchaseUiState.SUCCESS
         else if (purchaseState == PurchaseUiState.LAUNCHING) {
             // A missing callback must not leave the button locked indefinitely.
             delay(1500)

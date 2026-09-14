@@ -10,11 +10,17 @@ import androidx.lifecycle.viewModelScope
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.MainContextEntity
 import kotlinx.coroutines.*
-import java.text.DateFormat
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanRecord
+import com.spyfinder.hiddencamera.detectorapp.ui.main.context.replaceDevices
+import java.util.UUID
+import android.os.SystemClock
 import java.util.Date
 
 class ScanViewModel(application: Application) : AndroidViewModel(application), DefaultLifecycleObserver {
-    val state = MainContextEntity(application).apply { restoreLatestScanResult() }
+    val state = MainContextEntity(application)
+    private val historyLoad = viewModelScope.launch { state.restoreLatestScanResult() }
+    private var startedAt = 0L
+    private var lastCheckpoint = 0L
     private val prefs = application.getSharedPreferences("scan_session", 0)
     private var job: Job? = null
     private var scanner: NetworkScanner? = null
@@ -34,6 +40,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
     fun start() {
         cancel("Scan replaced.")
         val id = ++generation
+        startedAt = System.currentTimeMillis()
+        lastCheckpoint = SystemClock.elapsedRealtime()
+        state.currentRecordId = UUID.randomUUID().toString()
         val worker = NetworkScanner(getApplication())
         scanner = worker
         state.isShowResult.value = false
@@ -51,6 +60,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
             var deadline: Job? = null
             var forcedMessage: String? = null
             try {
+                historyLoad.join()
                 val target = worker.selectNetwork()
                 state.networkLabel = "${target.ip}/${target.prefix}"
                 val task = async { worker.scan(target) { message, devices, progress ->
@@ -59,6 +69,10 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                             state.scanMessage = message
                             state.detectProgress.intValue = maxOf(state.detectProgress.intValue, progress.coerceIn(0, 99))
                             publish(devices)
+                            if (SystemClock.elapsedRealtime() - lastCheckpoint >= 3_000) {
+                                saveSnapshot(worker)
+                                lastCheckpoint = SystemClock.elapsedRealtime()
+                            }
                         }
                     }
                 } }
@@ -82,7 +96,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                 state.scanStatus = if (result.partial) ScanStatus.PARTIAL else ScanStatus.COMPLETE
                 if (!result.partial) state.detectProgress.intValue = 100
                 state.scanMessage = "${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(Date())} · ${state.networkLabel}\n${result.message}"
-                if (!result.partial) state.saveLatestScanResult(state.suspiciousDevices.toList(), state.trustedDevices.toList())
             } catch (e: CancellationException) {
                 if (id == generation && forcedMessage != null) {
                     publish(worker.snapshot())
@@ -99,6 +112,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                 monitor?.cancel(); deadline?.cancel(); worker.resources.close()
                 if (id == generation) {
                     state.isAnimating.value = false
+                    saveSnapshot(worker)
                     prefs.edit().putBoolean("running", false).apply()
                     Event.event(getApplication(), when (state.scanStatus) {
                         ScanStatus.COMPLETE -> Event.WIFI_SCAN_COMPLETE
@@ -110,8 +124,17 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         }
     }
     private fun publish(devices: List<com.spyfinder.hiddencamera.detectorapp.model.WifiDevice>) {
-        state.suspiciousDevices.clear(); state.suspiciousDevices.addAll(devices.filter { it.riskLevel == 1 })
-        state.trustedDevices.clear(); state.trustedDevices.addAll(devices.filter { it.riskLevel != 1 })
+        val trust = (state.suspiciousDevices + state.trustedDevices).associate { it.ip to it.userTrusted }
+        val annotated = devices.map { it.copy(userTrusted = trust[it.ip] ?: false) }
+        state.suspiciousDevices.replaceDevices(annotated.filter { it.riskLevel == 1 })
+        state.trustedDevices.replaceDevices(annotated.filter { it.riskLevel != 1 })
+    }
+    private fun saveSnapshot(worker: NetworkScanner) {
+        if (!historyLoad.isCompleted) return
+        state.saveRecord(ScanRecord(state.currentRecordId, startedAt,
+            if (state.scanStatus == ScanStatus.RUNNING) null else System.currentTimeMillis(),
+            state.networkLabel, state.scanStatus, worker.coverage(), state.scanMessage,
+            (state.suspiciousDevices + state.trustedDevices).map { it.copy() }))
     }
     fun cancel(reason: String = "Scan cancelled. Results are incomplete.") {
         if (state.scanStatus != ScanStatus.RUNNING) return
@@ -121,6 +144,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         state.isAnimating.value = false
         state.scanStatus = ScanStatus.CANCELLED
         state.scanMessage = reason
+        scanner?.let { saveSnapshot(it) }
         prefs.edit().putBoolean("running", false).putString("interrupted", reason).apply()
         Event.event(getApplication(), Event.WIFI_SCAN_CANCEL, Event.PARAM_REASON to reason)
     }

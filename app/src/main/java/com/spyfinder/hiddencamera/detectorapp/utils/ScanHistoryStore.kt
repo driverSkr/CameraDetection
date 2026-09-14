@@ -7,59 +7,77 @@ import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
 import org.json.JSONArray
 import org.json.JSONObject
 import com.spyfinder.hiddencamera.detectorapp.scan.Finding
-
-data class LatestScanHistory(
-    val suspiciousDevices: List<WifiDevice>,
-    val trustedDevices: List<WifiDevice>,
-    val summary: String = "Legacy scan record — rescan to obtain evidence."
-)
+import com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus
+import com.spyfinder.hiddencamera.detectorapp.scan.ScanCoverage
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 object ScanHistoryStore {
     private const val TAG = "ScanHistoryStore"
     private const val PREF_NAME = "sp_detect_scan_history"
-    private const val KEY_SUSPICIOUS_DEVICES = "key_suspicious_devices"
-    private const val KEY_TRUSTED_DEVICES = "key_trusted_devices"
-
-    fun saveLatestScanResult(
-        context: Context,
-        suspiciousDevices: List<WifiDevice>,
-        trustedDevices: List<WifiDevice>,
-        summary: String = ""
-    ) {
-        runCatching {
-            val sharedPreferences = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-            val suspiciousJson = serializeDeviceList(suspiciousDevices).toString()
-            val trustedJson = serializeDeviceList(trustedDevices).toString()
-            sharedPreferences.edit {
-                putString(KEY_SUSPICIOUS_DEVICES, suspiciousJson)
-                putString(KEY_TRUSTED_DEVICES, trustedJson)
-                putString("summary", summary)
+    private const val ARCHIVE_KEY = "scan_archive_v2"
+    private val pending = Channel<Pair<Context, ScanArchive>>(Channel.CONFLATED)
+    private val failure = MutableStateFlow(false)
+    val saveFailed = failure.asStateFlow()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    init {
+        scope.launch {
+            for ((context, archive) in pending) {
+                failure.value = runCatching {
+                    val json = encode(archive)
+                    check(decode(json) == archive) { "History validation failed" }
+                    check(context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit()
+                        .putString(ARCHIVE_KEY, json).commit()) { "History write failed" }
+                }.onFailure { Log.e(TAG, "History could not be saved", it) }.isFailure
             }
-            Log.d(TAG, "最近一次扫描记录已保存，suspicious=${suspiciousDevices.size} trusted=${trustedDevices.size}")
-        }.onFailure { throwable ->
-            Log.e(TAG, "保存最近一次扫描记录失败", throwable)
         }
     }
-
-    fun loadLatestScanResult(context: Context): LatestScanHistory? {
-        return runCatching {
-            val sharedPreferences = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-            val suspiciousJson = sharedPreferences.getString(KEY_SUSPICIOUS_DEVICES, null)
-            val trustedJson = sharedPreferences.getString(KEY_TRUSTED_DEVICES, null)
-            if (suspiciousJson.isNullOrEmpty() || trustedJson.isNullOrEmpty()) {
-                return null
-            }
-
-            LatestScanHistory(
-                suspiciousDevices = deserializeDeviceList(suspiciousJson),
-                trustedDevices = deserializeDeviceList(trustedJson),
-                summary = sharedPreferences.getString("summary", null)?.takeIf { it.isNotBlank() }
-                    ?: "Legacy scan record — rescan to obtain evidence."
-            )
-        }.onFailure { throwable ->
-            Log.e(TAG, "读取最近一次扫描记录失败，已忽略损坏数据", throwable)
-        }.getOrNull()
+    fun save(context: Context, archive: ScanArchive) {
+        pending.trySend(context.applicationContext to archive)
     }
+    suspend fun load(context: Context): ScanArchive = withContext(Dispatchers.IO) {
+        val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        val archive = prefs.getString(ARCHIVE_KEY, null)?.let { runCatching { decode(it) }.getOrNull() }
+        if (archive != null) return@withContext archive.interrupted()
+        // Keep legacy keys intact: migration must never delete the only recoverable copy.
+        runCatching {
+            val suspicious = prefs.getString("key_suspicious_devices", null) ?: return@runCatching ScanArchive()
+            val trusted = prefs.getString("key_trusted_devices", null) ?: return@runCatching ScanArchive()
+            legacy(suspicious, trusted, prefs.getString("summary", null))
+        }.getOrElse { ScanArchive() }
+    }
+    internal fun legacy(suspicious: String, trusted: String, summary: String?): ScanArchive {
+        val record = ScanRecord("legacy", 0, null, "", null, ScanCoverage(),
+            summary ?: "Legacy scan record — rescan to obtain evidence.",
+            deserializeDeviceList(suspicious) + deserializeDeviceList(trusted))
+        // Protect the previous record during migration, without claiming its completion is known.
+        return ScanArchive(recent = record, complete = record)
+    }
+    internal fun encode(archive: ScanArchive): String = JSONObject().apply {
+        put("version", 2)
+        archive.recent?.let { put("recent", encodeRecord(it)) }
+        archive.complete?.let { put("complete", encodeRecord(it)) }
+    }.toString()
+    internal fun decode(json: String): ScanArchive {
+        val root = JSONObject(json)
+        require(root.getInt("version") == 2)
+        return ScanArchive(root.optJSONObject("recent")?.let(::decodeRecord), root.optJSONObject("complete")?.let(::decodeRecord))
+    }
+    private fun encodeRecord(record: ScanRecord) = JSONObject().apply {
+        put("id", record.id); put("startedAt", record.startedAt)
+        record.endedAt?.let { put("endedAt", it) }
+        put("network", record.network); record.status?.let { put("status", it.name) }
+        put("planned", record.coverage.planned); put("total", record.coverage.total)
+        put("checked", record.coverage.checked); put("analyzed", record.coverage.analyzed)
+        put("summary", record.summary); put("devices", serializeDeviceList(record.devices))
+    }
+    private fun decodeRecord(json: JSONObject) = ScanRecord(
+        json.getString("id"), json.getLong("startedAt"), if (json.has("endedAt")) json.getLong("endedAt") else null,
+        json.getString("network"), if (json.has("status")) ScanStatus.valueOf(json.getString("status")) else null,
+        ScanCoverage(json.getInt("planned"), json.getLong("total"), json.getInt("checked"), json.getInt("analyzed")),
+        json.getString("summary"), deserializeDeviceList(json.getJSONArray("devices").toString()))
 
     private fun serializeDeviceList(devices: List<WifiDevice>): JSONArray {
         val jsonArray = JSONArray()
@@ -104,7 +122,7 @@ object ScanHistoryStore {
                     signalColor = jsonObject.optInt("signalColor"),
                     brandModel = jsonObject.optString("brandModel"),
                     mac = jsonObject.optString("mac"),
-                    connected = false,
+                    connected = jsonObject.optBoolean("connected", false),
                     rssi = jsonObject.optInt("rssi"),
                     riskLevel = if (jsonObject.optString("finding") == Finding.CAMERA_FEATURES.name) 1 else 0,
                     finding = runCatching { Finding.valueOf(jsonObject.optString("finding")) }.getOrDefault(Finding.LEGACY),

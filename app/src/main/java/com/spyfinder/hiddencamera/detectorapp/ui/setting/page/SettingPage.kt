@@ -95,7 +95,7 @@ fun SettingPage() {
                 SettingItemView(settingItemList[index].let { it.first to context.getString(it.second) }) {
                     when(settingItemList[index].second) {
                         R.string.share_app -> {
-                            ShareUtils.shareTextWithHighlightedLinks(context, context.getString(R.string.share_app), "https://play.google.com/store/apps/details?id=" + context.packageName)
+                            ShareUtils.shareTextWithHighlightedLinks(context, context.getString(R.string.share_body), "https://play.google.com/store/apps/details?id=" + context.packageName)
                         }
                         R.string.privacy_policy -> {
                             LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.app_name))

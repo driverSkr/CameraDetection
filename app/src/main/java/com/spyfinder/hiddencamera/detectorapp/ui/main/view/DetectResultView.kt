@@ -1,6 +1,8 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
 
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanHistoryStore
+import com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -71,6 +73,7 @@ fun DetectResultView() {
     val resultTrustedDevices = localMain.resultTrustedDevices
     val allDevices = (resultSuspiciousDevices + resultTrustedDevices).distinctBy { it.ip }
     val scope = rememberCoroutineScope()
+    val saveFailed by ScanHistoryStore.saveFailed.collectAsState()
     val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
     var checking by remember { mutableStateOf(false) }
     val shouldRefreshSubscribeStateAfterSubscribe = rememberSaveable { mutableStateOf(false) }
@@ -194,6 +197,38 @@ fun DetectResultView() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
+                    if (saveFailed) {
+                        Text(context.getString(R.string.history_save_failed), color = White60, fontSize = 12.sp)
+                        Text(context.getString(R.string.history_retry_save), color = Color(0xFF00C46F), fontSize = 12.sp,
+                            modifier = Modifier.clickable { localMain.retryHistorySave() }.padding(vertical = 8.dp))
+                    }
+                    if (localMain.isShowingLatestHistoryResult) {
+                        if (localMain.hasHistoryChoice) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf(false to R.string.history_recent, true to if (localMain.archive.complete?.status == ScanStatus.COMPLETE) R.string.history_complete else R.string.history_previous).forEach { (complete, label) ->
+                                    Text(context.getString(label), fontSize = 12.sp,
+                                        color = if (localMain.showingCompleteHistory == complete) Color(0xFF00C46F) else White60,
+                                        modifier = Modifier.weight(1f).background(White10, RoundedCornerShape(999.dp))
+                                            .clickable { localMain.selectHistory(complete) }.padding(horizontal = 12.dp, vertical = 10.dp))
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        localMain.displayedHistory?.let { record ->
+                            val label = when (record.status) {
+                                ScanStatus.COMPLETE -> R.string.history_status_complete
+                                ScanStatus.PARTIAL -> R.string.history_status_partial
+                                ScanStatus.CANCELLED -> R.string.history_status_cancelled
+                                ScanStatus.FAILED -> R.string.history_status_failed
+                                ScanStatus.RUNNING -> R.string.history_status_running
+                                else -> R.string.history_status_legacy
+                            }
+                            Text(context.getString(label), color = White60, fontSize = 12.sp)
+                            if (record.startedAt > 0) Text(context.getString(R.string.history_meta,
+                                java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(java.util.Date(record.startedAt)),
+                                record.network, record.coverage.checked, record.coverage.total, record.coverage.analyzed), color = White60, fontSize = 12.sp)
+                        }
+                    }
                     Text(ScanStrings.text(context, if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage), color = White60, fontSize = 12.sp)
                     Spacer(Modifier.height(6.dp))
                     Text(context.getString(R.string.result_explanation), color = White60, fontSize = 12.sp)

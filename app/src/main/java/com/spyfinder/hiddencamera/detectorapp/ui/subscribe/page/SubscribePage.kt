@@ -68,7 +68,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
     val activity = context.findBaseActivityVBind() ?: return
     val vm: SubscribeViewModel = viewModel(activity)
     val owner = LocalLifecycleOwner.current
-    LaunchedEffect(Unit) { vm.load(context); vm.refreshOnResume() }
+    LaunchedEffect(Unit) { vm.load(context) }
     DisposableEffect(owner, vm) {
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) vm.refreshOnResume() }
         owner.lifecycle.addObserver(observer)

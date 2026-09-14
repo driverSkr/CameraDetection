@@ -100,8 +100,11 @@ fun DetectCheckView() {
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(context.getString(R.string.title_wifi_scan), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
-                Spacer(modifier = Modifier.weight(1f))
+                Text(context.getString(R.string.title_wifi_scan), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (localMain.hasScanHistory && localMain.isStartDetect.value && localMain.scanStatus != ScanStatus.RUNNING) {
+                    Text(context.getString(R.string.action_history), color = White60, fontSize = 12.sp,
+                        modifier = Modifier.clickable { localMain.openLatestResult() }.padding(horizontal = 8.dp, vertical = 12.dp))
+                }
                 if (!isSubscribed) {
                     // 未订阅时展示皇冠入口，订阅后自动隐藏。
                     Image(

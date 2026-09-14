@@ -65,7 +65,10 @@ import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 import kotlinx.coroutines.launch
-import kotlin.math.sqrt
+import com.spyfinder.hiddencamera.detectorapp.utils.MagneticReading
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /**
  * 传感器页
@@ -73,11 +76,16 @@ import kotlin.math.sqrt
 @Composable
 fun SensorPage() {
     val context = LocalContext.current
+    val readingLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val scope = rememberCoroutineScope()
     val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
     val magneticSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) }
     val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
-    var magneticGauge by remember { mutableStateOf(0) }
+    var reading by remember { mutableStateOf<MagneticReading?>(null) }
+    val magneticGauge = reading?.gauge ?: 0
+    var sensorError by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val selectedTab = com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity.current.selectTabIndex.intValue
     var isListening by remember { mutableStateOf(false) } // 控制是否监听传感器
 
     val shouldStartDetectionAfterSubscribe = androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
@@ -90,66 +98,44 @@ fun SensorPage() {
             val subscribed = SubscriptionGate.hasAccess()
             if (subscribed) {
                 Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "after_subscribe")
+                sensorError = false
                 isListening = true
             }
             shouldStartDetectionAfterSubscribe.value = false
         }
     }
 
-    val magneticSensorListener = remember {
-        object : SensorEventListener {
+    DisposableEffect(lifecycleOwner, isListening, selectedTab) {
+        var registered = false
+        val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent?) {
-                event?.let {
-                    if (it.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
-                        val x = it.values[0]
-                        val y = it.values[1]
-                        val z = it.values[2]
-
-                        // 计算磁场强度（微特斯拉）
-                        val magnitude = sqrt(x * x + y * y + z * z)
-
-                        // 将磁场强度转换为0-100的百分比值
-                        // 地球磁场通常在25-65 μT之间，我们设置一个合理的范围
-                        val normalizedValue = when {
-                            magnitude < 20 -> 0 // 低于20 μT认为是异常低
-                            magnitude > 1000 -> 100 // 高于200 μT认为是强磁场
-                            else -> ((magnitude - 20) / (1000 - 20) * 100).toInt()
-                        }
-
-                        Log.e("SensorPage", "磁场强度：${magnitude.toInt()} μT，百分比：$normalizedValue%")
-
-                        magneticGauge = normalizedValue
-                    }
+                if (registered && event?.sensor?.type == Sensor.TYPE_MAGNETIC_FIELD && event.values.size >= 3) {
+                    MagneticReading.from(event.values[0], event.values[1], event.values[2])?.let { reading = it }
                 }
             }
-
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
         }
-    }
-
-    // 根据isListening状态注册或取消注册传感器监听
-    DisposableEffect(isListening) {
-        if (isListening && magneticSensor != null) {
-            sensorManager.registerListener(
-                magneticSensorListener,
-                magneticSensor,
-                SensorManager.SENSOR_DELAY_NORMAL
-            )
-            Log.d("SensorPage", "开始监听磁场传感器")
-        } else {
-            if (magneticSensor != null) {
-                sensorManager.unregisterListener(magneticSensorListener, magneticSensor)
-                magneticGauge = 0
-                Log.d("SensorPage", "停止监听磁场传感器")
+        fun unregister() {
+            registered = false
+            sensorManager.unregisterListener(listener)
+            reading = null
+        }
+        fun sync() {
+            val shouldRegister = isListening && selectedTab == 1 && lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+            if (!shouldRegister) unregister()
+            else if (!registered) {
+                reading = null
+                registered = magneticSensor != null && runCatching {
+                    sensorManager.registerListener(listener, magneticSensor, SensorManager.SENSOR_DELAY_NORMAL)
+                }.getOrDefault(false)
+                sensorError = !registered
+                if (!registered) isListening = false
             }
         }
-
-        onDispose {
-            if (magneticSensor != null) {
-                sensorManager.unregisterListener(magneticSensorListener, magneticSensor)
-                Log.d("SensorPage", "停止监听磁场传感器")
-            }
-        }
+        val observer = LifecycleEventObserver { _, _ -> sync() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        sync()
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer); unregister() }
     }
 
     // 计算旋转角度并添加动画
@@ -183,7 +169,7 @@ fun SensorPage() {
         if (isListening) {
             shouldStartDetectionAfterSubscribe.value = false
             // 磁场检测停止埋点，记录用户主动结束检测时的读数。
-            Event.event(context, Event.MAGNETIC_DETECT_STOP, Event.PARAM_GAUGE to magneticGauge)
+            Event.event(context, Event.MAGNETIC_DETECT_STOP, Event.PARAM_GAUGE to magneticGauge, "micro_tesla" to reading?.microTesla)
             isListening = false
             return
         }
@@ -198,6 +184,7 @@ fun SensorPage() {
             if (subscribed) {
                 shouldStartDetectionAfterSubscribe.value = false
                 Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "sensor_page")
+                sensorError = false
                 isListening = true
             } else {
                 if (!SubscribeHelper.canOfferPurchase) {
@@ -256,7 +243,7 @@ fun SensorPage() {
                             baselineShift = BaselineShift(0f) // 调整符号的垂直位置
                         )
                     ) {
-                        append("$magneticGauge")
+                        append(reading?.let { String.format(readingLocale, "%.1f", it.microTesla) } ?: "—")
                     }
                     withStyle(
                         style = SpanStyle(
@@ -289,7 +276,7 @@ fun SensorPage() {
                 Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = context.getString(R.string.magnetic_help),
+                    text = context.getString(if (sensorError) R.string.magnetic_sensor_failed else R.string.magnetic_help),
                     color = Color(0xFFFFFFFF).copy(0.6f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W400,

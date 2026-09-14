@@ -10,7 +10,9 @@ import android.util.Xml
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
+import java.util.concurrent.PriorityBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import android.system.ErrnoException
 import org.xmlpull.v1.XmlPullParser
 import java.io.StringReader
 import java.net.*
@@ -20,16 +22,45 @@ import java.util.concurrent.atomic.AtomicInteger
 
 data class WifiTarget(val network: Network, val ip: String, val prefix: Int, val gateway: String?)
 data class ScanOutput(val devices: List<WifiDevice>, val partial: Boolean, val message: String)
+data class ScanCoverage(val planned: Int = 0, val total: Long = 0, val checked: Int = 0, val analyzed: Int = 0)
 
 class NetworkScanner(private val context: Context, val resources: ScanResources = ScanResources()) {
     private val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val found = ConcurrentHashMap<String, List<Evidence>>()
-    private val analyzed = ConcurrentHashMap<String, WifiDevice>()
-    private val checked = AtomicInteger()
-    private var planned = 0
-    private var reachable = 0
-    fun snapshot(): List<WifiDevice> = found.keys.map { ip -> analyzed[ip] ?: device(ip, found[ip].orEmpty(), false, true) }.sortedBy { it.ip }
+    private data class Analysis(val evidence: List<Evidence>, val complete: Boolean)
+    private data class Pending(val ip: String, val priority: Int, val order: Int) : Comparable<Pending> {
+        override fun compareTo(other: Pending) = compareValuesBy(this, other, { it.priority }, { it.order })
+    }
+    private val analyzed = ConcurrentHashMap<String, Analysis>()
+    private val pending = PriorityBlockingQueue<Pending>()
+    private val sequence = AtomicInteger()
+    private val discoveryCount = AtomicInteger()
+    private val limited = AtomicBoolean()
+    @Volatile private var planned = 0
+    @Volatile private var total = 0L
+    @Volatile private var scanDeadline = Long.MAX_VALUE
     private var target: WifiTarget? = null
+    fun coverage() = ScanCoverage(planned, total, discoveryCount.get(), analyzed.size)
+    fun snapshot(): List<WifiDevice> = synchronized(found) {
+        found.map { (ip, advertised) ->
+            val result = analyzed[ip]
+            device(ip, (advertised + result?.evidence.orEmpty()).distinct(), result?.complete == true, result?.complete != true)
+        }.sortedBy { ScanRules.ipv4(it.ip) }
+    }
+    private fun discovered(ip: String, evidence: List<Evidence>) = synchronized(found) {
+        val old = found[ip]
+        if (old == null && found.size >= 1024) { limited.set(true); return@synchronized }
+        val combined = (old.orEmpty() + evidence).distinct()
+        if (combined.size > 64) limited.set(true)
+        found[ip] = combined.take(64)
+        if (old == null) pending.offer(Pending(ip, if (evidence.any { it.cameraRelated }) 0 else 1, sequence.incrementAndGet()))
+        else if (evidence.any { it.cameraRelated }) {
+            pending.firstOrNull { it.ip == ip && it.priority != 0 }?.let {
+                if (pending.remove(it)) pending.offer(it.copy(priority = 0))
+            }
+        }
+        Unit
+    }
 
     fun selectNetwork(): WifiTarget {
         val networks = cm.allNetworks.filter { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true }
@@ -49,52 +80,65 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
 
     suspend fun scan(t: WifiTarget, onProgress: (String, List<WifiDevice>, Int) -> Unit): ScanOutput = withContext(Dispatchers.IO) {
         target = t
+        val started = SystemClock.elapsedRealtime()
+        scanDeadline = started + 45_000
+        val discoveryDeadline = started + 33_000
         val targets = ScanRules.targets(t.ip, t.prefix, t.gateway)
         planned = targets.addresses.size
-        found[t.ip] = listOf(Evidence("Local", "Current phone"))
+        total = targets.total
+        discovered(t.ip, listOf(Evidence("Local", "Current phone")))
         onProgress("Discovering devices in ${t.ip}/${t.prefix}…", snapshot(), 0)
-        discoverServices(t)
-        // TCP discovery works even when ICMP is blocked. Refusal also proves the host answered.
-        val discoveryCount = AtomicInteger()
-        bounded(targets.addresses, 32) { ip ->
-            if (!found.containsKey(ip)) {
-                for (port in listOf(80, 443, 554)) {
-                    if (reachable(t, ip, port)) { found.putIfAbsent(ip, emptyList()); break }
+        coroutineScope {
+            val reporter = launch {
+                while (isActive) {
+                    delay(200)
+                    val coverage = coverage()
+                    val message = "Discovering: ${coverage.checked}/$planned addresses checked\nAnalyzing services: ${coverage.analyzed}/${found.size} devices"
+                    val progress = coverage.checked * 60 / planned.coerceAtLeast(1) + coverage.analyzed * 39 / found.size.coerceAtLeast(1)
+                    onProgress(message, snapshot(), progress.coerceAtMost(99))
                 }
             }
-            val count = discoveryCount.incrementAndGet()
-            if (count % 16 == 0 || count == planned) onProgress("Discovering: $count/$planned addresses checked", snapshot(), count * 60 / planned.coerceAtLeast(1))
-        }
-        reachable = found.size
-        onProgress("Analyzing services: 0/$reachable devices", snapshot(), 60)
-        bounded(found.keys.toList(), 8) { ip ->
-            analyzed[ip] = analyze(t, ip, found[ip].orEmpty())
-            val count = checked.incrementAndGet()
-            onProgress("Analyzing services: $count/$reachable devices", snapshot(), 60 + count * 39 / reachable.coerceAtLeast(1))
+            try {
+                ScanPipeline(SystemClock::elapsedRealtime, discoveryDeadline, scanDeadline, { resources.closed }).run(
+                    planned, { discoverServices(t) }, { index ->
+                        val ip = targets.addresses[index]
+                        if (found.containsKey(ip)) discoveryCount.incrementAndGet()
+                        else {
+                            val attempt = ProbeSupport.discover({ !resources.closed && SystemClock.elapsedRealtime() < discoveryDeadline }) {
+                                probe(t, ip, it, discoveryDeadline)
+                            }
+                            if (attempt.uncertain) limited.set(true)
+                            if (attempt.responded) discovered(ip, emptyList())
+                            if (attempt.checked) discoveryCount.incrementAndGet()
+                        }
+                    }, { pending.poll()?.ip }, { ip -> analyzed[ip] = analyze(t, ip) })
+            } finally { reporter.cancelAndJoin() }
         }
         val devices = snapshot()
         val incomplete = devices.count { !it.analysisComplete }
-        val partial = targets.limited || incomplete > 0
+        val partial = targets.limited || limited.get() || discoveryCount.get() < planned || incomplete > 0
         ScanOutput(devices, partial, buildString {
             append(if (partial) "Partially completed. " else "Scan completed. ")
-            append("Checked $planned of ${targets.total} IPv4 addresses; ${devices.size} devices responded.")
+            append("Checked ${discoveryCount.get()} of ${targets.total} IPv4 addresses; ${devices.size} devices responded.")
             if (incomplete > 0) append(" $incomplete devices could not be fully analyzed.")
             append(" Devices that do not respond or are isolated by the network may be missed. No result proves a room is safe.")
         })
     }
 
-    private suspend fun <T> bounded(items: List<T>, workers: Int, block: suspend (T) -> Unit) = coroutineScope {
-        val queue = Channel<T>(workers)
-        launch { try { for (item in items) queue.send(item) } finally { queue.close() } }
-        repeat(minOf(workers, items.size)) { launch { for (item in queue) { ensureActive(); if (resources.closed) throw CancellationException(); block(item) } } }
+    private fun errorResult(error: Throwable): ProbeResult {
+        val causes = generateSequence(error) { it.cause }.take(16)
+        val errno = causes.filterIsInstance<ErrnoException>().firstOrNull()?.errno
+        return ProbeSupport.classify(error, errno, resources.closed)
     }
-
-    private fun reachable(t: WifiTarget, ip: String, port: Int): Boolean {
+    private fun probe(t: WifiTarget, ip: String, port: Int, deadline: Long): ProbeResult {
+        if (resources.closed) throw CancellationException()
         val socket = resources.track(t.network.socketFactory.createSocket())
-        return try { socket.connect(InetSocketAddress(ip, port), 450); true }
-        catch (_: ConnectException) { true }
-        catch (_: java.io.IOException) { false }
-        finally { resources.release(socket) }
+        return try {
+            socket.connect(InetSocketAddress(ip, port), (deadline - SystemClock.elapsedRealtime()).coerceIn(1, 450).toInt())
+            ProbeResult.OPEN
+        } catch (e: java.io.IOException) {
+            errorResult(e)
+        } finally { resources.release(socket) }
     }
 
     private fun device(ip: String, evidence: List<Evidence>, complete: Boolean, incomplete: Boolean): WifiDevice {
@@ -107,13 +151,13 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             analysisComplete = complete, ruleVersion = ScanRules.VERSION)
     }
 
-    private fun analyze(t: WifiTarget, ip: String, discovered: List<Evidence>): WifiDevice {
-        val evidence = discovered.toMutableList()
-        if (ip == t.ip) return device(ip, evidence, true, false)
+    private fun analyze(t: WifiTarget, ip: String): Analysis {
+        val evidence = mutableListOf<Evidence>()
+        if (ip == t.ip) return Analysis(evidence, true)
         if (ip == t.gateway) evidence.add(Evidence("Network", "Configured Wi-Fi gateway"))
-        val deadline = SystemClock.elapsedRealtime() + 8_000
+        val deadline = minOf(scanDeadline, SystemClock.elapsedRealtime() + 8_000)
         var incomplete = false
-        for (port in listOf(554, 8554, 80, 443, 5000)) {
+        for (port in ProbeSupport.ports) {
             if (resources.closed) throw CancellationException()
             val remaining = deadline - SystemClock.elapsedRealtime()
             if (remaining <= 0) { incomplete = true; break }
@@ -126,19 +170,21 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                     val request = if (port == 554 || port == 8554) "OPTIONS rtsp://$ip:$port/ RTSP/1.0\r\nCSeq: 1\r\n\r\n"
                         else "HEAD / HTTP/1.1\r\nHost: $ip\r\nConnection: close\r\n\r\n"
                     socket.getOutputStream().write(request.toByteArray(Charsets.US_ASCII))
-                    socket.soTimeout = (deadline - SystemClock.elapsedRealtime()).coerceIn(1, 1500).toInt()
-                    val bytes = ByteArray(4096)
-                    val n = socket.getInputStream().read(bytes)
-                    val response = if (n > 0) String(bytes, 0, n, Charsets.UTF_8) else ""
+                    val response = ProbeSupport.readStatusLine(socket.getInputStream(),
+                        minOf(deadline, SystemClock.elapsedRealtime() + 1500), SystemClock::elapsedRealtime,
+                        { socket.soTimeout = it }, { resources.closed })
                     if (DiscoveryProtocols.isRtsp(response)) evidence.add(Evidence("RTSP", "Video protocol responded on port $port; verify the device manually", true))
                     else if (response.startsWith("HTTP/1.")) evidence.add(Evidence("HTTP", "Web service responded on port $port"))
                 }
-            } catch (_: SocketTimeoutException) { incomplete = true }
-            catch (_: ConnectException) { /* Refused port is a completed negative probe. */ }
-            catch (_: java.io.IOException) { incomplete = true }
-            finally { resources.release(socket) }
+            } catch (e: java.io.IOException) {
+                when (errorResult(e)) {
+                    ProbeResult.REFUSED -> Unit
+                    ProbeResult.CANCELLED -> throw CancellationException()
+                    else -> incomplete = true
+                }
+            } finally { resources.release(socket) }
         }
-        return device(ip, evidence.distinct(), !incomplete, incomplete)
+        return Analysis(evidence.distinct(), !incomplete)
     }
 
     private suspend fun discoverServices(t: WifiTarget) = coroutineScope {
@@ -178,7 +224,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                     "ssdp" -> DiscoveryProtocols.ssdpEvidence(String(payload, Charsets.UTF_8))
                     else -> onvifEvidence(String(payload, Charsets.UTF_8), requestId)
                 }
-                if (evidence.isNotEmpty()) found.compute(ip) { _, old -> (old.orEmpty() + evidence).distinct() }
+                if (evidence.isNotEmpty()) discovered(ip, evidence)
             }
         } catch (_: java.io.IOException) { /* No multicast response does not imply no devices. */ }
         finally { resources.release(socket) }

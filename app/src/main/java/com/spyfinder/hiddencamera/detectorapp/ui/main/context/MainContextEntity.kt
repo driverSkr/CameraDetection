@@ -12,6 +12,8 @@ import com.spyfinder.hiddencamera.detectorapp.DetectorApp
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanHistoryStore
 import com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanArchive
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanRecord
 
 class MainContextEntity(
     private val appContext: Context? = DetectorApp.INSTANCE?.applicationContext
@@ -42,77 +44,79 @@ class MainContextEntity(
     val resultTrustedDevices: SnapshotStateList<WifiDevice>
         get() = if (isShowingLatestHistoryResult) latestTrustedDevices else trustedDevices
 
+    var currentRecordId = ""
+    var archive by mutableStateOf(ScanArchive())
+        private set
+    var showingCompleteHistory by mutableStateOf(false)
+        private set
+    val hasHistoryChoice get() = archive.recent != null && archive.complete != null && archive.recent?.id != archive.complete?.id
+    val displayedHistory get() = if (showingCompleteHistory) archive.complete else archive.recent
+
     fun markDeviceAsSafe(device: WifiDevice) {
-        val updatedDevice = device.copy(userTrusted = !device.userTrusted)
-
-        // Trust is a user annotation, not evidence that changes the detection conclusion.
-        val lists = if (isShowingLatestHistoryResult) listOf(latestSuspiciousDevices, latestTrustedDevices)
-            else if (scanStatus == ScanStatus.COMPLETE) listOf(suspiciousDevices, trustedDevices, latestSuspiciousDevices, latestTrustedDevices)
-            else listOf(suspiciousDevices, trustedDevices)
-        lists.forEach { list ->
-            val index = list.indexOfFirst { isSameDevice(it, device) }
-            if (index >= 0) list[index] = updatedDevice
+        if (device.isCurrentPhone) return
+        val recordId = if (isShowingLatestHistoryResult) displayedHistory?.id else currentRecordId
+        if (recordId == null) return
+        val trusted = !device.userTrusted
+        if (recordId == currentRecordId) {
+            listOf(suspiciousDevices, trustedDevices).forEach { list ->
+                val index = list.indexOfFirst { it.ip == device.ip }
+                if (index >= 0) list[index] = list[index].copy(userTrusted = trusted)
+            }
         }
-        if (hasScanHistory) persistLatestScanResult()
+        archive = archive.trust(recordId, device.ip, trusted)
+        refreshHistory()
+        persist()
     }
 
-    fun saveLatestScanResult(suspiciousList: List<WifiDevice>, trustedList: List<WifiDevice>) {
-        latestSuspiciousDevices.clear()
-        latestSuspiciousDevices.addAll(suspiciousList.map { it.copy() })
-        latestTrustedDevices.clear()
-        latestTrustedDevices.addAll(trustedList.map { it.copy() })
-        hasScanHistory = true
-        latestMessage = scanMessage
-        persistLatestScanResult()
+    fun saveRecord(record: ScanRecord) {
+        val updated = archive.record(record)
+        if (updated == archive) return
+        archive = updated
+        refreshHistory()
+        persist()
     }
-
-    fun restoreLatestScanResult() {
+    suspend fun restoreLatestScanResult() {
         val context = appContext ?: return
-        val latestScanHistory = ScanHistoryStore.loadLatestScanResult(context) ?: return
-
-        latestSuspiciousDevices.clear()
-        latestSuspiciousDevices.addAll(latestScanHistory.suspiciousDevices.map { it.copy() })
-        latestTrustedDevices.clear()
-        latestTrustedDevices.addAll(latestScanHistory.trustedDevices.map { it.copy() })
-        hasScanHistory = true
-        latestMessage = latestScanHistory.summary
+        archive = ScanHistoryStore.load(context)
+        refreshHistory()
     }
-
+    private fun refreshHistory() {
+        hasScanHistory = archive.recent != null || archive.complete != null
+        if (archive.recent == null) showingCompleteHistory = true
+        val record = displayedHistory
+        latestSuspiciousDevices.replaceDevices(record?.devices.orEmpty().filter { it.riskLevel == 1 })
+        latestTrustedDevices.replaceDevices(record?.devices.orEmpty().filter { it.riskLevel != 1 })
+        latestMessage = record?.summary.orEmpty()
+    }
+    fun selectHistory(complete: Boolean) {
+        showingCompleteHistory = complete && archive.complete != null
+        refreshHistory()
+    }
     fun openLatestResult() {
-        if (!hasScanHistory) {
-            return
-        }
+        if (!hasScanHistory || scanStatus == ScanStatus.RUNNING) return
+        selectHistory(false)
         isShowingLatestHistoryResult = true
         isShowResult.value = true
     }
-
     fun openCurrentResult() {
         isShowingLatestHistoryResult = false
         isShowResult.value = true
     }
-
     fun closeDetectResult() {
         isShowingLatestHistoryResult = false
         isShowResult.value = false
     }
-
-    private fun isSameDevice(left: WifiDevice, right: WifiDevice): Boolean {
-        return when {
-            left.mac.isNotBlank() && right.mac.isNotBlank() -> left.mac == right.mac
-            left.ip.isNotBlank() && right.ip.isNotBlank() -> left.ip == right.ip
-            else -> left.name == right.name && left.type == right.type
-        }
-    }
-
-    private fun persistLatestScanResult() {
-        val context = appContext ?: return
-        ScanHistoryStore.saveLatestScanResult(
-            context = context,
-            suspiciousDevices = latestSuspiciousDevices,
-            trustedDevices = latestTrustedDevices,
-            summary = latestMessage
-        )
-    }
+    fun retryHistorySave() = persist()
+    private fun persist() { appContext?.let { ScanHistoryStore.save(it, archive) } }
 }
 
+/** Preserve unchanged rows instead of clearing the entire observable list every update. */
+fun SnapshotStateList<WifiDevice>.replaceDevices(devices: List<WifiDevice>) {
+    androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+        while (size > devices.size) removeAt(lastIndex)
+        devices.forEachIndexed { index, device ->
+            if (index >= size) add(device) else if (this[index] != device) this[index] = device
+        }
+    }
+}
 val LocalMainContextEntity = compositionLocalOf { MainContextEntity() }

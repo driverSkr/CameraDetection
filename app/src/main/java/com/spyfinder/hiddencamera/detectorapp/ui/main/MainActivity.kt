@@ -48,7 +48,6 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     override fun onResume() {
         super.onResume()
-        SubscribeHelper.refreshSubscribeState()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -14,7 +14,7 @@ import kotlinx.coroutines.sync.withLock
 
 object SubscribeHelper {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val mutex = Mutex()
+    private val refresh = SharedRefresh<Boolean>(scope)
     private val subscribed = MutableStateFlow(false)
     private val access = MutableStateFlow(AccessStatus.UNKNOWN)
     val isSubscribedFlow = subscribed.asStateFlow()
@@ -26,16 +26,19 @@ object SubscribeHelper {
     private var subscriptionActive: Boolean? = null
     private var lifetimeActive: Boolean? = null
     private var revision = 0L
-    private var lastRefresh = 0L
+    @Volatile private var lastRefresh = 0L
     private var appContext: Context? = null
 
     fun init(context: Context) { appContext = context.applicationContext; refreshSubscribeState() }
-    fun refreshSubscribeState() { scope.launch { refreshSubscribeStateSuspend(force = true) } }
+    fun refreshSubscribeState() { scope.launch { refreshSubscribeStateSuspend() } }
     suspend fun isSubscribe(): Boolean = refreshSubscribeStateSuspend()
 
-    suspend fun refreshSubscribeStateSuspend(force: Boolean = false): Boolean = mutex.withLock {
+    suspend fun refreshSubscribeStateSuspend(force: Boolean = false): Boolean {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (!force && now - lastRefresh < 2_000) return@withLock isSubscribed
+        if (!force && lastRefresh > 0 && now - lastRefresh < 2_000) return isSubscribed
+        return refresh.run(fresh = force) { queryEntitlements() }
+    }
+    private suspend fun queryEntitlements(): Boolean {
         val queryRevision = synchronized(this) { revision }
         val context = appContext ?: DetectorApp.INSTANCE?.applicationContext
         val connected = if (context == null) false else querySafely { BillFactory.init(context) == 0 } == true
@@ -55,7 +58,7 @@ object SubscribeHelper {
             }
             lastRefresh = android.os.SystemClock.elapsedRealtime()
         }
-        isSubscribed
+        return isSubscribed
     }
     private suspend fun querySafely(block: suspend () -> Boolean): Boolean? = try {
         withTimeoutOrNull(8_000) { block() }

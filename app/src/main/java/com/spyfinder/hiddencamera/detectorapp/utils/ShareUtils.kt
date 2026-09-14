@@ -10,12 +10,13 @@ object ShareUtils {
 
     fun shareTextWithHighlightedLinks(context: Context, text: String,myUrl: String) {
         // 检测文本中的所有链接并高亮
-        val highlightedHtml = highlightUrlsInText(text,myUrl)
+        val body = ShareText.body(text, myUrl)
+        val highlightedHtml = highlightUrlsInText(android.text.TextUtils.htmlEncode(body), myUrl)
 
         val shareIntent = Intent().apply {
             action = Intent.ACTION_SEND
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)  // 纯文本
+            putExtra(Intent.EXTRA_TEXT, body)  // 纯文本
             putExtra(Intent.EXTRA_HTML_TEXT, highlightedHtml)  // HTML 高亮版
             putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.share_subject))
         }

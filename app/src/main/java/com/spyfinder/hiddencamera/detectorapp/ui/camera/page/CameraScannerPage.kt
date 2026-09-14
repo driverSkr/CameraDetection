@@ -1,6 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.camera.page
 
 import android.Manifest
+import com.spyfinder.hiddencamera.detectorapp.utils.LatestRequest
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Camera
 import androidx.compose.foundation.Image
@@ -81,16 +82,37 @@ fun CameraScannerPage() {
     var minZoom by remember { mutableFloatStateOf(1f) }
     var maxZoom by remember { mutableFloatStateOf(1f) }
     var error by remember { mutableStateOf("") }
+    var zoomError by remember { mutableStateOf("") }
+    var torchError by remember { mutableStateOf("") }
+    val zoomRequests = remember { LatestRequest() }
+    val torchRequests = remember { LatestRequest() }
+    fun invalidateControls() { zoomRequests.invalidate(); torchRequests.invalidate(); zoomError = ""; torchError = "" }
+    fun cancelledOperation(error: Throwable): Boolean = generateSequence(error) { it.cause }.take(16).any {
+        it is androidx.camera.core.CameraControl.OperationCanceledException || it is java.util.concurrent.CancellationException
+    }
+    fun setZoom(value: Float) {
+        zoom = value.coerceIn(minZoom, maxZoom)
+        val activeCamera = camera ?: return
+        val request = zoomRequests.begin()
+        val future = activeCamera.cameraControl.setZoomRatio(zoom)
+        future.addListener({
+            if (camera === activeCamera && zoomRequests.accepts(request) && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                runCatching { future.get() }.onSuccess { zoomError = "" }.onFailure {
+                    if (!cancelledOperation(it)) zoomError = context.getString(R.string.zoom_error)
+                }
+            }
+        }, ContextCompat.getMainExecutor(context))
+    }
     var showHelp by rememberSaveable { mutableStateOf(true) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
     LaunchedEffect(Unit) { if (!granted && !requested) { requested = true; launcher.launch(Manifest.permission.CAMERA) } }
     DisposableEffect(owner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-            if (event == Lifecycle.Event.ON_STOP) { camera?.cameraControl?.enableTorch(false); torch = false }
+            if (event == Lifecycle.Event.ON_STOP) { invalidateControls(); camera?.cameraControl?.enableTorch(false); torch = false }
         }
         owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer) }
+        onDispose { invalidateControls(); owner.lifecycle.removeObserver(observer) }
     }
     Column(modifier = Modifier.fillMaxSize().background(color = Black).statusBarsPadding().navigationBarsPadding()) {
         Box(modifier = Modifier.fillMaxWidth().height(54.dp).padding(horizontal = 12.dp)) {
@@ -104,11 +126,11 @@ fun CameraScannerPage() {
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             if (granted) CameraPreview(Modifier.fillMaxSize(), lens, retry,
                 onReady = { value, switch ->
-                    camera = value; canSwitch = switch; error = ""; torch = false
+                    invalidateControls(); camera = value; canSwitch = switch; error = ""; torch = false
                     val range = value.cameraInfo.zoomState.value
                     minZoom = range?.minZoomRatio ?: 1f; maxZoom = range?.maxZoomRatio ?: 1f
                     zoom = range?.zoomRatio ?: 1f
-                }, onError = { error = it; camera = null })
+                }, onError = { invalidateControls(); error = it; camera = null })
 
             // 滤镜层
             Box(
@@ -121,7 +143,7 @@ fun CameraScannerPage() {
                 Column(Modifier.align(Alignment.Center).padding(16.dp).fillMaxWidth().background(Color(0xFF161618), RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(if (!granted) context.getString(R.string.camera_permission_required) else error, color = White60, fontSize = 14.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CameraControl(context.getString(R.string.action_retry)) { if (!granted) launcher.launch(Manifest.permission.CAMERA) else { camera = null; retry++ } }
+                        CameraControl(context.getString(R.string.action_retry)) { if (!granted) launcher.launch(Manifest.permission.CAMERA) else { invalidateControls(); camera = null; retry++ } }
                         CameraControl(context.getString(R.string.app_settings)) { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
                     }
                 }
@@ -155,8 +177,7 @@ fun CameraScannerPage() {
 
             Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = null, modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 8.dp).clickable{
                 currentFilterColorIndex = -1
-                zoom = 1f.coerceIn(minZoom, maxZoom)
-                camera?.cameraControl?.setZoomRatio(zoom)
+                setZoom(1f)
             })
 
             Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 50.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -178,28 +199,33 @@ fun CameraScannerPage() {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
                 if (canSwitch) CameraControl(context.getString(R.string.switch_camera), enabled = camera != null) {
-                    camera = null; torch = false
+                    invalidateControls(); camera = null; torch = false
                     lens = if (lens == CameraSelector.LENS_FACING_BACK) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
                 }
                 if (camera?.cameraInfo?.hasFlashUnit() == true) CameraControl(if (torch) context.getString(R.string.light_off) else context.getString(R.string.light_on)) {
                     val next = !torch
-                    camera?.cameraControl?.enableTorch(next)?.let { future ->
-                        future.addListener({ try { future.get(); torch = next } catch (_: Exception) { error = context.getString(R.string.flashlight_error) } }, ContextCompat.getMainExecutor(context))
+                    val activeCamera = camera
+                    val request = torchRequests.begin()
+                    activeCamera?.cameraControl?.enableTorch(next)?.let { future ->
+                        future.addListener({
+                            if (camera === activeCamera && torchRequests.accepts(request) && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                                runCatching { future.get() }.onSuccess { torch = next; torchError = "" }.onFailure {
+                                    if (!cancelledOperation(it)) torchError = context.getString(R.string.flashlight_error)
+                                }
+                            }
+                        }, ContextCompat.getMainExecutor(context))
                     }
                 }
             }
+            if (torchError.isNotEmpty()) Text(torchError, color = White60, fontSize = 12.sp)
+            if (zoomError.isNotEmpty()) Text(zoomError, color = White60, fontSize = 12.sp)
             if (camera != null && maxZoom > minZoom) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(context.getString(R.string.zoom), color = White60, fontSize = 12.sp)
                     Spacer(Modifier.width(12.dp))
                     Slider(modifier = Modifier.weight(1f), value = zoom.coerceIn(minZoom, maxZoom), valueRange = minZoom..maxZoom,
                         colors = SliderDefaults.colors(thumbColor = Color(0xFF00C46F), activeTrackColor = Color(0xFF00C46F), inactiveTrackColor = White10),
-                        onValueChange = {
-                            zoom = it
-                            camera?.cameraControl?.setZoomRatio(it)?.let { future ->
-                                future.addListener({ runCatching { future.get() }.onFailure { error = context.getString(R.string.zoom_error) } }, ContextCompat.getMainExecutor(context))
-                            }
-                        })
+                        onValueChange = { setZoom(it) })
                 }
             }
         }

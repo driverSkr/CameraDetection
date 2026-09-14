@@ -184,4 +184,18 @@
     <string name="evidence_rtsp">"Video protocol responded on port %1$s; verify the device manually"</string>
     <string name="evidence_http">"Web service responded on port %1$s"</string>
     <string name="evidence_ssdp">"Advertised service: %1$s"</string>
+    <string name="magnetic_sensor_failed">"Unable to start the magnetic sensor. Please retry."</string>
+    <string name="history_recent">"Most recent"</string>
+    <string name="history_complete">"Last complete"</string>
+    <string name="history_meta">"%1$s · %2$s\nChecked %3$d/%4$d addresses; analyzed %5$d devices"</string>
+    <string name="history_status_complete">"Completed"</string>
+    <string name="history_status_partial">"Partially completed"</string>
+    <string name="history_status_cancelled">"Interrupted or cancelled"</string>
+    <string name="history_status_failed">"Failed; results may be incomplete"</string>
+    <string name="history_status_running">"In progress; saved checkpoint"</string>
+    <string name="history_status_legacy">"Legacy record; completion unknown"</string>
+    <string name="history_save_failed">"Unable to save history. Keep this screen open and retry."</string>
+    <string name="history_retry_save">"Retry saving"</string>
+    <string name="share_body">"Try this app to help inspect your surroundings."</string>
+    <string name="history_previous">"Previous saved"</string>
 </resources>
