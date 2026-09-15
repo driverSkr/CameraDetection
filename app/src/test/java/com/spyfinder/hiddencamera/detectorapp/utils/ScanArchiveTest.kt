@@ -7,6 +7,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ScanArchiveTest {
+    @Test fun deviceMetadataSurvivesHistoryAndOldRecordsRemainReadable() {
+        val original = record("metadata", ScanStatus.COMPLETE)
+        val details = mapOf("mdns_name" to "Living room", "port_8554" to "RTSP", "server_8554" to "Example/1")
+        val enriched = original.copy(devices = original.devices.map { it.copy(details = details) })
+        val archive = ScanArchive(enriched, enriched)
+        assertEquals(archive, ScanHistoryStore.decode(ScanHistoryStore.encode(archive)))
+        val json = org.json.JSONObject(ScanHistoryStore.encode(archive))
+        json.getJSONObject("records").getJSONObject("metadata").getJSONArray("devices").getJSONObject(0).remove("details")
+        assertTrue(ScanHistoryStore.decode(json.toString()).recent!!.devices.single().details.isEmpty())
+    }
     @Test fun readsV2AndWritesOneSharedV3Record() {
         val value = record("A", ScanStatus.COMPLETE)
         val archive = ScanArchive(value, value)

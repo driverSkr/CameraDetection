@@ -22,7 +22,7 @@ import kotlinx.coroutines.*
 
 enum class PurchaseUiState { IDLE, LAUNCHING, PENDING, SUCCESS, CANCELLED, FAILED }
 
-class SubscribeViewModel : ViewModel() {
+class SubscribeViewModel(private val productLoader: (suspend (Context) -> List<SubModel>)? = null) : ViewModel() {
     var products by mutableStateOf<List<SubModel>>(emptyList())
         private set
     var selected by mutableStateOf<SubModel?>(null)
@@ -33,6 +33,8 @@ class SubscribeViewModel : ViewModel() {
         private set
     var messageRes by mutableIntStateOf(0)
         private set
+    var productMessageRes by mutableIntStateOf(0)
+        private set
     private var loaded = false
     private val attempts = PurchaseAttemptGate()
     fun select(model: SubModel) { if (purchaseState != PurchaseUiState.LAUNCHING) selected = model }
@@ -40,16 +42,17 @@ class SubscribeViewModel : ViewModel() {
         if (loading || (loaded && !force)) return
         loaded = true
         loading = true
+        productMessageRes = 0
         products = emptyList(); selected = null
         viewModelScope.launch {
             try {
-                products = withTimeout(15_000) { queryProducts(context) }
+                products = withTimeout(15_000) { productLoader?.invoke(context) ?: queryProducts(context) }
                 selected = products.firstOrNull { it.id == SubHelper.getWeekPlanId() } ?: products.firstOrNull()
-                if (products.isEmpty()) messageRes = R.string.store_no_plans
+                productMessageRes = if (products.isEmpty()) R.string.store_no_plans else 0
             } catch (e: CancellationException) {
                 if (e !is TimeoutCancellationException) throw e
-                messageRes = R.string.store_timeout
-            } catch (_: Exception) { messageRes = R.string.store_prices_error }
+                productMessageRes = R.string.store_timeout
+            } catch (_: Exception) { productMessageRes = R.string.store_prices_error }
             finally { loading = false }
         }
     }

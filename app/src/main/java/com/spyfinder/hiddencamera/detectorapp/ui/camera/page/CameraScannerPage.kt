@@ -120,7 +120,7 @@ fun CameraScannerPage() {
     }
     Column(modifier = Modifier.fillMaxSize().background(color = Black).statusBarsPadding().navigationBarsPadding()) {
         Box(modifier = Modifier.fillMaxWidth().height(54.dp).padding(horizontal = 12.dp)) {
-            Image(painter = painterResource(R.drawable.svg_icon_back), contentDescription = null, modifier = Modifier.align(Alignment.CenterStart).clickable{
+            Image(painter = painterResource(R.drawable.svg_icon_back), contentDescription = context.getString(R.string.a11y_back), modifier = Modifier.align(Alignment.CenterStart).clickable{
                 context.findBaseActivityVBind()?.finish()
             })
             Image(painterResource(R.drawable.svg_icon_warning_gray), contentDescription = context.getString(R.string.inspection_tips), modifier = Modifier.align(Alignment.CenterEnd).size(24.dp).clickable { showHelp = !showHelp })
@@ -180,11 +180,11 @@ fun CameraScannerPage() {
                         fontWeight = FontWeight.W400, modifier = Modifier.weight(1f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Image(painter = painterResource(R.drawable.svg_icon_close), contentDescription = null, modifier = Modifier.clickable{ showHelp = false })
+                    Image(painter = painterResource(R.drawable.svg_icon_close), contentDescription = context.getString(R.string.a11y_close), modifier = Modifier.clickable{ showHelp = false })
                 }
             }
 
-            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = null, modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 8.dp).clickable{
+            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = context.getString(R.string.a11y_reset_camera), modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 8.dp).clickable{
                 currentFilterColorIndex = -1
                 setZoom(1f)
             })

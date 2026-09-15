@@ -123,6 +123,16 @@ class MainContextEntity(
         isShowResult.value = false
     }
     fun retryHistorySave() = persist()
+    suspend fun retryHistoryLoad() {
+        if (scanStatus == ScanStatus.RUNNING) return
+        val previous = archive
+        val loaded = appContext?.let { ScanHistoryStore.load(it) } ?: return
+        if (scanStatus != ScanStatus.RUNNING && archive === previous &&
+            (loaded.recent != null || loaded.complete != null)) {
+            archive = loaded
+            refreshHistory()
+        }
+    }
     private fun persist() { appContext?.let { ScanHistoryStore.save(it, archive) } }
 }
 

@@ -44,6 +44,7 @@ import com.spyfinder.hiddencamera.detectorapp.R
 @Composable
 fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSafe: (WifiDevice) -> Unit) {
     val context = LocalContext.current
+    val identity = com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.forDevice(device)
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(color = Color(0xFF161618), shape = RoundedCornerShape(48.dp))
@@ -64,23 +65,49 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
                 Image(painter = painterResource(R.drawable.svg_icon_wifi_info_router), modifier = Modifier.size(36.dp).align(Alignment.Center), contentDescription = null)
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(ScanStrings.text(context, device.name), modifier = Modifier.weight(1f), color = White, fontSize = 18.sp, fontWeight = FontWeight.W600, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(device.details) ?: ScanStrings.text(context, identity.type), modifier = Modifier.weight(1f), color = White, fontSize = 18.sp, fontWeight = FontWeight.W600, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.width(8.dp))
-            Image(painter = painterResource(R.drawable.svg_icon_close_30), contentDescription = null, modifier = Modifier.clickable{ dialog.dismiss() })
+            Image(painter = painterResource(R.drawable.svg_icon_close_30), contentDescription = context.getString(R.string.a11y_close), modifier = Modifier.clickable{ dialog.dismiss() })
         }
         Spacer(modifier = Modifier.height(20.dp))
-        Box(modifier = Modifier.fillMaxWidth().height(42.dp)) {
-            Text(context.getString(R.string.ip_address), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
-            Text(device.ip, color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
+        Text(ScanStrings.text(context, identity.type), color = White, fontSize = 14.sp)
+        Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
+        listOf(R.string.ip_address to device.ip,
+            R.string.mac_address to device.mac.ifBlank { context.getString(R.string.device_mac_unavailable) },
+            R.string.device_model to device.brandModel.ifBlank { context.getString(R.string.device_model_unavailable) }).forEach { (label, value) ->
+            Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                Text(context.getString(label), color = White60, fontSize = 14.sp)
+                Spacer(Modifier.height(4.dp))
+                Text(value, color = White, fontSize = 14.sp)
+            }
         }
-        Box(modifier = Modifier.fillMaxWidth().height(42.dp)) {
-            Text(context.getString(R.string.mac_address), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
-            Text(device.mac.ifBlank { context.getString(R.string.unavailable) }, color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
+        val ports = device.details.filterKeys { it.startsWith("port_") }.entries.sortedBy { it.key.removePrefix("port_").toIntOrNull() ?: 0 }
+        if (ports.isNotEmpty()) {
+            Text(context.getString(R.string.device_open_ports), color = White60, fontSize = 14.sp)
+            Text(ports.joinToString(" · ") { "${it.key.removePrefix("port_")}/${it.value}" }, color = White, fontSize = 14.sp)
+            Spacer(Modifier.height(12.dp))
         }
-        Box(modifier = Modifier.fillMaxWidth().height(42.dp)) {
-            Text(context.getString(R.string.device_model), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterStart))
-            Text(context.getString(R.string.unknown), color = White, fontSize = 14.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.CenterEnd))
+        device.details.filterKeys { !it.startsWith("port_") && it != "identity_basis" && it != "mdns_device_type" }.toSortedMap().forEach { (key, value) ->
+            val label = when {
+                key == "mdns_name" -> context.getString(R.string.device_advertised_name)
+                key == "mdns_host" -> context.getString(R.string.device_hostname)
+                key == "ssdp_server" -> context.getString(R.string.device_ssdp_server)
+                key == "ssdp_st" -> context.getString(R.string.device_advertised_service)
+                key == "upnp_name" -> context.getString(R.string.identity_name)
+                key == "upnp_type" -> context.getString(R.string.identity_declared_type)
+                key == "identity_model" -> context.getString(R.string.device_model)
+                key == "identity_manufacturer" -> context.getString(R.string.identity_manufacturer)
+                key == "identity_firmware" -> context.getString(R.string.identity_firmware)
+                key == "identity_source" -> context.getString(R.string.identity_source)
+                key == "identity_query" -> context.getString(R.string.identity_query)
+                key.startsWith("server_") -> context.getString(R.string.device_server_port, key.removePrefix("server_"))
+                else -> key
+            }
+            Text(label, color = White60, fontSize = 14.sp)
+            Text(if (key == "identity_query") ScanStrings.text(context, value) else value, color = White, fontSize = 14.sp)
+            Spacer(Modifier.height(12.dp))
         }
+        Text(context.getString(R.string.device_metadata_note), color = White60, fontSize = 12.sp)
         Spacer(Modifier.height(12.dp))
         Text(context.getString(R.string.detection_finding), color = White60, fontSize = 14.sp)
         Spacer(Modifier.height(6.dp))

@@ -14,6 +14,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -72,6 +74,10 @@ fun DetectResultView() {
     val resultSuspiciousDevices = localMain.resultSuspiciousDevices
     val resultTrustedDevices = localMain.resultTrustedDevices
     val allDevices = (resultSuspiciousDevices + resultTrustedDevices).distinctBy { it.ip }
+    val identityGroups = allDevices.groupBy { com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.forDevice(it).type }
+    var selectedType by remember { mutableStateOf<String?>(null) }
+    val activeType = selectedType?.takeIf { it in identityGroups }
+    val visibleDevices = activeType?.let { identityGroups.getValue(it) } ?: allDevices
     val scope = rememberCoroutineScope()
     val saveFailed by ScanHistoryStore.saveFailed.collectAsState()
     val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
@@ -128,7 +134,7 @@ fun DetectResultView() {
             Box(modifier = Modifier.fillMaxWidth().height(54.dp)) {
                 Image(
                     painter = painterResource(R.drawable.svg_icon_back),
-                    contentDescription = null,
+                    contentDescription = context.getString(R.string.a11y_back),
                     modifier = Modifier.align(Alignment.CenterStart).clickable {
                         localMain.closeDetectResult()
                     }
@@ -197,6 +203,17 @@ fun DetectResultView() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        (listOf<String?>(null) + identityGroups.keys.sorted()).forEach { type ->
+                            val title = type?.let { ScanStrings.text(context, it) } ?: context.getString(R.string.all_detection_list)
+                            val count = type?.let { identityGroups.getValue(it).size } ?: allDevices.size
+                            Text("$title ($count)", color = if (activeType == type) White else White60, fontSize = 12.sp,
+                                modifier = Modifier.background(White10, RoundedCornerShape(20.dp))
+                                    .clickable { selectedType = type }.padding(horizontal = 12.dp, vertical = 12.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    HistoryReadWarning()
                     if (saveFailed) {
                         Text(context.getString(R.string.history_save_failed), color = White60, fontSize = 12.sp)
                         Text(context.getString(R.string.history_retry_save), color = Color(0xFF00C46F), fontSize = 12.sp,
@@ -236,10 +253,10 @@ fun DetectResultView() {
                         Text(context.getString(R.string.history_offline_note), color = White60, fontSize = 12.sp)
                     }
                 }
-                items(allDevices.size, key = { allDevices[it].ip }) { index ->
-                    WifiInfoItemView(allDevices[index]) {
+                items(visibleDevices.size, key = { visibleDevices[it].ip }) { index ->
+                    WifiInfoItemView(visibleDevices[index]) {
                         if (!isSubscribed) return@WifiInfoItemView
-                        DialogHelper.showWifiInfoDialog(context as? FragmentActivity ?: return@WifiInfoItemView, allDevices[index]) { device ->
+                        DialogHelper.showWifiInfoDialog(context as? FragmentActivity ?: return@WifiInfoItemView, visibleDevices[index]) { device ->
                             localMain.markDeviceAsSafe(device)
                         }
                     }

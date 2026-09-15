@@ -147,7 +147,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                                 context.findBaseActivityVBind()?.finish()
                             }
                         },
-                    contentDescription = null
+                    contentDescription = context.getString(R.string.a11y_close)
                 )
 
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 110.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -206,6 +206,9 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                                 }
                             }
                         }
+                    }
+                    if (vm.productMessageRes != 0) {
+                        Text(context.getString(vm.productMessageRes), modifier = Modifier.padding(horizontal = 24.dp), color = Color(0xFF96939E), fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
                     if (vm.messageRes != 0) {
                         Spacer(Modifier.height(8.dp))

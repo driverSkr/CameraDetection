@@ -22,5 +22,6 @@ data class WifiDevice(
     val userTrusted: Boolean = false,
     val isCurrentPhone: Boolean = false,
     val analysisComplete: Boolean = true,
-    val ruleVersion: Int = 1
+    val ruleVersion: Int = 1,
+    val details: Map<String, String> = emptyMap()
 ) : Parcelable

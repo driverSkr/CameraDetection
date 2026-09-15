@@ -24,16 +24,22 @@ object ScanHistoryStore {
     private val pending = Channel<Pair<Context, ScanArchive>>(Channel.CONFLATED)
     private val failure = MutableStateFlow(false)
     val saveFailed = failure.asStateFlow()
+    private val readFailure = MutableStateFlow(false)
+    val readFailed = readFailure.asStateFlow()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     init {
         scope.launch {
             val encoder = ArchiveEncoder(validate = true)
+            val files = mutableMapOf<String, RecoverableHistoryFile>()
             var saved: ScanArchive? = null
             for ((context, archive) in pending) {
                 if (archive === saved) continue
                 failure.value = runCatching {
                     val json = encoder.encode(archive)
-                    synchronized(fileLock) { AtomicHistoryFile(java.io.File(context.filesDir, ARCHIVE_FILE)).write(json) }
+                    synchronized(fileLock) {
+                        val file = java.io.File(context.filesDir, ARCHIVE_FILE)
+                        files.getOrPut(file.absolutePath) { RecoverableHistoryFile(file) { decode(it) } }.write(json)
+                    }
                     saved = archive
                 }.onFailure { Log.e(TAG, "History could not be saved", it) }.isFailure
             }
@@ -43,14 +49,15 @@ object ScanHistoryStore {
         pending.trySend(context.applicationContext to archive)
     }
     suspend fun load(context: Context): ScanArchive = withContext(Dispatchers.IO) {
+        readFailure.value = false
         val savedFile = runCatching {
             val json = synchronized(fileLock) { AtomicHistoryFile(java.io.File(context.filesDir, ARCHIVE_FILE)).read() }
             json?.let(::decode)
-        }.getOrNull()
+        }.onFailure { readFailure.value = true; Log.w(TAG, "History could not be read", it) }.getOrNull()
         if (savedFile != null) return@withContext savedFile.interrupted()
         val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val archive = listOf(ARCHIVE_KEY, PREVIOUS_KEY).firstNotNullOfOrNull { key ->
-            prefs.getString(key, null)?.let { runCatching { decode(it) }.getOrNull() }
+            prefs.getString(key, null)?.let { runCatching { decode(it) }.onFailure { readFailure.value = true }.getOrNull() }
         }
         if (archive != null) return@withContext archive.interrupted()
         // Keep legacy keys intact: migration must never delete the only recoverable copy.
@@ -58,7 +65,7 @@ object ScanHistoryStore {
             val suspicious = prefs.getString("key_suspicious_devices", null) ?: return@runCatching ScanArchive()
             val trusted = prefs.getString("key_trusted_devices", null) ?: return@runCatching ScanArchive()
             legacy(suspicious, trusted, prefs.getString("summary", null))
-        }.getOrElse { ScanArchive() }
+        }.getOrElse { readFailure.value = true; ScanArchive() }
     }
     internal fun legacy(suspicious: String, trusted: String, summary: String?): ScanArchive {
         val record = ScanRecord("legacy", 0, null, "", null, ScanCoverage(),
@@ -153,6 +160,7 @@ object ScanHistoryStore {
                     put("isCurrentPhone", device.isCurrentPhone)
                     put("analysisComplete", device.analysisComplete)
                     put("ruleVersion", device.ruleVersion)
+                    put("details", JSONObject(device.details))
                 }
             )
         }
@@ -182,7 +190,10 @@ object ScanHistoryStore {
                     userTrusted = jsonObject.optBoolean("userTrusted", false),
                     isCurrentPhone = jsonObject.optBoolean("isCurrentPhone", false),
                     analysisComplete = jsonObject.optBoolean("analysisComplete", false),
-                    ruleVersion = jsonObject.optInt("ruleVersion", 0)
+                    ruleVersion = jsonObject.optInt("ruleVersion", 0),
+                    details = jsonObject.optJSONObject("details")?.let { details ->
+                        details.keys().asSequence().associateWith { details.optString(it) }
+                    }.orEmpty()
                 )
             )
         }

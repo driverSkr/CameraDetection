@@ -6,6 +6,47 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MdnsDiscoveryTest {
+    @Test fun printerAndPlaybackServicesAreNeverCameraEvidence() {
+        listOf("_ipp._tcp.local", "_googlecast._tcp.local", "_airplay._tcp.local").forEach { service ->
+            val instance = "Room.$service"
+            val discovery = MdnsDiscovery()
+            val server = ByteArrayOutputStream().also { bytes ->
+                DataOutputStream(bytes).apply { writeShort(0); writeShort(0); writeShort(8008); write(name("hallcam.local")) }
+            }.toByteArray()
+            val response = packet(record(service, 12, name(instance)), record(instance, 33, server), address())
+            discovery.accept(response)
+            val endpoint = discovery.endpoints("192.168.2.1", 24).single()
+            assertFalse(endpoint.evidence.cameraRelated)
+            assertFalse(DiscoveryProtocols.mdnsEvidence(response).any { it.cameraRelated })
+            assertNotNull(endpoint.details["mdns_device_type"])
+        }
+    }
+    @Test fun lostServiceResponseIsRetriedAndResolvedWithoutFlooding() {
+        var clock = 0L
+        val discovery = MdnsDiscovery(now = { clock })
+        discovery.accept(packet(ptr()))
+        assertEquals(1, discovery.questions().size)
+        repeat(10) { assertTrue(discovery.questions().isEmpty()) }
+        clock = 500
+        assertEquals(1, discovery.questions().size)
+        discovery.accept(packet(srv()))
+        assertEquals(listOf(MdnsPacket.Question("hallcam.local", 1)), discovery.questions())
+        clock = 1000
+        assertEquals(1, discovery.questions().size)
+        discovery.accept(packet(address()))
+        clock = 2000
+        assertTrue(discovery.questions().isEmpty())
+        assertEquals(1, discovery.endpoints("192.168.2.1", 24).size)
+    }
+
+    @Test fun unansweredServiceStopsAfterThreeAttempts() {
+        var clock = 0L
+        val discovery = MdnsDiscovery(now = { clock })
+        discovery.accept(packet(ptr()))
+        repeat(3) { assertEquals(1, discovery.questions().size); clock += 500 }
+        assertTrue(discovery.questions().isEmpty())
+        assertEquals(1, discovery.unresolved("192.168.2.1", 24))
+    }
     @Test fun literalDotsInAnInstanceStayInsideTheDnsLabelWhenResolving() {
         val wire = ByteArrayOutputStream().also { bytes ->
             DataOutputStream(bytes).apply { writeByte(8); writeBytes("hall.cam"); write(name("_rtsp._tcp.local")) }
@@ -48,6 +89,8 @@ class MdnsDiscoveryTest {
         val endpoint = discovery.endpoints("192.168.2.1", 24).single()
         assertEquals("192.168.2.99", endpoint.ip)
         assertEquals(ServiceProbe(9554, "RTSP"), endpoint.probe)
+        assertEquals("hallcam", endpoint.details["mdns_name"])
+        assertEquals("hallcam.local", endpoint.details["mdns_host"])
         assertTrue(endpoint.evidence.cameraRelated)
         assertEquals(0, discovery.unresolved("192.168.2.1", 24))
     }

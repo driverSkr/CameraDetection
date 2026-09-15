@@ -9,7 +9,7 @@ object DiscoveryProtocols {
     // Compatibility helper for protocol-only callers. Device attribution uses MdnsDiscovery.
     fun mdnsEvidence(packet: ByteArray): List<Evidence> = MdnsPacket.records(packet)
         .filterIsInstance<MdnsRecord.Ptr>().filter { it.alive && it.owner in MdnsPacket.services }
-        .map { Evidence("mDNS", "${it.owner}: ${it.instance}", it.owner != "_http._tcp.local") }.distinct()
+        .map { Evidence("mDNS", "${it.owner}: ${it.instance}", it.owner in setOf("_rtsp._tcp.local", "_onvif._tcp.local")) }.distinct()
 
     fun ssdpEvidence(response: String): List<Evidence> {
         if (!response.startsWith("HTTP/1.1 200", ignoreCase = true)) return emptyList()

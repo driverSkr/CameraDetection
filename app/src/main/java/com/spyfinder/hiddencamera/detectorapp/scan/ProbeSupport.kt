@@ -8,6 +8,32 @@ import java.util.concurrent.CancellationException
 enum class ProbeResult { OPEN, REFUSED, TIMEOUT, UNREACHABLE, CANCELLED, UNKNOWN }
 
 object ProbeSupport {
+    /** Consume exactly one line so buffered response headers remain available to the caller. */
+    fun readLine(input: InputStream, deadline: Long, now: () -> Long, beforeRead: (Int) -> Unit,
+        cancelled: () -> Boolean, limit: Int = 4096): String {
+        val result = StringBuilder()
+        while (result.length < limit) {
+            if (cancelled()) throw CancellationException("Probe cancelled")
+            val remaining = deadline - now()
+            if (remaining <= 0) throw SocketTimeoutException("Response timed out")
+            beforeRead(remaining.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+            val byte = input.read()
+            if (byte < 0) throw IOException("Truncated response")
+            result.append(byte.toChar())
+            if (byte == 10) return result.toString().removeSuffix("\n").removeSuffix("\r") + "\r\n"
+        }
+        throw IOException("Response line exceeds limit")
+    }
+    fun readHeaders(input: InputStream, deadline: Long, now: () -> Long, beforeRead: (Int) -> Unit,
+        cancelled: () -> Boolean): String {
+        val headers = StringBuilder()
+        repeat(64) {
+            val line = readLine(input, deadline, now, beforeRead, cancelled, (8192 - headers.length).coerceAtMost(4096))
+            headers.append(line)
+            if (line == "\r\n") return headers.toString()
+        }
+        throw IOException("Too many response headers")
+    }
     val ports = listOf(554, 8554, 80, 5000, 443)
 
     data class DiscoveryAttempt(val responded: Boolean, val checked: Boolean, val uncertain: Boolean)

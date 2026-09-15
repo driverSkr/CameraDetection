@@ -60,7 +60,7 @@ fun SettingPage() {
         Box(modifier = Modifier.fillMaxWidth().height(54.dp).padding(start = 12.dp, end = 16.dp)) {
             Image(
                 painter = painterResource(R.drawable.svg_icon_back),
-                contentDescription = null,
+                contentDescription = context.getString(R.string.a11y_back),
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .clickable{ context.findBaseActivityVBind()?.finish() }

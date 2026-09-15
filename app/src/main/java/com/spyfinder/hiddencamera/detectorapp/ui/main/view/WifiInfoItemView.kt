@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +34,7 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White60
 @Composable
 fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
     val context = LocalContext.current
+    val identity = com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.forDevice(info)
     val deviceType = when(info.riskLevel) {
         1 -> R.drawable.svg_icon_wifi_info_router
         else -> R.drawable.svg_icon_wifi_info_router
@@ -40,18 +42,22 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(71.dp)
+            .heightIn(min = 88.dp)
             .background(color = White10, shape = RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .clickable{ onClick.invoke() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(painter = painterResource(deviceType), contentDescription = null)
         Spacer(modifier = Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(ScanStrings.text(context, info.name), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(info.details) ?: ScanStrings.text(context, identity.type), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(3.dp))
-            Text(info.ip, color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
+            Text(if (com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(info.details) != null)
+                "${info.ip} · ${ScanStrings.text(context, identity.type)}" else info.ip,
+                color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
         }
         Spacer(modifier = Modifier.width(8.dp))
         Image(painter = painterResource(when {

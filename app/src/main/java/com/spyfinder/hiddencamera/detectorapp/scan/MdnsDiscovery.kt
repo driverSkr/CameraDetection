@@ -14,7 +14,8 @@ sealed interface MdnsRecord {
 }
 
 object MdnsPacket {
-    val services = setOf("_rtsp._tcp.local", "_onvif._tcp.local", "_http._tcp.local")
+    val services = setOf("_rtsp._tcp.local", "_onvif._tcp.local", "_http._tcp.local",
+        "_ipp._tcp.local", "_ipps._tcp.local", "_airplay._tcp.local", "_googlecast._tcp.local")
     data class Question(val name: String, val type: Int)
     private fun labels(name: String): List<String> {
         val result = mutableListOf<String>()
@@ -102,12 +103,14 @@ object MdnsPacket {
 }
 
 data class ServiceProbe(val port: Int, val protocol: String)
-data class MdnsEndpoint(val ip: String, val probe: ServiceProbe, val evidence: Evidence)
+data class MdnsEndpoint(val ip: String, val probe: ServiceProbe, val evidence: Evidence,
+    val details: Map<String, String> = emptyMap())
 
 /** Session-local cache joins split DNS packets without ever assuming the sender hosts the service. */
-class MdnsDiscovery(private val limit: Int = 1024) {
+class MdnsDiscovery(private val limit: Int = 1024, private val now: () -> Long = { System.nanoTime() / 1_000_000 }) {
     private val records = linkedMapOf<String, MdnsRecord>()
-    private val asked = mutableSetOf<MdnsPacket.Question>()
+    private data class Sent(val count: Int, val at: Long)
+    private val asked = mutableMapOf<MdnsPacket.Question, Sent>()
     var limited = false; private set
     fun accept(packet: ByteArray) {
         MdnsPacket.records(packet).forEach { record ->
@@ -129,8 +132,13 @@ class MdnsDiscovery(private val limit: Int = 1024) {
             val srv = targets[ptr.instance]
             if (srv == null) MdnsPacket.Question(ptr.instance, 33)
             else if (srv.host !in addresses) MdnsPacket.Question(srv.host, 1) else null
-        }.distinct().filter { it !in asked }.take(16).also { batch ->
-            if (asked.size + batch.size <= limit) asked.addAll(batch) else limited = true
+        }.distinct().filter { question ->
+            val sent = asked[question]
+            sent == null || (sent.count < 3 && now() - sent.at >= 500)
+        }.take(16).also { batch ->
+            if (asked.size + batch.count { it !in asked } <= limit) {
+                batch.forEach { asked[it] = Sent((asked[it]?.count ?: 0) + 1, now()) }
+            } else limited = true
         }.takeIf { !limited }.orEmpty()
     }
     fun endpoints(local: String, prefix: Int): List<MdnsEndpoint> {
@@ -140,7 +148,13 @@ class MdnsDiscovery(private val limit: Int = 1024) {
             val srv = targets[ptr.instance] ?: return@flatMap emptyList()
             addresses[srv.host].orEmpty().filter { ScanRules.usableHost(it.ip, local, prefix) }.map {
                 MdnsEndpoint(it.ip, ServiceProbe(srv.port, if (ptr.owner == "_rtsp._tcp.local") "RTSP" else "HTTP"),
-                    Evidence("mDNS", "${ptr.owner}: ${MdnsPacket.displayName(ptr.instance)} (${MdnsPacket.displayName(srv.host)}:${srv.port})", ptr.owner != "_http._tcp.local"))
+                    Evidence("mDNS", "${ptr.owner}: ${MdnsPacket.displayName(ptr.instance)} (${MdnsPacket.displayName(srv.host)}:${srv.port})", ptr.owner in setOf("_rtsp._tcp.local", "_onvif._tcp.local")),
+                    mapOf("mdns_name" to MdnsPacket.displayName(ptr.instance.removeSuffix("." + ptr.owner)),
+                        "mdns_host" to MdnsPacket.displayName(srv.host)) + when (ptr.owner) {
+                            "_ipp._tcp.local", "_ipps._tcp.local" -> mapOf("mdns_device_type" to "Printer")
+                            "_airplay._tcp.local", "_googlecast._tcp.local" -> mapOf("mdns_device_type" to "Media playback device")
+                            else -> emptyMap()
+                        })
             }
         }.distinct()
     }

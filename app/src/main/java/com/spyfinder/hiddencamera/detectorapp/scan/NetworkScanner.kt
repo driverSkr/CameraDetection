@@ -27,7 +27,8 @@ data class ScanCoverage(val planned: Int = 0, val total: Long = 0, val checked: 
 class NetworkScanner(private val context: Context, val resources: ScanResources = ScanResources()) {
     private val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val found = ConcurrentHashMap<String, List<Evidence>>()
-    private data class Analysis(val evidence: List<Evidence>, val complete: Boolean)
+    private data class Analysis(val evidence: List<Evidence>, val complete: Boolean, val details: Map<String, String> = emptyMap())
+    private val metadata = ConcurrentHashMap<String, Map<String, String>>()
     private data class Pending(val ip: String, val priority: Int, val order: Int) : Comparable<Pending> {
         override fun compareTo(other: Pending) = compareValuesBy(this, other, { it.priority }, { it.order })
     }
@@ -59,12 +60,14 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val result = analyzed[ip]
         rows.update(device(ip, (found[ip].orEmpty() + result?.evidence.orEmpty()).distinct(), result?.complete == true, result?.complete != true))
     }
-    private fun discovered(ip: String, evidence: List<Evidence>, probe: ServiceProbe? = null) = synchronized(found) {
+    private fun discovered(ip: String, evidence: List<Evidence>, probe: ServiceProbe? = null,
+        details: Map<String, String> = emptyMap()) = synchronized(found) {
         val old = found[ip]
         if (old == null && found.size >= ScanRules.MAX_TARGETS) { limited.set(true); return@synchronized }
         val combined = (old.orEmpty() + evidence).distinct()
         if (combined.size > 64) limited.set(true)
         found[ip] = combined.sortedByDescending { it.cameraRelated }.take(64)
+        if (details.isNotEmpty()) metadata[ip] = (metadata[ip].orEmpty() + details.mapValues { ServiceMetadata.clean(it.value) }).entries.take(24).associate { it.toPair() }
         if (probe != null) {
             val previous = advertisedProbes[ip].orEmpty()
             if (probe !in previous && previous.size >= 8) limited.set(true)
@@ -199,17 +202,25 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             discoveryMillis.addAndGet(SystemClock.elapsedRealtime() - started)
         }
         probeCounts.getOrPut(result) { AtomicInteger() }.incrementAndGet()
+        if (result == ProbeResult.OPEN) synchronized(found) {
+            metadata[ip] = metadata[ip].orEmpty() + ("port_$port" to "TCP")
+            if (found.containsKey(ip)) refreshRow(ip)
+        }
         return result
     }
 
     private fun device(ip: String, evidence: List<Evidence>, complete: Boolean, incomplete: Boolean): WifiDevice {
         val self = ip == target?.ip
         val finding = ScanRules.finding(evidence, incomplete)
-        val type = when { self -> "Phone"; ip == target?.gateway -> "Router"; finding == Finding.CAMERA_FEATURES -> "Video service"; else -> "Unknown" }
-        return WifiDevice(if (self) "Current phone" else type, type, ip, R.drawable.svg_icon_sensor, 0, 0,
+        val details = metadata[ip].orEmpty() + analyzed[ip]?.details.orEmpty()
+        val identity = DeviceIdentity.classify(self, ip == target?.gateway, details, finding == Finding.CAMERA_FEATURES)
+        val type = identity.type
+        return WifiDevice(if (self) "Current phone" else DeviceIdentity.name(details) ?: "$type · $ip", type, ip, R.drawable.svg_icon_sensor, 0, 0,
             riskLevel = if (!self && finding == Finding.CAMERA_FEATURES) 1 else 0,
             finding = finding, evidence = evidence.map { "${it.source}: ${it.detail}" }, isCurrentPhone = self,
-            analysisComplete = complete, ruleVersion = ScanRules.VERSION)
+            analysisComplete = complete, ruleVersion = ScanRules.VERSION,
+            brandModel = if (self) "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}" else listOfNotNull(details["identity_manufacturer"], details["identity_model"]).joinToString(" "),
+            details = details.filterKeys { !it.endsWith("_url") } + ("identity_basis" to identity.basis))
     }
 
     private suspend fun analyze(t: WifiTarget, ip: String, advertised: Set<ServiceProbe>): Analysis {
@@ -219,7 +230,12 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val probes = (advertised + ProbeSupport.ports.map { port -> ServiceProbe(port,
             when (port) { 554, 8554 -> "RTSP"; 80, 5000 -> "HTTP"; else -> "TCP" }) }).distinct()
         val results = serviceRunner.run(probes) { (port, protocol) ->
+            if (protocol == "UPNP_INFO" || protocol == "ONVIF_INFO") {
+                val url = metadata[ip]?.get(if (protocol == "ONVIF_INFO") "onvif_url" else "description_url")
+                return@run Analysis(emptyList(), true, url?.let { readDescription(t, ip, it, protocol == "ONVIF_INFO") }.orEmpty())
+            }
             val evidence = mutableListOf<Evidence>()
+            val details = mutableMapOf<String, String>()
             var incomplete = false
             if (resources.closed) throw CancellationException()
             val socket = resources.track(t.network.socketFactory.createSocket())
@@ -227,15 +243,26 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                 socket.soTimeout = 1500
                 socket.connect(InetSocketAddress(ip, port), 1500)
                 evidence.add(Evidence("TCP", "Port $port is open (service not confirmed)"))
+                details["port_$port"] = "TCP"
                 if (protocol != "TCP") {
                     val request = if (protocol == "RTSP") "OPTIONS rtsp://$ip:$port/ RTSP/1.0\r\nCSeq: 1\r\n\r\n"
                         else "HEAD / HTTP/1.1\r\nHost: $ip\r\nConnection: close\r\n\r\n"
                     socket.getOutputStream().write(request.toByteArray(Charsets.US_ASCII))
-                    val response = ProbeSupport.readStatusLine(socket.getInputStream(),
-                        SystemClock.elapsedRealtime() + 1500, SystemClock::elapsedRealtime,
+                    val input = socket.getInputStream().buffered()
+                    val deadline = SystemClock.elapsedRealtime() + 1500
+                    val response = ProbeSupport.readLine(input,
+                        deadline, SystemClock::elapsedRealtime,
                         { socket.soTimeout = it }, { resources.closed })
                     if (DiscoveryProtocols.isRtsp(response)) evidence.add(Evidence("RTSP", "Video protocol responded on port $port; verify the device manually", true))
                     else if (response.startsWith("HTTP/1.")) evidence.add(Evidence("HTTP", "Web service responded on port $port"))
+                    if (DiscoveryProtocols.isRtsp(response) || response.startsWith("HTTP/1.")) {
+                        details["port_$port"] = if (DiscoveryProtocols.isRtsp(response)) "RTSP" else "HTTP"
+                        val headers = ProbeSupport.readHeaders(input, deadline, SystemClock::elapsedRealtime,
+                            { socket.soTimeout = it }, { resources.closed })
+                        ServiceMetadata.headers(response + headers)["server"]?.takeIf { it.isNotBlank() }?.let {
+                            details["server_$port"] = it
+                        }
+                    }
                 }
             } catch (e: java.io.IOException) {
                 when (errorResult(e)) {
@@ -244,11 +271,73 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                     else -> incomplete = true
                 }
             } finally { resources.release(socket); liveness.activity() }
-            Analysis(evidence, !incomplete)
+            Analysis(evidence, !incomplete, details)
         }
-        return Analysis((evidence + results.flatMap { it.evidence }).distinct(), results.all { it.complete })
+        return Analysis((evidence + results.flatMap { it.evidence }).distinct(), results.all { it.complete }, results.flatMap { it.details.entries }.associate { it.toPair() })
     }
 
+    private fun readDescription(t: WifiTarget, ip: String, value: String, onvif: Boolean): Map<String, String> {
+        val url = DeviceDescription.localUrl(value, ip) ?: return emptyMap()
+        val uri = java.net.URI(url)
+        val socket = resources.track(t.network.socketFactory.createSocket())
+        val deadline = SystemClock.elapsedRealtime() + 2500
+        return try {
+            socket.connect(InetSocketAddress(ip, uri.port.takeIf { it > 0 } ?: 80), 1000)
+            val body = if (onvif) "<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"><s:Body><GetDeviceInformation xmlns=\"http://www.onvif.org/ver10/device/wsdl\"/></s:Body></s:Envelope>".toByteArray() else byteArrayOf()
+            val path = uri.rawPath.ifEmpty { "/" } + (uri.rawQuery?.let { "?$it" } ?: "")
+            val request = "${if (onvif) "POST" else "GET"} $path HTTP/1.1\r\nHost: ${uri.rawAuthority}\r\nConnection: close\r\nAccept-Encoding: identity\r\n" +
+                (if (onvif) "Content-Type: application/soap+xml; charset=utf-8; action=\"http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation\"\r\nContent-Length: ${body.size}\r\n" else "") + "\r\n"
+            socket.getOutputStream().write(request.toByteArray(Charsets.US_ASCII) + body)
+            val input = socket.getInputStream().buffered()
+            fun remaining() {
+                if (resources.closed) throw CancellationException()
+                val time = deadline - SystemClock.elapsedRealtime()
+                if (time <= 0) throw java.net.SocketTimeoutException()
+                socket.soTimeout = time.toInt()
+            }
+            fun line() = ProbeSupport.readLine(input, deadline, SystemClock::elapsedRealtime,
+                { socket.soTimeout = it }, { resources.closed })
+            val status = line()
+            val headers = ServiceMetadata.headers(status + ProbeSupport.readHeaders(input, deadline,
+                SystemClock::elapsedRealtime, { socket.soTimeout = it }, { resources.closed }))
+            if (!status.matches(Regex("HTTP/1\\.[01] 200(?: .*|\\r\\n)\\r?\\n?")))
+                return mapOf("identity_query" to if (Regex("^HTTP/1\\.[01] (401|403) ").containsMatchIn(status)) "Authentication required" else "Device description unavailable")
+            require(headers["content-encoding"].let { it == null || it.equals("identity", true) })
+            val output = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(2048)
+            fun read(count: Int) {
+                require(count >= 0 && output.size().toLong() + count <= 65536)
+                var left = count
+                while (left > 0) {
+                    remaining()
+                    val n = input.read(buffer, 0, minOf(left, buffer.size))
+                    if (n < 0) throw java.io.IOException("Truncated description")
+                    output.write(buffer, 0, n); left -= n
+                }
+            }
+            if (headers["transfer-encoding"].equals("chunked", true)) {
+                while (true) {
+                    val count = line().trim().substringBefore(';').toInt(16)
+                    if (count == 0) break
+                    read(count)
+                    require(line() == "\r\n")
+                }
+            } else if (headers["content-length"] != null) read(headers.getValue("content-length").toInt())
+            else {
+                require(headers["transfer-encoding"] == null)
+                while (true) {
+                    remaining()
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    require(output.size() + n <= 65536)
+                    output.write(buffer, 0, n)
+                }
+            }
+            DeviceDescription.parse(output.toByteArray(), onvif).ifEmpty { mapOf("identity_query" to "Device description unavailable") }
+        } catch (e: CancellationException) { throw e }
+          catch (_: Exception) { mapOf("identity_query" to "Device description unavailable") }
+        finally { resources.release(socket); liveness.activity() }
+    }
     private suspend fun discoverServices(t: WifiTarget) = coroutineScope {
         val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val lock = wifi.createMulticastLock("camera-discovery").apply { setReferenceCounted(false) }
@@ -277,12 +366,25 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                 "ssdp" -> "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 1\r\nST: ssdp:all\r\n\r\n".toByteArray()
                 else -> "<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:a=\"http://schemas.xmlsoap.org/ws/2004/08/addressing\" xmlns:d=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\" xmlns:dn=\"http://www.onvif.org/ver10/network/wsdl\"><s:Header><a:MessageID>$requestId</a:MessageID><a:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</a:To><a:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</a:Action></s:Header><s:Body><d:Probe><d:Types>dn:NetworkVideoTransmitter</d:Types></d:Probe></s:Body></s:Envelope>".toByteArray()
             }
-            stage(DiscoveryHealth.Stage.SENDING)
-            socket.send(DatagramPacket(data, data.size, InetAddress.getByName(host), port))
-            stage(DiscoveryHealth.Stage.RECEIVING)
-            val end = SystemClock.elapsedRealtime() + 2_000
+            val destination = InetAddress.getByName(host)
+            fun send(bytes: ByteArray) {
+                if (resources.closed) throw CancellationException()
+                stage(DiscoveryHealth.Stage.SENDING)
+                socket.send(DatagramPacket(bytes, bytes.size, destination, port))
+                stage(DiscoveryHealth.Stage.RECEIVING)
+            }
+            val started = SystemClock.elapsedRealtime()
+            val end = started + 3_000
+            var initialSends = 0
             while (!resources.closed && SystemClock.elapsedRealtime() < end) {
-                socket.soTimeout = (end - SystemClock.elapsedRealtime()).coerceIn(1, 500).toInt()
+                if (initialSends < 3 && SystemClock.elapsedRealtime() - started >= initialSends * 750L) {
+                    send(data)
+                    initialSends++
+                }
+                val questions = mdns?.questions().orEmpty()
+                val encodable = questions.filter { runCatching { MdnsPacket.query(listOf(it)) }.isSuccess }
+                if (encodable.isNotEmpty()) send(MdnsPacket.query(encodable))
+                socket.soTimeout = (end - SystemClock.elapsedRealtime()).coerceIn(1, 250).toInt()
                 val packet = DatagramPacket(ByteArray(16_384), 16_384)
                 try { socket.receive(packet) } catch (_: SocketTimeoutException) { continue }
                 val ip = packet.address.hostAddress ?: continue
@@ -290,23 +392,25 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                 val payload = packet.data.copyOf(packet.length)
                 if (mdns != null) {
                     mdns.accept(payload)
-                    mdns.endpoints(t.ip, t.prefix).forEach { discovered(it.ip, listOf(it.evidence), it.probe) }
-                    val questions = mdns.questions()
-                    if (questions.isNotEmpty()) {
-                        val query = runCatching { MdnsPacket.query(questions) }.getOrNull()
-                        if (query != null) {
-                            stage(DiscoveryHealth.Stage.SENDING)
-                            socket.send(DatagramPacket(query, query.size, InetAddress.getByName(host), port))
-                            stage(DiscoveryHealth.Stage.RECEIVING)
-                        }
-                    }
+                    mdns.endpoints(t.ip, t.prefix).forEach { discovered(it.ip, listOf(it.evidence), it.probe, it.details) }
                     continue
                 }
                 val evidence = when (kind) {
                     "ssdp" -> DiscoveryProtocols.ssdpEvidence(String(payload, Charsets.UTF_8))
                     else -> onvifEvidence(String(payload, Charsets.UTF_8), requestId)
                 }
-                if (evidence.isNotEmpty()) discovered(ip, evidence)
+                if (evidence.isNotEmpty()) {
+                    val response = String(payload, Charsets.UTF_8)
+                    val details = (if (kind == "ssdp") ServiceMetadata.ssdp(response) else emptyMap()).toMutableMap()
+                    val advertisedUrl = if (kind == "ssdp") ServiceMetadata.headers(response)["location"] else
+                        Regex("<(?:[A-Za-z0-9_]+:)?XAddrs(?:\\s[^>]*)?>([^<]+)</").find(response)?.groupValues?.get(1)?.trim()?.split(Regex("\\s+"))?.firstOrNull { DeviceDescription.localUrl(it, ip) != null }
+                    val url = advertisedUrl?.let { DeviceDescription.localUrl(it, ip) }
+                    val probe = url?.let {
+                        details[if (kind == "ssdp") "description_url" else "onvif_url"] = it
+                        ServiceProbe(java.net.URI(it).port.takeIf { p -> p > 0 } ?: 80, if (kind == "ssdp") "UPNP_INFO" else "ONVIF_INFO")
+                    }
+                    discovered(ip, evidence, probe, details)
+                }
             }
             }
         }
