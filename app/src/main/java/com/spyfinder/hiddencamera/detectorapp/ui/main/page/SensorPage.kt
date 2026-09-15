@@ -15,6 +15,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -92,6 +97,7 @@ fun SensorPage() {
     val lifecycleOwner = LocalLifecycleOwner.current
     val selectedTab = com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity.current.selectTabIndex.intValue
     var isListening by remember { mutableStateOf(false) } // 控制是否监听传感器
+    var checking by remember { mutableStateOf(false) }
 
     val shouldStartDetectionAfterSubscribe = androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -99,14 +105,16 @@ fun SensorPage() {
             return@rememberLauncherForActivityResult
         }
         shouldStartDetectionAfterSubscribe.value = false
+        checking = true
         scope.launch {
+          try {
             val subscribed = SubscriptionGate.hasAccess()
             if (subscribed) {
                 Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "after_subscribe")
                 sensorError = false
                 isListening = true
             }
-            shouldStartDetectionAfterSubscribe.value = false
+          } finally { checking = false }
         }
     }
 
@@ -176,6 +184,7 @@ fun SensorPage() {
     val rotationAngle = MagneticScale.rotation(displayedMicroTesla)
 
     fun toggleDetectionWithSubscriptionCheck() {
+        if (checking || shouldStartDetectionAfterSubscribe.value) return
         if (magneticSensor == null) {
             android.widget.Toast.makeText(context, context.getString(R.string.no_magnetic_sensor), android.widget.Toast.LENGTH_LONG).show()
             return
@@ -188,7 +197,9 @@ fun SensorPage() {
             return
         }
 
+        checking = true
         scope.launch {
+          try {
             val subscribed = if (isSubscribed) {
                 true
             } else {
@@ -209,16 +220,22 @@ fun SensorPage() {
                 Event.event(context, Event.SUBSCRIBE_GATE_SHOW, Event.PARAM_SOURCE to "magnetic_detector")
                 subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
             }
+          } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) {
+                shouldStartDetectionAfterSubscribe.value = false
+                android.widget.Toast.makeText(context, context.getString(R.string.access_retry), android.widget.Toast.LENGTH_LONG).show()
+            } finally { checking = false }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
+      Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight),
+          horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
         Text(context.getString(R.string.title_magnetic), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
 
+        Column(Modifier.padding(top = 24.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(modifier = Modifier
             .size(280.dp)
-            .align(Alignment.Center)
-            .offset(y = (-60).dp)
         ) {
             Image(
                 painter = painterResource(R.mipmap.img_circular_arc),
@@ -248,6 +265,7 @@ fun SensorPage() {
                 contentDescription = null
             )
 
+        }
             Text(
                 buildAnnotatedString {
                     withStyle(
@@ -271,25 +289,24 @@ fun SensorPage() {
                         append(" μT")
                     }
                 },
-                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 30.dp)
+                modifier = Modifier.padding(top = 4.dp)
             )
             Text(context.getString(if (displayedMicroTesla > MagneticScale.MAX_MICRO_TESLA)
                 R.string.magnetic_over_range else R.string.magnetic_scale),
                 color = White60, fontSize = 10.sp,
-                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 50.dp))
+                modifier = Modifier.padding(top = 4.dp))
         }
 
         Column(modifier = Modifier
             .padding(bottom = 24.dp)
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .align(Alignment.BottomCenter)
         ) {
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
+                .heightIn(min = 60.dp)
                 .background(color = Color(0xFFFFFFFF).copy(0.1f), shape = RoundedCornerShape(20.dp))
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null)
@@ -304,24 +321,22 @@ fun SensorPage() {
                     color = Color(0xFFFFFFFF).copy(0.6f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W400,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    modifier = Modifier.weight(1f)
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
             Box(modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .heightIn(min = 56.dp)
                 .background(color = if (isListening) White10 else Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                 .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
-                .padding(12.dp)
-                .clickable {
+                .clickable(enabled = !checking && !shouldStartDetectionAfterSubscribe.value) {
                     // 点击切换监听状态
                     toggleDetectionWithSubscriptionCheck()
-                },
+                }.padding(12.dp),
             ) {
                 Text(
-                    text = if (isListening) context.getString(R.string.stop_detection) else context.getString(R.string.start_detection),
+                    text = context.getString(if (checking) R.string.action_checking else if (isListening) R.string.stop_detection else R.string.start_detection),
                     color = if (isListening) White60 else White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.W500,
@@ -329,5 +344,6 @@ fun SensorPage() {
                 )
             }
         }
+      }
     }
 }

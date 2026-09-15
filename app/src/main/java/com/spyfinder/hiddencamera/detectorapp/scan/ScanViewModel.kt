@@ -37,9 +37,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         }
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
-    override fun onStop(owner: LifecycleOwner) { cancel("Scan interrupted while the app was in the background.") }
+    override fun onStop(owner: LifecycleOwner) { cancel("Scan interrupted while the app was in the background.", source = "background") }
     fun start() {
-        cancel("Scan replaced.")
+        cancel("Scan replaced.", source = "replaced")
         lastPublished = null
         val id = ++generation
         startedAt = System.currentTimeMillis()
@@ -101,13 +101,13 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                 if (id == generation && forcedMessage != null) {
                     publish(worker.snapshot())
                     state.scanStatus = ScanStatus.PARTIAL
-                    state.scanMessage = forcedMessage!!
+                    state.scanMessage = worker.withWarnings(forcedMessage!!)
                 } else throw e
             } catch (e: Exception) {
                 if (id == generation) {
                     publish(worker.snapshot())
                     state.scanStatus = ScanStatus.FAILED
-                    state.scanMessage = e.message ?: "Scan failed. Reconnect to Wi-Fi and retry."
+                    state.scanMessage = worker.withWarnings(e.message ?: "Scan failed. Reconnect to Wi-Fi and retry.")
                 }
             } finally {
                 monitor?.cancel(); worker.resources.close()
@@ -139,20 +139,21 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
             state.networkLabel, state.scanStatus, worker.coverage(), state.scanMessage,
             state.recordDevices()))
     }
-    fun cancel(reason: String = "Scan cancelled. Results are incomplete.") {
+    fun cancel(reason: String = "Scan cancelled. Results are incomplete.", source: String = "lifecycle") {
         if (state.scanStatus != ScanStatus.RUNNING) return
         ++generation
         scanner?.let { it.resources.close(); publish(it.snapshot()) }
         job?.cancel()
         state.isAnimating.value = false
         state.scanStatus = ScanStatus.CANCELLED
-        state.scanMessage = reason
+        state.scanMessage = scanner?.withWarnings(reason) ?: reason
         scanner?.let { saveSnapshot(it) }
         prefs.edit().putBoolean("running", false).putString("interrupted", reason).apply()
-        Event.event(getApplication(), Event.WIFI_SCAN_CANCEL, Event.PARAM_REASON to reason)
+        Event.event(getApplication(), Event.WIFI_SCAN_CANCEL, Event.PARAM_REASON to reason,
+            Event.PARAM_SOURCE to source, Event.PARAM_PROGRESS to state.detectProgress.intValue)
     }
     override fun onCleared() {
-        cancel()
+        cancel(source = "viewmodel_cleared")
         ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
     }
 }

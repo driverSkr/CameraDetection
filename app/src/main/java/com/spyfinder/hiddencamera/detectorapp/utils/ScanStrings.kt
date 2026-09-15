@@ -40,6 +40,11 @@ object ScanStrings {
         "Current phone" to R.string.current_phone
     )
     private val templates = listOf(
+        Regex("(.+) discovery permission was denied\\. Results may be incomplete\\. Check app permissions and retry\\.") to R.string.scan_channel_permission,
+        Regex("(.+) discovery could not start\\. Results may be incomplete\\. Reconnect to Wi-Fi and retry\\.") to R.string.scan_channel_start_failed,
+        Regex("(.+) discovery request could not be sent\\. Results may be incomplete\\. Reconnect to Wi-Fi and retry\\.") to R.string.scan_channel_send_failed,
+        Regex("(.+) discovery responses could not be received\\. Results may be incomplete\\. Reconnect to Wi-Fi and retry\\.") to R.string.scan_channel_receive_failed,
+        Regex("Devices awaiting analysis: (\\d+)") to R.string.scan_analysis_remaining,
         Regex(" (\\d+) service announcements could not be resolved to an in-scope IPv4 endpoint\\.") to R.string.scan_unresolved_services,
         Regex(" (\\d+) addresses could not be verified due to network errors\\.") to R.string.scan_unverified_addresses,
         Regex("Discovering devices in (.+)…") to R.string.scan_discovering_network,

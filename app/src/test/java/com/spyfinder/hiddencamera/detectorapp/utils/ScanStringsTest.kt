@@ -15,6 +15,8 @@ class ScanStringsTest {
         R.string.current_phone -> "当前手机"
         R.string.scan_discovery_progress -> "已检查 ${args[0]}/${args[1]}"
         R.string.scan_unresolved_services -> "${args[0]} 条公告未解析。"
+        R.string.scan_channel_send_failed -> "${args[0]} 请求发送失败，请重试。"
+        R.string.scan_analysis_remaining -> "待分析 ${args[0]} 台"
         else -> error("Unexpected resource $id")
     }
 
@@ -40,5 +42,10 @@ class ScanStringsTest {
     }
     @Test fun unresolvedServiceCountIsLocalized() {
         assertEquals("扫描完成。2 条公告未解析。", ScanStrings.format("Scan completed. 2 service announcements could not be resolved to an in-scope IPv4 endpoint.", ::lookup))
+    }
+    @Test fun channelFailureSurvivesHistoryFormatting() {
+        val formatted = ScanStrings.format("Scan completed. 2 service announcements could not be resolved to an in-scope IPv4 endpoint.\nmDNS discovery request could not be sent. Results may be incomplete. Reconnect to Wi-Fi and retry.", ::lookup)
+        assertEquals("扫描完成。2 条公告未解析。\nmDNS 请求发送失败，请重试。", formatted)
+        assertEquals("待分析 12 台", ScanStrings.format("Devices awaiting analysis: 12", ::lookup))
     }
 }

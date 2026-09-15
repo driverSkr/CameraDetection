@@ -204,14 +204,7 @@ fun DetectCheckView() {
                         .background(color = White10, shape = RoundedCornerShape(999.dp))
                         .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                         .clickable{
-                            // 用户主动取消扫描，记录当前进度便于分析中断位置。
-                            Event.event(
-                                context,
-                                Event.WIFI_SCAN_CANCEL,
-                                Event.PARAM_SOURCE to "cancel_button",
-                                Event.PARAM_PROGRESS to detectProgress.intValue
-                            )
-                            vm.cancel()
+                            vm.cancel(source = "cancel_button")
                         }
                     ) {
                         Text(

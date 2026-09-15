@@ -17,6 +17,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,20 +48,31 @@ fun ScannerPage() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
+    var checking by remember { mutableStateOf(false) }
+    var cameraOpen by rememberSaveable { mutableStateOf(false) }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        cameraOpen = false
+    }
+    fun openCamera(source: String) {
+        cameraOpen = true
+        try {
+            cameraLauncher.launch(Intent(context, CameraScannerActivity::class.java))
+            Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to source)
+        } catch (_: Exception) {
+            cameraOpen = false
+            android.widget.Toast.makeText(context, context.getString(R.string.camera_unavailable), android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
     val shouldLaunchScannerAfterSubscribe = androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val subscribeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (!shouldLaunchScannerAfterSubscribe.value) {
             return@rememberLauncherForActivityResult
         }
         shouldLaunchScannerAfterSubscribe.value = false
+        checking = true
         scope.launch {
-            val subscribed = SubscriptionGate.hasAccess()
-            if (subscribed) {
-                // 订阅完成后继续打开红外扫描，记录付费门槛后的转化路径。
-                Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to "after_subscribe")
-                CameraScannerActivity.launch(context)
-            }
-            shouldLaunchScannerAfterSubscribe.value = false
+            try { if (SubscriptionGate.hasAccess()) openCamera("after_subscribe") }
+            finally { checking = false }
         }
     }
     val scannerItemList = listOf(
@@ -77,9 +91,12 @@ fun ScannerPage() {
     )
 
     fun openScannerWithSubscriptionCheck(scannerItem: String) {
+        if (checking || cameraOpen || shouldLaunchScannerAfterSubscribe.value) return
+        checking = true
         // 红外扫描功能点击埋点，item 表示用户选择的检测位置。
         Event.event(context, Event.CAMERA_SCANNER_CLICK, Event.PARAM_ITEM to scannerItem)
         scope.launch {
+          try {
             val subscribed = if (isSubscribed) {
                 true
             } else {
@@ -88,8 +105,7 @@ fun ScannerPage() {
 
             if (subscribed) {
                 shouldLaunchScannerAfterSubscribe.value = false
-                Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to "scanner_grid")
-                CameraScannerActivity.launch(context)
+                openCamera("scanner_grid")
             } else {
                 if (!SubscribeHelper.canOfferPurchase) {
                     android.widget.Toast.makeText(context, context.getString(R.string.access_retry), android.widget.Toast.LENGTH_LONG).show()
@@ -104,28 +120,35 @@ fun ScannerPage() {
                 )
                 subscribeLauncher.launch(Intent(context, SubscribeActivity::class.java))
             }
+          } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) {
+                shouldLaunchScannerAfterSubscribe.value = false
+                android.widget.Toast.makeText(context, context.getString(R.string.access_retry), android.widget.Toast.LENGTH_LONG).show()
+            } finally { checking = false }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text(context.getString(R.string.tab_scanner), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
             Spacer(modifier = Modifier.height(8.dp))
             Text(context.getString(R.string.scanner_description), color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
         }
 
-        LazyVerticalGrid(
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+          LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            modifier = Modifier.fillMaxWidth().align(Alignment.Center)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             items(scannerItemList.size) { index ->
-                ScannerItemView(scannerItemList[index]) {
+                ScannerItemView(scannerItemList[index], enabled = !checking && !cameraOpen && !shouldLaunchScannerAfterSubscribe.value) {
                     openScannerWithSubscriptionCheck(scannerItemList[index].second)
                 }
             }
+        }
         }
     }
 }

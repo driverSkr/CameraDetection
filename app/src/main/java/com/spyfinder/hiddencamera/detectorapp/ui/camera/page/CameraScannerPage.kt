@@ -104,11 +104,15 @@ fun CameraScannerPage() {
         }, ContextCompat.getMainExecutor(context))
     }
     var showHelp by rememberSaveable { mutableStateOf(true) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
+    fun updatePermission(value: Boolean) {
+        if (granted != value) { invalidateControls(); camera = null; error = ""; torch = false; canSwitch = false }
+        granted = value
+    }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { updatePermission(it) }
     LaunchedEffect(Unit) { if (!granted && !requested) { requested = true; launcher.launch(Manifest.permission.CAMERA) } }
     DisposableEffect(owner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            if (event == Lifecycle.Event.ON_RESUME) updatePermission(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
             if (event == Lifecycle.Event.ON_STOP) { invalidateControls(); camera?.cameraControl?.enableTorch(false); torch = false }
         }
         owner.lifecycle.addObserver(observer)
@@ -148,7 +152,7 @@ fun CameraScannerPage() {
                 Column(Modifier.align(Alignment.Center).padding(16.dp).fillMaxWidth().background(Color(0xFF161618), RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(if (!granted) context.getString(R.string.camera_permission_required) else error, color = White60, fontSize = 14.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CameraControl(context.getString(R.string.action_retry)) { if (!granted) launcher.launch(Manifest.permission.CAMERA) else { invalidateControls(); camera = null; retry++ } }
+                        CameraControl(context.getString(R.string.action_retry)) { if (!granted) launcher.launch(Manifest.permission.CAMERA) else if (error.isNotEmpty()) { invalidateControls(); camera = null; error = ""; torch = false; canSwitch = false; retry++ } }
                         CameraControl(context.getString(R.string.app_settings)) { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
                     }
                 }

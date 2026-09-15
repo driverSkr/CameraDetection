@@ -212,4 +212,9 @@
     <string name="camera_starting">Opening camera…</string>
     <string name="scan_foreground_hint">Keep this app in the foreground. The screen stays on during scanning.</string>
     <string name="scan_unresolved_services"> %1$s service announcements could not be resolved to an in-scope IPv4 endpoint.</string>
+    <string name="scan_channel_permission">%1$s discovery permission was denied. Results may be incomplete. Check app permissions and retry.</string>
+    <string name="scan_channel_start_failed">%1$s discovery could not start. Results may be incomplete. Reconnect to Wi-Fi and retry.</string>
+    <string name="scan_channel_send_failed">%1$s discovery request could not be sent. Results may be incomplete. Reconnect to Wi-Fi and retry.</string>
+    <string name="scan_channel_receive_failed">%1$s discovery responses could not be received. Results may be incomplete. Reconnect to Wi-Fi and retry.</string>
+    <string name="scan_analysis_remaining">Devices awaiting analysis: %1$s</string>
 </resources>

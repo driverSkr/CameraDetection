@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -21,17 +23,18 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White10
 import com.spyfinder.hiddencamera.detectorapp.theme.White60
 
 @Composable
-fun ScannerItemView(item: Pair<Int, String>, onClick: () -> Unit) {
+fun ScannerItemView(item: Pair<Int, String>, enabled: Boolean = true, onClick: () -> Unit) {
     Column(modifier = Modifier
-        .height(86.dp)
+        .heightIn(min = 86.dp)
         .width(106.dp)
         .background(color = White10, shape = RoundedCornerShape(20.dp))
-        .clickable { onClick.invoke() },
+        .clickable(enabled = enabled) { onClick.invoke() }
+        .padding(horizontal = 6.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(painter = painterResource(item.first), contentDescription = null)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(item.second, color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
+        Text(item.second, color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
