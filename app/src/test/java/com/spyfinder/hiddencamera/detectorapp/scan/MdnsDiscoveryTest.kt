@@ -7,7 +7,7 @@ import org.junit.Test
 
 class MdnsDiscoveryTest {
     @Test fun printerAndPlaybackServicesAreNeverCameraEvidence() {
-        listOf("_ipp._tcp.local", "_googlecast._tcp.local", "_airplay._tcp.local").forEach { service ->
+        listOf("_ipp._tcp.local", "_ipps._tcp.local", "_googlecast._tcp.local", "_airplay._tcp.local").forEach { service ->
             val instance = "Room.$service"
             val discovery = MdnsDiscovery()
             val server = ByteArrayOutputStream().also { bytes ->
@@ -19,6 +19,7 @@ class MdnsDiscoveryTest {
             assertFalse(endpoint.evidence.cameraRelated)
             assertFalse(DiscoveryProtocols.mdnsEvidence(response).any { it.cameraRelated })
             assertNotNull(endpoint.details["mdns_device_type"])
+            assertEquals("TCP", endpoint.probe.protocol)
         }
     }
     @Test fun lostServiceResponseIsRetriedAndResolvedWithoutFlooding() {
@@ -116,6 +117,20 @@ class MdnsDiscoveryTest {
         discovery.accept(packet(ptr(), srv(), address()))
         discovery.accept(packet(ptr(ttl = 0)))
         assertTrue(discovery.endpoints("192.168.2.1", 24).isEmpty())
+    }
+    @Test fun unchangedPacketsDoNotRepublishAndGoodbyeAllowsRediscovery() {
+        val discovery = MdnsDiscovery()
+        val response = packet(ptr(), srv(), address())
+        discovery.accept(response)
+        assertEquals(1, discovery.changedEndpoints("192.168.2.1", 24).size)
+        repeat(10) {
+            discovery.accept(response)
+            assertTrue(discovery.changedEndpoints("192.168.2.1", 24).isEmpty())
+        }
+        discovery.accept(packet(ptr(ttl = 0)))
+        assertTrue(discovery.changedEndpoints("192.168.2.1", 24).isEmpty())
+        discovery.accept(response)
+        assertEquals(1, discovery.changedEndpoints("192.168.2.1", 24).size)
     }
     @Test fun ipv6AdditionalRecordStillRequestsAnIpv4Address() {
         val discovery = MdnsDiscovery()

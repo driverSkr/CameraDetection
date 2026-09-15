@@ -23,6 +23,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -44,6 +48,8 @@ import com.spyfinder.hiddencamera.detectorapp.R
 @Composable
 fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSafe: (WifiDevice) -> Unit) {
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    var showTechnical by rememberSaveable(device.ip) { mutableStateOf(false) }
     val identity = com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.forDevice(device)
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -62,7 +68,7 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
         Spacer(modifier = Modifier.height(10.dp))
         Row(modifier = Modifier.fillMaxWidth().height(64.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(64.dp).background(color = White10, shape = RoundedCornerShape(19.dp))) {
-                Image(painter = painterResource(R.drawable.svg_icon_wifi_info_router), modifier = Modifier.size(36.dp).align(Alignment.Center), contentDescription = null)
+                Image(painter = painterResource(com.spyfinder.hiddencamera.detectorapp.utils.DevicePresentation.icon(identity.type)), modifier = Modifier.size(36.dp).align(Alignment.Center), contentDescription = null)
             }
             Spacer(modifier = Modifier.width(12.dp))
             Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(device.details) ?: ScanStrings.text(context, identity.type), modifier = Modifier.weight(1f), color = White, fontSize = 18.sp, fontWeight = FontWeight.W600, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -72,7 +78,33 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
         Spacer(modifier = Modifier.height(20.dp))
         Text(ScanStrings.text(context, identity.type), color = White, fontSize = 14.sp)
         Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
-        listOf(R.string.ip_address to device.ip,
+        Text(context.getString(R.string.detection_finding), color = White60, fontSize = 14.sp)
+        Spacer(Modifier.height(6.dp))
+        Text(if (device.isCurrentPhone) context.getString(R.string.current_phone) else when (device.finding) {
+            Finding.CAMERA_FEATURES -> context.getString(R.string.finding_camera)
+            Finding.NO_CAMERA_FEATURES -> context.getString(R.string.finding_no_camera)
+            Finding.INSUFFICIENT -> context.getString(R.string.finding_insufficient)
+            Finding.LEGACY -> context.getString(R.string.finding_legacy)
+        }, color = White, fontSize = 14.sp)
+        if (!device.analysisComplete) Text(context.getString(R.string.analysis_incomplete), color = White60, fontSize = 12.sp)
+        Text(context.getString(R.string.ux_next_step), color = White, fontSize = 14.sp)
+        Text(context.getString(com.spyfinder.hiddencamera.detectorapp.utils.DevicePresentation.nextStep(device)), color = White60, fontSize = 12.sp)
+        Spacer(Modifier.height(12.dp))
+        Text(context.getString(R.string.ip_address), color = White60, fontSize = 14.sp)
+        Text(device.ip, color = White, fontSize = 14.sp)
+        Text(context.getString(R.string.ux_copy_ip), color = White, fontSize = 12.sp,
+            modifier = Modifier.clickable {
+                clipboard.setText(AnnotatedString(device.ip))
+                android.widget.Toast.makeText(context, context.getString(R.string.ux_ip_copied), android.widget.Toast.LENGTH_SHORT).show()
+            }.padding(vertical = 10.dp))
+        if (identity.capabilities.isNotEmpty()) {
+            Text(context.getString(R.string.ux_capabilities), color = White60, fontSize = 14.sp)
+            Text(identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = White, fontSize = 14.sp)
+        }
+        Text(context.getString(if (showTechnical) R.string.ux_hide_technical else R.string.ux_show_technical),
+            color = White, fontSize = 14.sp, modifier = Modifier.clickable { showTechnical = !showTechnical }.padding(vertical = 14.dp))
+        if (showTechnical) {
+        listOf(
             R.string.mac_address to device.mac.ifBlank { context.getString(R.string.device_mac_unavailable) },
             R.string.device_model to device.brandModel.ifBlank { context.getString(R.string.device_model_unavailable) }).forEach { (label, value) ->
             Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
@@ -87,7 +119,7 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
             Text(ports.joinToString(" · ") { "${it.key.removePrefix("port_")}/${it.value}" }, color = White, fontSize = 14.sp)
             Spacer(Modifier.height(12.dp))
         }
-        device.details.filterKeys { !it.startsWith("port_") && it != "identity_basis" && it != "mdns_device_type" }.toSortedMap().forEach { (key, value) ->
+        device.details.filterKeys { !it.startsWith("port_") && it !in setOf("identity_basis", "identity_conflict") }.toSortedMap().forEach { (key, value) ->
             val label = when {
                 key == "mdns_name" -> context.getString(R.string.device_advertised_name)
                 key == "mdns_host" -> context.getString(R.string.device_hostname)
@@ -100,27 +132,21 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
                 key == "identity_firmware" -> context.getString(R.string.identity_firmware)
                 key == "identity_source" -> context.getString(R.string.identity_source)
                 key == "identity_query" -> context.getString(R.string.identity_query)
+                key == "identity_observations" -> context.getString(R.string.identity_observations)
+                key == "mdns_device_type" -> context.getString(R.string.device_advertised_service)
                 key.startsWith("server_") -> context.getString(R.string.device_server_port, key.removePrefix("server_"))
                 else -> key
             }
             Text(label, color = White60, fontSize = 14.sp)
-            Text(if (key == "identity_query") ScanStrings.text(context, value) else value, color = White, fontSize = 14.sp)
+            Text(if (key in setOf("identity_query", "mdns_device_type")) ScanStrings.text(context, value) else value, color = White, fontSize = 14.sp)
             Spacer(Modifier.height(12.dp))
         }
         Text(context.getString(R.string.device_metadata_note), color = White60, fontSize = 12.sp)
         Spacer(Modifier.height(12.dp))
-        Text(context.getString(R.string.detection_finding), color = White60, fontSize = 14.sp)
-        Spacer(Modifier.height(6.dp))
-        Text(if (device.isCurrentPhone) context.getString(R.string.current_phone) else when (device.finding) {
-            Finding.CAMERA_FEATURES -> context.getString(R.string.finding_camera)
-            Finding.NO_CAMERA_FEATURES -> context.getString(R.string.finding_no_camera)
-            Finding.INSUFFICIENT -> context.getString(R.string.finding_insufficient)
-            Finding.LEGACY -> context.getString(R.string.finding_legacy)
-        }, color = White, fontSize = 14.sp)
-        if (!device.analysisComplete) Text(context.getString(R.string.analysis_incomplete), color = White60, fontSize = 12.sp)
         device.evidence.forEach {
             Spacer(Modifier.height(6.dp))
             Text(ScanStrings.text(context, it), color = White60, fontSize = 12.sp)
+        }
         }
         if (device.userTrusted) {
             Spacer(Modifier.height(8.dp))

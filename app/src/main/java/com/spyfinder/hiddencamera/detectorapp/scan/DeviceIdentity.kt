@@ -12,22 +12,31 @@ object DeviceIdentity {
         "Likely storage device" to "nas|diskstation|rackstation|network attached storage"
     ).map { (type, words) -> type to Regex("(?i)(?:^|[^a-z0-9])(?:$words)(?:[^a-z]|$)") }
     private val hostRules = listOf(
-        "Likely computer" to Regex("(?i)(?:^|[-_. ])(?:macbook|imac|mac-mini|macmini|thinkpad|desktop|laptop)(?:[-_. 0-9]|$)"),
-        "Likely phone or tablet" to Regex("(?i)(?:^|[-_. ])(?:iphone|ipad)(?:[-_. 0-9]|$)")
+        "Likely computer" to Regex("(?i)(?:^|[^a-z0-9])(?:macbook|imac|mac[ -]?mini|thinkpad|desktop|laptop)(?:[-_. 0-9]|$)"),
+        "Likely phone or tablet" to Regex("(?i)(?:^|[^a-z0-9])(?:iphone|ipad)(?:[-_. 0-9]|$)")
     )
     private val upnpType = Regex("urn:schemas-upnp-org:device:(MediaRenderer|MediaServer|InternetGatewayDevice|Printer):[0-9]+")
     fun forDevice(device: com.spyfinder.hiddencamera.detectorapp.model.WifiDevice): Result = classify(
         device.isCurrentPhone, device.details["identity_basis"] == "Configured Wi-Fi gateway" ||
             device.evidence.any { it == "Network: Configured Wi-Fi gateway" }, device.details,
-        device.finding == Finding.CAMERA_FEATURES)
-    data class Result(val type: String, val basis: String)
+        device.finding == Finding.CAMERA_FEATURES).let { it.copy(capabilities = capabilities(device.details)) }
+    data class Result(val type: String, val basis: String, val capabilities: List<String> = emptyList())
+    fun capabilities(details: Map<String, String>): List<String> = buildList {
+        when (upnpType.matchEntire(details["upnp_type"].orEmpty())?.groupValues?.get(1)) {
+            "MediaRenderer" -> add("Media playback service")
+            "MediaServer" -> add("Media server service")
+            "Printer" -> add("Printing service")
+        }
+        details["mdns_device_type"].orEmpty().lines().forEach {
+            when (it) { "Printer" -> add("Printing service"); "Media playback device" -> add("Media playback service") }
+        }
+    }.distinct().sorted()
     fun classify(self: Boolean, gateway: Boolean, details: Map<String, String>, video: Boolean): Result {
         if (self) return Result("Phone", "Current phone")
         if (gateway) return Result("Router", "Configured Wi-Fi gateway")
+        if (details["identity_conflict"] == "true") return Result("Device type unconfirmed", "Conflicting identity clues")
         val declared = details["upnp_type"].orEmpty()
         val type = when (upnpType.matchEntire(declared)?.groupValues?.get(1)) {
-            "MediaRenderer" -> "Media playback device"
-            "MediaServer" -> "Media server"
             "InternetGatewayDevice" -> "Router"
             "Printer" -> "Printer"
             else -> null
@@ -38,15 +47,16 @@ object DeviceIdentity {
         val modelMatches = modelRules.filter { it.second.containsMatchIn(model) }.map { it.first }.distinct()
         if (modelMatches.size > 1) return Result("Device type unconfirmed", "Conflicting identity clues")
         modelMatches.singleOrNull()?.let { return Result(it, "Device-reported model") }
-        details["mdns_device_type"]?.takeIf { it in setOf("Printer", "Media playback device") }?.let {
-            return Result(it, "mDNS service type")
-        }
+        val serviceTypes = details["mdns_device_type"].orEmpty().lines().filter { it in setOf("Printer", "Media playback device") }.distinct()
+        if (serviceTypes == listOf("Printer")) return Result("Printer", "mDNS service type")
         // Names are user-editable. Only narrow computer/mobile hints are used, always tentative.
         // Never infer cameras, recorders, storage or safety from a friendly name or a port alone.
-        val names = listOf("mdns_host", "mdns_name", "upnp_name").mapNotNull { details[it] }
+        val names = listOf("mdns_host", "mdns_name", "upnp_name").flatMap { details[it].orEmpty().lines() }
         val hostMatches = hostRules.filter { rule -> names.any { rule.second.containsMatchIn(it) } }.map { it.first }.distinct()
         if (hostMatches.size > 1) return Result("Device type unconfirmed", "Conflicting identity clues")
         hostMatches.singleOrNull()?.let { return Result(it, "Device name suggests type; verify manually") }
+        if (serviceTypes.size > 1) return Result("Device type unconfirmed", "Multiple service capabilities; hardware type unconfirmed")
+        if (capabilities(details).isNotEmpty()) return Result("Device type unconfirmed", "Services advertised; hardware type unconfirmed")
         val reason = when {
             details["identity_query"] == "Authentication required" -> "Authentication required"
             model.isNotBlank() || declared.isNotBlank() -> "Reported identity not matched"
@@ -59,5 +69,5 @@ object DeviceIdentity {
         return Result("Device type unconfirmed", reason)
     }
     fun name(details: Map<String, String>): String? = listOf("upnp_name", "mdns_name", "identity_model")
-        .firstNotNullOfOrNull { details[it]?.takeIf(String::isNotBlank) }
+        .firstNotNullOfOrNull { details[it]?.lineSequence()?.firstOrNull(String::isNotBlank) }
 }

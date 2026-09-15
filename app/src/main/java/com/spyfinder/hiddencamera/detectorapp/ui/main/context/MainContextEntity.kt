@@ -115,7 +115,7 @@ class MainContextEntity(
         isShowResult.value = true
     }
     fun openWifiFeature() {
-        pendingWifiAutoScan.value = scanStatus != ScanStatus.RUNNING
+        pendingWifiAutoScan.value = false
         selectTabIndex.intValue = 0
     }
     fun closeDetectResult() {

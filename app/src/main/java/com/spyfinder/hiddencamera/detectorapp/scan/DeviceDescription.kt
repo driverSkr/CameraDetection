@@ -5,6 +5,28 @@ import javax.xml.parsers.DocumentBuilderFactory
 import java.io.ByteArrayInputStream
 
 object DeviceDescription {
+    /** Keep one coherent primary report; preserve other reports rather than mixing their fields. */
+    fun mergeReports(reports: List<Map<String, String>>): Map<String, String> {
+        val successful = reports.filter { it["identity_source"] != null }.distinct().sortedBy {
+            (if (it["identity_source"] == "ONVIF") "0" else "1") + it.toSortedMap().toString()
+        }
+        val result = successful.firstOrNull().orEmpty().toMutableMap()
+        if (successful.size > 1) {
+            result["identity_observations"] = successful.joinToString("\n") {
+                listOf("identity_source", "upnp_name", "identity_manufacturer", "identity_model", "identity_firmware", "upnp_type")
+                    .mapNotNull(it::get).joinToString(" · ")
+            }
+            if (listOf("identity_model", "upnp_type").any { key -> successful.mapNotNull { it[key] }.filter(String::isNotBlank).distinct().size > 1 })
+                result["identity_conflict"] = "true"
+        }
+        val failures = reports.mapNotNull { it["identity_query"] }
+        if (failures.isNotEmpty()) result["identity_query"] = when {
+            successful.isNotEmpty() -> "Some identity queries failed"
+            "Authentication required" in failures -> "Authentication required"
+            else -> "Device description unavailable"
+        }
+        return result
+    }
     fun localUrl(value: String, ip: String): String? = runCatching {
         val uri = URI(value)
         require(uri.scheme == "http" && uri.host == ip && ScanRules.ipv4(ip) != null)

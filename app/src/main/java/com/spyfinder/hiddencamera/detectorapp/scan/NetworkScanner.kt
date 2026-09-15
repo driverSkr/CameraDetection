@@ -67,7 +67,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val combined = (old.orEmpty() + evidence).distinct()
         if (combined.size > 64) limited.set(true)
         found[ip] = combined.sortedByDescending { it.cameraRelated }.take(64)
-        if (details.isNotEmpty()) metadata[ip] = (metadata[ip].orEmpty() + details.mapValues { ServiceMetadata.clean(it.value) }).entries.take(24).associate { it.toPair() }
+        if (details.isNotEmpty()) metadata[ip] = ServiceMetadata.merge(metadata[ip].orEmpty(), details).entries.take(24).associate { it.toPair() }
         if (probe != null) {
             val previous = advertisedProbes[ip].orEmpty()
             if (probe !in previous && previous.size >= 8) limited.set(true)
@@ -227,11 +227,11 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val evidence = mutableListOf<Evidence>()
         if (ip == t.ip) return Analysis(evidence, true)
         if (ip == t.gateway) evidence.add(Evidence("Network", "Configured Wi-Fi gateway"))
-        val probes = (advertised + ProbeSupport.ports.map { port -> ServiceProbe(port,
+        val probes = (advertised + ProbeSupport.ports.filter { port -> advertised.none { it.port == port && it.protocol == "TCP" } }.map { port -> ServiceProbe(port,
             when (port) { 554, 8554 -> "RTSP"; 80, 5000 -> "HTTP"; else -> "TCP" }) }).distinct()
-        val results = serviceRunner.run(probes) { (port, protocol) ->
+        val results = serviceRunner.run(probes) { (port, protocol, descriptionUrl) ->
             if (protocol == "UPNP_INFO" || protocol == "ONVIF_INFO") {
-                val url = metadata[ip]?.get(if (protocol == "ONVIF_INFO") "onvif_url" else "description_url")
+                val url = descriptionUrl
                 return@run Analysis(emptyList(), true, url?.let { readDescription(t, ip, it, protocol == "ONVIF_INFO") }.orEmpty())
             }
             val evidence = mutableListOf<Evidence>()
@@ -273,7 +273,9 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             } finally { resources.release(socket); liveness.activity() }
             Analysis(evidence, !incomplete, details)
         }
-        return Analysis((evidence + results.flatMap { it.evidence }).distinct(), results.all { it.complete }, results.flatMap { it.details.entries }.associate { it.toPair() })
+        val descriptions = probes.zip(results).filter { it.first.url != null }.map { it.second.details }
+        val serviceDetails = probes.zip(results).filter { it.first.url == null }.flatMap { it.second.details.entries }.associate { it.toPair() }
+        return Analysis((evidence + results.flatMap { it.evidence }).distinct(), results.all { it.complete }, serviceDetails + DeviceDescription.mergeReports(descriptions))
     }
 
     private fun readDescription(t: WifiTarget, ip: String, value: String, onvif: Boolean): Map<String, String> {
@@ -392,7 +394,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                 val payload = packet.data.copyOf(packet.length)
                 if (mdns != null) {
                     mdns.accept(payload)
-                    mdns.endpoints(t.ip, t.prefix).forEach { discovered(it.ip, listOf(it.evidence), it.probe, it.details) }
+                    mdns.changedEndpoints(t.ip, t.prefix).forEach { discovered(it.ip, listOf(it.evidence), it.probe, it.details) }
                     continue
                 }
                 val evidence = when (kind) {
@@ -406,8 +408,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                         Regex("<(?:[A-Za-z0-9_]+:)?XAddrs(?:\\s[^>]*)?>([^<]+)</").find(response)?.groupValues?.get(1)?.trim()?.split(Regex("\\s+"))?.firstOrNull { DeviceDescription.localUrl(it, ip) != null }
                     val url = advertisedUrl?.let { DeviceDescription.localUrl(it, ip) }
                     val probe = url?.let {
-                        details[if (kind == "ssdp") "description_url" else "onvif_url"] = it
-                        ServiceProbe(java.net.URI(it).port.takeIf { p -> p > 0 } ?: 80, if (kind == "ssdp") "UPNP_INFO" else "ONVIF_INFO")
+                        ServiceProbe(java.net.URI(it).port.takeIf { p -> p > 0 } ?: 80, if (kind == "ssdp") "UPNP_INFO" else "ONVIF_INFO", it)
                     }
                     discovered(ip, evidence, probe, details)
                 }

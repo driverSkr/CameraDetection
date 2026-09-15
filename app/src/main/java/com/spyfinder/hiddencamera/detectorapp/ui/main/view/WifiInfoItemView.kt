@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,10 +36,7 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White60
 fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
     val context = LocalContext.current
     val identity = com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.forDevice(info)
-    val deviceType = when(info.riskLevel) {
-        1 -> R.drawable.svg_icon_wifi_info_router
-        else -> R.drawable.svg_icon_wifi_info_router
-    }
+    val deviceType = com.spyfinder.hiddencamera.detectorapp.utils.DevicePresentation.icon(identity.type)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -48,7 +46,7 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
             .clickable{ onClick.invoke() },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(painter = painterResource(deviceType), contentDescription = null)
+        Image(painter = painterResource(deviceType), contentDescription = null, modifier = Modifier.size(32.dp))
         Spacer(modifier = Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(info.details) ?: ScanStrings.text(context, identity.type), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -58,12 +56,14 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
                 color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(3.dp))
             Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
+            if (identity.capabilities.isNotEmpty()) Text(context.getString(R.string.ux_capabilities) + ": " + identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = White60, fontSize = 12.sp)
+            if (info.userTrusted) Text(context.getString(R.string.ux_my_mark), color = White60, fontSize = 12.sp)
+            if (!info.analysisComplete) Text(context.getString(R.string.analysis_incomplete), color = White60, fontSize = 12.sp)
         }
         Spacer(modifier = Modifier.width(8.dp))
         Image(painter = painterResource(when {
-            info.isCurrentPhone || info.userTrusted -> R.drawable.svg_icon_safety
-            info.finding == Finding.CAMERA_FEATURES -> R.drawable.svg_icon_risk
-            else -> R.drawable.svg_icon_warning_gray
+            !info.analysisComplete -> R.drawable.svg_icon_warning_gray
+            else -> R.drawable.svg_icon_next
         }), contentDescription = if (info.userTrusted) context.getString(R.string.user_trusted) else if (info.isCurrentPhone) context.getString(R.string.current_phone) else context.getString(R.string.view_device_details))
     }
 }

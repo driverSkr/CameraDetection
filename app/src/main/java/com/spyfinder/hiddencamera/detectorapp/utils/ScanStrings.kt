@@ -9,6 +9,12 @@ import com.spyfinder.hiddencamera.detectorapp.R
  */
 object ScanStrings {
     private val exact = mapOf(
+        "Services advertised; hardware type unconfirmed" to R.string.ux_service_only,
+        "Media playback service" to R.string.ux_service_playback,
+        "Media server service" to R.string.ux_service_server,
+        "Printing service" to R.string.ux_service_print,
+        "Multiple service capabilities; hardware type unconfirmed" to R.string.identity_multi_service,
+        "Some identity queries failed" to R.string.identity_partial_query,
         "Likely computer" to R.string.identity_computer,
         "Likely phone or tablet" to R.string.identity_mobile,
         "Likely television" to R.string.identity_tv,

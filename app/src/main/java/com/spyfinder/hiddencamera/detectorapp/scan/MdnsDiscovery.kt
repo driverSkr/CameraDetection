@@ -102,12 +102,21 @@ object MdnsPacket {
     }.getOrDefault(emptyList())
 }
 
-data class ServiceProbe(val port: Int, val protocol: String)
+data class ServiceProbe(val port: Int, val protocol: String, val url: String? = null)
 data class MdnsEndpoint(val ip: String, val probe: ServiceProbe, val evidence: Evidence,
     val details: Map<String, String> = emptyMap())
 
 /** Session-local cache joins split DNS packets without ever assuming the sender hosts the service. */
 class MdnsDiscovery(private val limit: Int = 1024, private val now: () -> Long = { System.nanoTime() / 1_000_000 }) {
+    private var published = emptySet<MdnsEndpoint>()
+    fun changedEndpoints(local: String, prefix: Int): List<MdnsEndpoint> {
+        val current = endpoints(local, prefix).toSet()
+        val changed = current - published
+        // Goodbye records remove cache entries; a later re-announcement can be published again.
+        // Previously observed scan evidence remains a historical observation for this scan.
+        published = current
+        return changed.toList()
+    }
     private val records = linkedMapOf<String, MdnsRecord>()
     private data class Sent(val count: Int, val at: Long)
     private val asked = mutableMapOf<MdnsPacket.Question, Sent>()
@@ -147,7 +156,11 @@ class MdnsDiscovery(private val limit: Int = 1024, private val now: () -> Long =
         return instances().flatMap { ptr ->
             val srv = targets[ptr.instance] ?: return@flatMap emptyList()
             addresses[srv.host].orEmpty().filter { ScanRules.usableHost(it.ip, local, prefix) }.map {
-                MdnsEndpoint(it.ip, ServiceProbe(srv.port, if (ptr.owner == "_rtsp._tcp.local") "RTSP" else "HTTP"),
+                MdnsEndpoint(it.ip, ServiceProbe(srv.port, when (ptr.owner) {
+                    "_rtsp._tcp.local" -> "RTSP"
+                    "_http._tcp.local", "_onvif._tcp.local" -> "HTTP"
+                    else -> "TCP" // Capability comes from the announcement; do not send HTTP to IPPS or proprietary services.
+                }),
                     Evidence("mDNS", "${ptr.owner}: ${MdnsPacket.displayName(ptr.instance)} (${MdnsPacket.displayName(srv.host)}:${srv.port})", ptr.owner in setOf("_rtsp._tcp.local", "_onvif._tcp.local")),
                     mapOf("mdns_name" to MdnsPacket.displayName(ptr.instance.removeSuffix("." + ptr.owner)),
                         "mdns_host" to MdnsPacket.displayName(srv.host)) + when (ptr.owner) {

@@ -36,6 +36,16 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -66,18 +76,32 @@ import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 import kotlinx.coroutines.launch
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun DetectResultView() {
     val hazeState = remember { HazeState() }
     val context = LocalContext.current
+    val keyboard = LocalSoftwareKeyboardController.current
     val localMain = LocalMainContextEntity.current
     val resultSuspiciousDevices = localMain.resultSuspiciousDevices
     val resultTrustedDevices = localMain.resultTrustedDevices
     val allDevices = (resultSuspiciousDevices + resultTrustedDevices).distinctBy { it.ip }
     val identityGroups = allDevices.groupBy { com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.forDevice(it).type }
-    var selectedType by remember { mutableStateOf<String?>(null) }
+    val recordKey = if (localMain.isShowingLatestHistoryResult) localMain.displayedHistory?.id else localMain.currentRecordId
+    var selectedType by rememberSaveable(recordKey) { mutableStateOf<String?>(null) }
+    var search by rememberSaveable(recordKey) { mutableStateOf("") }
+    var statusFilter by rememberSaveable(recordKey) { mutableStateOf(0) }
+    var showScanDetails by rememberSaveable(recordKey) { mutableStateOf(false) }
+    val listState = rememberLazyListState()
     val activeType = selectedType?.takeIf { it in identityGroups }
-    val visibleDevices = activeType?.let { identityGroups.getValue(it) } ?: allDevices
+    val visibleDevices = (activeType?.let { identityGroups.getValue(it) } ?: allDevices).filter { device ->
+        (statusFilter != 1 || device.finding == com.spyfinder.hiddencamera.detectorapp.scan.Finding.CAMERA_FEATURES) &&
+        (statusFilter != 2 || !device.analysisComplete) &&
+        (search.isBlank() || (listOf(device.ip, device.name, device.brandModel) +
+            listOf("upnp_name", "mdns_name", "mdns_host", "identity_model").mapNotNull { device.details[it] })
+            .any { it.contains(search.trim(), ignoreCase = true) })
+    }
+    LaunchedEffect(recordKey, activeType, search, statusFilter) { listState.scrollToItem(0) }
     val scope = rememberCoroutineScope()
     val saveFailed by ScanHistoryStore.saveFailed.collectAsState()
     val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
@@ -147,14 +171,14 @@ fun DetectResultView() {
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 Image(painter = painterResource(R.drawable.svg_icon_sensor), modifier = Modifier.size(20.dp), contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(context.getString(R.string.inspection_results), color = White, fontSize = 14.sp, fontWeight = FontWeight.W400)
+                Text(context.getString(R.string.ux_scan_overview), color = White, fontSize = 14.sp, fontWeight = FontWeight.W400)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth().height(92.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().height(76.dp)) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -172,47 +196,60 @@ fun DetectResultView() {
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(1f)
-                        .background(color = Color(0x3300C46F), shape = RoundedCornerShape(20.dp))
+                        .background(color = White10, shape = RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${resultTrustedDevices.size}", color = Color(0xFF00C46F), fontSize = 32.sp, fontWeight = FontWeight.W700)
+                        Text("${resultTrustedDevices.size}", color = White, fontSize = 32.sp, fontWeight = FontWeight.W700)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(context.getString(R.string.other_devices), color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text(context.getString(R.string.other_devices), color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(21.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth().height(24.dp).padding(start = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(context.getString(R.string.all_detection_list), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
-                Spacer(modifier = Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .background(color = White10, shape = RoundedCornerShape(999.dp))
-                        .padding(horizontal = 8.dp)
-                ) {
-                    Text("${allDevices.size}", color = White, fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.align(Alignment.Center))
-                }
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(context.getString(R.string.ux_incomplete_count, allDevices.count { !it.analysisComplete }),
+                color = White60, fontSize = 12.sp)
             LazyColumn(
+                state = listState,
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item {
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        (listOf<String?>(null) + identityGroups.keys.sorted()).forEach { type ->
-                            val title = type?.let { ScanStrings.text(context, it) } ?: context.getString(R.string.all_detection_list)
-                            val count = type?.let { identityGroups.getValue(it).size } ?: allDevices.size
-                            Text("$title ($count)", color = if (activeType == type) White else White60, fontSize = 12.sp,
-                                modifier = Modifier.background(White10, RoundedCornerShape(20.dp))
-                                    .clickable { selectedType = type }.padding(horizontal = 12.dp, vertical = 12.dp))
+                stickyHeader {
+                    Column(Modifier.fillMaxWidth().background(Black).padding(vertical = 4.dp)) {
+                        OutlinedTextField(value = search, onValueChange = { search = it },
+                            label = { Text(context.getString(R.string.ux_search)) }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = White, unfocusedTextColor = White,
+                                focusedLabelColor = White60, unfocusedLabelColor = White60, cursorColor = White))
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            (listOf<String?>(null) + identityGroups.keys.sorted()).forEach { type ->
+                                val title = type?.let { ScanStrings.text(context, it) } ?: context.getString(R.string.all_detection_list)
+                                val count = type?.let { identityGroups.getValue(it).size } ?: allDevices.size
+                                Text("$title ($count)", color = if (activeType == type) White else White60, fontSize = 12.sp,
+                                    modifier = Modifier.semantics { selected = activeType == type }
+                                        .clickable { selectedType = type; keyboard?.hide() }.padding(horizontal = 8.dp, vertical = 10.dp))
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(R.string.ux_status_all, R.string.camera_clues, R.string.ux_status_incomplete).forEachIndexed { index, label ->
+                                Text(context.getString(label), color = if (statusFilter == index) White else White60, fontSize = 12.sp,
+                                    modifier = Modifier.semantics { selected = statusFilter == index }
+                                        .clickable { statusFilter = index; keyboard?.hide() }.padding(horizontal = 8.dp, vertical = 10.dp))
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            val category = activeType?.let { ScanStrings.text(context, it) } ?: context.getString(R.string.ux_status_all)
+                            Text(context.getString(R.string.ux_filter_count, category, visibleDevices.size, allDevices.size),
+                                color = White60, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                            if (activeType != null || search.isNotBlank() || statusFilter != 0)
+                                Text(context.getString(R.string.ux_clear_filter), color = White, fontSize = 12.sp,
+                                    modifier = Modifier.clickable { selectedType = null; search = ""; statusFilter = 0; keyboard?.hide() }.padding(8.dp))
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
+                }
+                item {
                     HistoryReadWarning()
                     if (saveFailed) {
                         Text(context.getString(R.string.history_save_failed), color = White60, fontSize = 12.sp)
@@ -246,12 +283,17 @@ fun DetectResultView() {
                                 record.network, record.coverage.checked, record.coverage.total, record.coverage.analyzed), color = White60, fontSize = 12.sp)
                         }
                     }
-                    Text(ScanStrings.text(context, if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage), color = White60, fontSize = 12.sp)
+                    Text(context.getString(if (showScanDetails) R.string.ux_hide_scan_details else R.string.ux_show_scan_details), color = White, fontSize = 12.sp,
+                        modifier = Modifier.clickable { showScanDetails = !showScanDetails }.padding(vertical = 10.dp))
+                    if (showScanDetails) Text(ScanStrings.text(context, if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage), color = White60, fontSize = 12.sp)
                     Spacer(Modifier.height(6.dp))
                     Text(context.getString(R.string.result_explanation), color = White60, fontSize = 12.sp)
                     if (localMain.isShowingLatestHistoryResult) {
                         Text(context.getString(R.string.history_offline_note), color = White60, fontSize = 12.sp)
                     }
+                }
+                if (visibleDevices.isEmpty()) item {
+                    Text(context.getString(R.string.ux_no_matches), color = White60, fontSize = 14.sp, modifier = Modifier.padding(16.dp))
                 }
                 items(visibleDevices.size, key = { visibleDevices[it].ip }) { index ->
                     WifiInfoItemView(visibleDevices[index]) {
@@ -284,7 +326,7 @@ fun DetectResultView() {
                         Text(context.getString(R.string.review_devices_suffix), fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Box(
                         modifier = Modifier

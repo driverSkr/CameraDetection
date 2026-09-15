@@ -4,6 +4,40 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DeviceIdentityTest {
+    @Test fun computerIdentityAndPlaybackCapabilityAreSeparate() {
+        val details = mapOf("mdns_name" to "办公室的mac mini", "mdns_device_type" to "Media playback device")
+        assertEquals("Likely computer", DeviceIdentity.classify(false, false, details, false).type)
+        assertEquals(listOf("Media playback service"), DeviceIdentity.capabilities(details))
+        assertEquals("Device name suggests type; verify manually", DeviceIdentity.classify(false, false, details, false).basis)
+    }
+    @Test fun longDescriptionUrlsRemainCompleteAndArePartOfTaskIdentity() {
+        val url = "http://192.168.1.2/" + "path/".repeat(60) + "device.xml?token=abc"
+        assertEquals(url, ServiceMetadata.headers("HTTP/1.1 200 OK\r\nLOCATION: $url\r\n\r\n")["location"])
+        assertEquals(url, DeviceDescription.localUrl(url, "192.168.1.2"))
+        assertEquals(2, setOf(ServiceProbe(80, "UPNP_INFO", url), ServiceProbe(80, "UPNP_INFO", "$url&v=2")).size)
+        assertNull(ServiceMetadata.headers("HTTP/1.1 200 OK\r\nLOCATION: http://192.168.1.2/" + "a".repeat(2048) + "\r\n\r\n")["location"])
+    }
+    @Test fun multipleServiceTypesAreOrderIndependentAndNamesArePreserved() {
+        val printer = mapOf("mdns_device_type" to "Printer", "mdns_name" to "Office printer")
+        val player = mapOf("mdns_device_type" to "Media playback device", "mdns_name" to "Office player")
+        val merged = ServiceMetadata.merge(printer, player)
+        assertEquals(merged, ServiceMetadata.merge(player, printer))
+        assertEquals(2, merged.getValue("mdns_name").lines().size)
+        assertEquals("Multiple service capabilities; hardware type unconfirmed", DeviceIdentity.classify(false, false, merged, false).basis)
+    }
+    @Test fun reportsStayCoherentAndConflictsDoNotDependOnArrivalOrder() {
+        val a = mapOf("identity_source" to "ONVIF", "identity_model" to "NVR", "identity_manufacturer" to "A")
+        val b = mapOf("identity_source" to "UPnP", "identity_model" to "IP Camera", "identity_firmware" to "B firmware")
+        val merged = DeviceDescription.mergeReports(listOf(a, b))
+        assertEquals(merged, DeviceDescription.mergeReports(listOf(b, a)))
+        assertEquals("NVR", merged["identity_model"])
+        assertNull(merged["identity_firmware"])
+        assertTrue(merged.getValue("identity_observations").contains("B firmware"))
+        assertEquals("Conflicting identity clues", DeviceIdentity.classify(false, false, merged, true).basis)
+        val partial = DeviceDescription.mergeReports(listOf(a, mapOf("identity_query" to "Authentication required")))
+        assertEquals("NVR", partial["identity_model"])
+        assertEquals("Some identity queries failed", partial["identity_query"])
+    }
     @Test fun incompleteIdentityExplainsTheSpecificReason() {
         fun reason(details: Map<String, String>, video: Boolean = false) = DeviceIdentity.classify(false, false, details, video).basis
         assertEquals("Authentication required", reason(mapOf("identity_query" to "Authentication required"), true))
@@ -47,10 +81,10 @@ class DeviceIdentityTest {
         assertEquals("Device type unconfirmed", DeviceIdentity.classify(false, false,
             mapOf("port_554" to "RTSP", "server_80" to "webserver"), true).type)
     }
-    @Test fun declaredMediaDeviceRetainsItsIdentityEvenWithVideoClues() {
-        assertEquals("Media playback device", DeviceIdentity.classify(false, false,
+    @Test fun mediaAnnouncementsDoNotProveHardwareTypeEvenWithVideoClues() {
+        assertEquals("Device type unconfirmed", DeviceIdentity.classify(false, false,
             mapOf("upnp_type" to "urn:schemas-upnp-org:device:MediaRenderer:1"), true).type)
-        assertEquals("Media server", DeviceIdentity.classify(false, false,
+        assertEquals("Device type unconfirmed", DeviceIdentity.classify(false, false,
             mapOf("upnp_type" to "urn:schemas-upnp-org:device:MediaServer:1"), true).type)
     }
     @Test fun explicitCameraAndRecorderModelsAreOnlyTentative() {
@@ -60,7 +94,7 @@ class DeviceIdentityTest {
     }
     @Test fun mdnsPrinterAndPlaybackAnnouncementsHaveTheirOwnTypes() {
         assertEquals("Printer", DeviceIdentity.classify(false, false, mapOf("mdns_device_type" to "Printer"), false).type)
-        assertEquals("Media playback device", DeviceIdentity.classify(false, false, mapOf("mdns_device_type" to "Media playback device"), false).type)
+        assertEquals("Device type unconfirmed", DeviceIdentity.classify(false, false, mapOf("mdns_device_type" to "Media playback device"), false).type)
     }
     @Test fun descriptionCanOnlyAddressTheAnnouncingDevice() {
         assertNotNull(DeviceDescription.localUrl("http://192.168.1.2:8080/device.xml", "192.168.1.2"))
