@@ -46,6 +46,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     private val rows = DeviceSnapshotCache()
     private val discoveryHealth = DiscoveryHealth()
     private val serviceRunner = ServiceProbeRunner()
+    private val discoveryPolicy = DiscoveryPolicy()
     private val probeCounts = java.util.concurrent.ConcurrentHashMap<ProbeResult, AtomicInteger>()
     private val analysisMillis = java.util.concurrent.atomic.AtomicLong()
     private val discoveryMillis = java.util.concurrent.atomic.AtomicLong()
@@ -100,6 +101,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         return cm.getLinkProperties(t.network)?.linkAddresses?.any { it.address.hostAddress == t.ip && it.prefixLength == t.prefix } == true
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun scan(t: WifiTarget, onProgress: (String, List<WifiDevice>, Int) -> Unit): ScanOutput = withContext(Dispatchers.IO) {
         target = t
         val scanStarted = SystemClock.elapsedRealtime()
@@ -121,38 +123,41 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                 }
             }
             try {
-                ScanPipeline({ resources.closed }).run(
-                    planned, { try { discoverServices(t) } finally { progress.multicastFinished(); liveness.activity() } }, { index ->
-                        val ip = targets.addresses[index]
-                        if (!found.containsKey(ip)) {
-                            val attempt = ProbeSupport.discover({ !resources.closed }) {
-                                probe(t, ip, it)
+                // Blocking connects need enough IO slots; reserve headroom for multicast and coordinators.
+                withContext(Dispatchers.IO.limitedParallelism(discoveryPolicy.workers(planned) + 12)) {
+                    ScanPipeline({ resources.closed }, discoveryWorkers = discoveryPolicy.workers(planned)).run(
+                        planned, { try { discoverServices(t) } finally { progress.multicastFinished(); liveness.activity() } }, { index ->
+                            val ip = targets.addresses[index]
+                            if (!found.containsKey(ip)) {
+                                val attempt = discoveryPolicy.discover({ !resources.closed }) { port, timeout ->
+                                    probe(t, ip, port, timeout)
+                                }
+                                if (attempt.uncertain) uncertainAddresses.incrementAndGet()
+                                if (attempt.responded) discovered(ip, emptyList())
+                                if (!attempt.checked) throw CancellationException()
                             }
-                            if (attempt.uncertain) uncertainAddresses.incrementAndGet()
-                            if (attempt.responded) discovered(ip, emptyList())
-                            if (!attempt.checked) throw CancellationException()
-                        }
-                        discoveryCount.incrementAndGet()
-                        progress.checked(ip)
-                        liveness.activity()
-                    }, { pending.poll()?.ip }, { ip ->
-                        val probes = synchronized(found) { advertisedProbes[ip].orEmpty() }
-                        val analysisStarted = SystemClock.elapsedRealtime()
-                        val result = try { analyze(t, ip, probes) } finally {
-                            analysisMillis.addAndGet(SystemClock.elapsedRealtime() - analysisStarted)
-                        }
-                        synchronized(found) {
-                            if (advertisedProbes[ip].orEmpty() != probes) {
-                                // A late announcement must be analyzed even if this address was already in flight.
-                                pending.offer(Pending(ip, 0, sequence.incrementAndGet()))
-                            } else {
-                                analyzed[ip] = result
-                                refreshRow(ip)
-                                progress.analyzed(ip)
+                            discoveryCount.incrementAndGet()
+                            progress.checked(ip)
+                            liveness.activity()
+                        }, { pending.poll()?.ip }, { ip ->
+                            val probes = synchronized(found) { advertisedProbes[ip].orEmpty() }
+                            val analysisStarted = SystemClock.elapsedRealtime()
+                            val result = try { analyze(t, ip, probes) } finally {
+                                analysisMillis.addAndGet(SystemClock.elapsedRealtime() - analysisStarted)
                             }
-                        }
-                        liveness.activity()
-                    })
+                            synchronized(found) {
+                                if (advertisedProbes[ip].orEmpty() != probes) {
+                                    // A late announcement must be analyzed even if this address was already in flight.
+                                    pending.offer(Pending(ip, 0, sequence.incrementAndGet()))
+                                } else {
+                                    analyzed[ip] = result
+                                    refreshRow(ip)
+                                    progress.analyzed(ip)
+                                }
+                            }
+                            liveness.activity()
+                        })
+                }
             } finally {
                 reporter.cancelAndJoin()
                 android.util.Log.i("ScanMetrics", "elapsed_ms=${SystemClock.elapsedRealtime() - scanStarted} " +
@@ -180,12 +185,12 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val errno = causes.filterIsInstance<ErrnoException>().firstOrNull()?.errno
         return ProbeSupport.classify(error, errno, resources.closed)
     }
-    private fun probe(t: WifiTarget, ip: String, port: Int): ProbeResult {
+    private fun probe(t: WifiTarget, ip: String, port: Int, timeoutMillis: Int): ProbeResult {
         if (resources.closed) throw CancellationException()
         val socket = resources.track(t.network.socketFactory.createSocket())
         val started = SystemClock.elapsedRealtime()
         val result = try {
-            socket.connect(InetSocketAddress(ip, port), 450)
+            socket.connect(InetSocketAddress(ip, port), timeoutMillis)
             ProbeResult.OPEN
         } catch (e: java.io.IOException) {
             errorResult(e)

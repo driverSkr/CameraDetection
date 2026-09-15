@@ -7,6 +7,24 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 
 class ScanPipelineTest {
+    @Test fun largeSubnetUsesBoundedWorkersAndChecksEveryAddressExactlyOnce() = runBlocking {
+        val workers = DiscoveryPolicy().workers(2046)
+        val active = AtomicInteger()
+        val peak = AtomicInteger()
+        val visited = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+        ScanPipeline({ false }, workers).run(2046, {}, { index ->
+            val current = active.incrementAndGet()
+            peak.updateAndGet { maxOf(it, current) }
+            try {
+                assertTrue(visited.add(index))
+                delay(1)
+            } finally { active.decrementAndGet() }
+        }, { null }, {})
+        assertEquals(2046, visited.size)
+        assertEquals(64, peak.get())
+        assertEquals(0, active.get())
+    }
+
     @Test fun lateMulticastWorkIsDrainedAfterTheFirstAnalysis() = runBlocking {
         val queue = ConcurrentLinkedQueue<String>()
         val firstAnalysis = CompletableDeferred<Unit>()
