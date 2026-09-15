@@ -298,4 +298,9 @@
     <string name="ux_service_print">Printing service</string>
     <string name="ux_show_scan_details">Show scan details</string>
     <string name="ux_hide_scan_details">Hide scan details</string>
+    <string name="ux_return_to_scan">Return to Wi-Fi scan</string>
+    <string name="ux_scan_failed_empty">Scanning failed before any devices were found. Check the reason above, then return to Wi-Fi scan to try again.</string>
+    <string name="ux_scan_incomplete_empty">The scan is incomplete and no devices were found. This does not mean the network has no devices.</string>
+    <string name="ux_scan_running_empty">Searching for devices…</string>
+    <string name="ux_scan_empty">No devices were found in this scan. Devices may be offline or unreachable; this does not confirm the area is safe.</string>
 </resources>

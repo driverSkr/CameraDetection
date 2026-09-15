@@ -22,10 +22,12 @@ object DeviceIdentity {
         device.finding == Finding.CAMERA_FEATURES).let { it.copy(capabilities = capabilities(device.details)) }
     data class Result(val type: String, val basis: String, val capabilities: List<String> = emptyList())
     fun capabilities(details: Map<String, String>): List<String> = buildList {
-        when (upnpType.matchEntire(details["upnp_type"].orEmpty())?.groupValues?.get(1)) {
-            "MediaRenderer" -> add("Media playback service")
-            "MediaServer" -> add("Media server service")
-            "Printer" -> add("Printing service")
+        details["upnp_type"].orEmpty().lines().forEach { declared ->
+            when (upnpType.matchEntire(declared)?.groupValues?.get(1)) {
+                "MediaRenderer" -> add("Media playback service")
+                "MediaServer" -> add("Media server service")
+                "Printer" -> add("Printing service")
+            }
         }
         details["mdns_device_type"].orEmpty().lines().forEach {
             when (it) { "Printer" -> add("Printing service"); "Media playback device" -> add("Media playback service") }

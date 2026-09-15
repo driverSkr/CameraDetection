@@ -11,6 +11,12 @@ object DeviceDescription {
             (if (it["identity_source"] == "ONVIF") "0" else "1") + it.toSortedMap().toString()
         }
         val result = successful.firstOrNull().orEmpty().toMutableMap()
+        // Names and advertised capabilities are independent of the coherent hardware report.
+        listOf("upnp_name", "upnp_type").forEach { key ->
+            val values = successful.mapNotNull { it[key] }.flatMap { it.lines() }
+                .filter(String::isNotBlank).distinct().sorted()
+            if (values.isNotEmpty()) result[key] = values.joinToString("\n")
+        }
         if (successful.size > 1) {
             result["identity_observations"] = successful.joinToString("\n") {
                 listOf("identity_source", "upnp_name", "identity_manufacturer", "identity_model", "identity_firmware", "upnp_type")

@@ -274,7 +274,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             Analysis(evidence, !incomplete, details)
         }
         val descriptions = probes.zip(results).filter { it.first.url != null }.map { it.second.details }
-        val serviceDetails = probes.zip(results).filter { it.first.url == null }.flatMap { it.second.details.entries }.associate { it.toPair() }
+        val serviceDetails = ServiceMetadata.mergeProbeDetails(probes.zip(results).filter { it.first.url == null }.map { it.second.details })
         return Analysis((evidence + results.flatMap { it.evidence }).distinct(), results.all { it.complete }, serviceDetails + DeviceDescription.mergeReports(descriptions))
     }
 

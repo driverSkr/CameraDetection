@@ -2,6 +2,14 @@ package com.spyfinder.hiddencamera.detectorapp.scan
 
 /** Self-reported metadata, never a basis for camera classification or manufacturer inference. */
 object ServiceMetadata {
+    /** A connectivity-only result must never erase an observed application protocol. */
+    fun mergeProbeDetails(reports: List<Map<String, String>>): Map<String, String> =
+        reports.flatMap { it.entries }.groupBy({ it.key }, { it.value }).mapValues { (key, values) ->
+            if (key.startsWith("port_")) {
+                val protocols = values.flatMap { it.split(" / ") }.filter(String::isNotBlank).distinct().sorted()
+                protocols.filter { it != "TCP" }.ifEmpty { protocols }.joinToString(" / ")
+            } else values.filter(String::isNotBlank).distinct().sorted().joinToString("\n")
+        }
     fun merge(previous: Map<String, String>, incoming: Map<String, String>): Map<String, String> = previous + incoming.mapValues { (key, value) ->
         if (key in setOf("mdns_name", "mdns_host", "mdns_device_type"))
             (previous[key].orEmpty().lines() + value.lines()).filter { it.isNotBlank() }.map(::clean).distinct().sorted().take(16).joinToString("\n")

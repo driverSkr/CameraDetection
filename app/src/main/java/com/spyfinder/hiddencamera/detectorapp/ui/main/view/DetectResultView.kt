@@ -92,6 +92,9 @@ fun DetectResultView() {
     var search by rememberSaveable(recordKey) { mutableStateOf("") }
     var statusFilter by rememberSaveable(recordKey) { mutableStateOf(0) }
     var showScanDetails by rememberSaveable(recordKey) { mutableStateOf(false) }
+    val resultStatus = if (localMain.isShowingLatestHistoryResult) localMain.displayedHistory?.status else localMain.scanStatus
+    val resultMessage = ScanStrings.text(context, if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage)
+    val needsAttention = resultStatus in setOf(ScanStatus.FAILED, ScanStatus.CANCELLED, ScanStatus.PARTIAL)
     val listState = rememberLazyListState()
     val activeType = selectedType?.takeIf { it in identityGroups }
     val visibleDevices = (activeType?.let { identityGroups.getValue(it) } ?: allDevices).filter { device ->
@@ -283,9 +286,28 @@ fun DetectResultView() {
                                 record.network, record.coverage.checked, record.coverage.total, record.coverage.analyzed), color = White60, fontSize = 12.sp)
                         }
                     }
-                    Text(context.getString(if (showScanDetails) R.string.ux_hide_scan_details else R.string.ux_show_scan_details), color = White, fontSize = 12.sp,
+                    if (!localMain.isShowingLatestHistoryResult) {
+                        val label = when (resultStatus) {
+                            ScanStatus.COMPLETE -> R.string.history_status_complete
+                            ScanStatus.PARTIAL -> R.string.history_status_partial
+                            ScanStatus.CANCELLED -> R.string.history_status_cancelled
+                            ScanStatus.FAILED -> R.string.history_status_failed
+                            ScanStatus.RUNNING -> R.string.history_status_running
+                            else -> R.string.history_status_legacy
+                        }
+                        Text(context.getString(label), color = White, fontSize = 14.sp)
+                    }
+                    if (needsAttention) {
+                        Text(resultMessage, color = White60, fontSize = 12.sp)
+                        Text(context.getString(R.string.ux_return_to_scan), color = Color(0xFF00C46F), fontSize = 14.sp,
+                            modifier = Modifier.clickable {
+                                localMain.closeDetectResult()
+                                localMain.openWifiFeature()
+                            }.padding(vertical = 12.dp))
+                    }
+                    if (!needsAttention) Text(context.getString(if (showScanDetails) R.string.ux_hide_scan_details else R.string.ux_show_scan_details), color = White, fontSize = 12.sp,
                         modifier = Modifier.clickable { showScanDetails = !showScanDetails }.padding(vertical = 10.dp))
-                    if (showScanDetails) Text(ScanStrings.text(context, if (localMain.isShowingLatestHistoryResult) localMain.latestMessage else localMain.scanMessage), color = White60, fontSize = 12.sp)
+                    if (showScanDetails && !needsAttention) Text(resultMessage, color = White60, fontSize = 12.sp)
                     Spacer(Modifier.height(6.dp))
                     Text(context.getString(R.string.result_explanation), color = White60, fontSize = 12.sp)
                     if (localMain.isShowingLatestHistoryResult) {
@@ -293,7 +315,14 @@ fun DetectResultView() {
                     }
                 }
                 if (visibleDevices.isEmpty()) item {
-                    Text(context.getString(R.string.ux_no_matches), color = White60, fontSize = 14.sp, modifier = Modifier.padding(16.dp))
+                    val emptyLabel = when {
+                        allDevices.isNotEmpty() -> R.string.ux_no_matches
+                        resultStatus == ScanStatus.FAILED -> R.string.ux_scan_failed_empty
+                        resultStatus == ScanStatus.CANCELLED || resultStatus == ScanStatus.PARTIAL -> R.string.ux_scan_incomplete_empty
+                        resultStatus == ScanStatus.RUNNING -> R.string.ux_scan_running_empty
+                        else -> R.string.ux_scan_empty
+                    }
+                    Text(context.getString(emptyLabel), color = White60, fontSize = 14.sp, modifier = Modifier.padding(16.dp))
                 }
                 items(visibleDevices.size, key = { visibleDevices[it].ip }) { index ->
                     WifiInfoItemView(visibleDevices[index]) {

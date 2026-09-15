@@ -298,4 +298,9 @@
     <string name="ux_service_print">打印服务</string>
     <string name="ux_show_scan_details">展开扫描详情</string>
     <string name="ux_hide_scan_details">收起扫描详情</string>
+    <string name="ux_return_to_scan">返回 Wi-Fi 扫描</string>
+    <string name="ux_scan_failed_empty">扫描失败，尚未发现设备。请查看上方原因，处理后返回 Wi-Fi 扫描重试。</string>
+    <string name="ux_scan_incomplete_empty">扫描未完成，尚未发现设备。这不代表网络中没有设备。</string>
+    <string name="ux_scan_running_empty">正在查找设备…</string>
+    <string name="ux_scan_empty">本次未发现设备。设备可能离线或无法访问，不能据此确认环境安全。</string>
 </resources>
