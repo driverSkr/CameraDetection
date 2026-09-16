@@ -4,6 +4,38 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ResultMergeRegressionTest {
+    @Test fun compatibleMediaCapabilitiesPreserveHardwareIdentityInEitherOrder() {
+        val base = mapOf("identity_source" to "UPnP", "identity_manufacturer" to "Example", "identity_model" to "Smart TV")
+        val reports = listOf("MediaRenderer", "MediaServer").map {
+            base + ("upnp_type" to "urn:schemas-upnp-org:device:$it:1")
+        }
+        val merged = DeviceDescription.mergeReports(reports)
+        assertEquals(merged, DeviceDescription.mergeReports(reports.reversed()))
+        assertNull(merged["identity_conflict"])
+        assertEquals("Likely television", DeviceIdentity.classify(false, false, merged, false).type)
+        assertEquals(listOf("Media playback service", "Media server service"), DeviceIdentity.capabilities(merged))
+    }
+
+    @Test fun multipleCapabilitiesStillHonorExplicitHardwareDeclarations() {
+        fun report(type: String) = mapOf("identity_source" to "UPnP", "upnp_type" to "urn:schemas-upnp-org:device:$type:1")
+        val printer = DeviceDescription.mergeReports(listOf(report("Printer"), report("MediaServer")))
+        assertEquals("Printer", DeviceIdentity.classify(false, false, printer, false).type)
+        val conflict = DeviceDescription.mergeReports(listOf(report("Printer"), report("InternetGatewayDevice")))
+        assertEquals("Conflicting identity clues", DeviceIdentity.classify(false, false, conflict, false).basis)
+    }
+
+    @Test fun conflictingManufacturersRemainUnconfirmed() {
+        val base = mapOf("identity_source" to "UPnP", "identity_model" to "Smart TV")
+        val merged = DeviceDescription.mergeReports(listOf(base + ("identity_manufacturer" to "A"), base + ("identity_manufacturer" to "B")))
+        assertEquals("true", merged["identity_conflict"])
+        assertEquals("Conflicting identity clues", DeviceIdentity.classify(false, false, merged, false).basis)
+    }
+
+    @Test fun repeatedProbeMergesDoNotDuplicateServerObservations() {
+        val reports = listOf(mapOf("server_80" to "A"), mapOf("server_80" to "B"))
+        val merged = ServiceMetadata.mergeProbeDetails(reports)
+        assertEquals(merged, ServiceMetadata.mergeProbeDetails(listOf(merged) + reports))
+    }
     @Test fun compatibleReportsPreserveNameCapabilitiesAndCoherentHardware() {
         val onvif = mapOf("identity_source" to "ONVIF", "identity_model" to "Model-100", "identity_manufacturer" to "Example")
         val upnp = mapOf("identity_source" to "UPnP", "identity_model" to "Model-100", "upnp_name" to "Living room",

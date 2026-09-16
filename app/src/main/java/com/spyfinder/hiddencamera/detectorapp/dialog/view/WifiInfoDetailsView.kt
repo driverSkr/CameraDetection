@@ -1,6 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.dialog.view
 
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
+import com.spyfinder.hiddencamera.detectorapp.utils.DevicePresentation
 import androidx.compose.ui.platform.LocalContext
 
 import androidx.compose.foundation.Image
@@ -71,13 +72,29 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
                 Image(painter = painterResource(com.spyfinder.hiddencamera.detectorapp.utils.DevicePresentation.icon(identity.type)), modifier = Modifier.size(36.dp).align(Alignment.Center), contentDescription = null)
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(device.details) ?: ScanStrings.text(context, identity.type), modifier = Modifier.weight(1f), color = White, fontSize = 18.sp, fontWeight = FontWeight.W600, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(device.details)
+                ?: if (identity.type == "Device type unconfirmed") context.getString(R.string.identity_network_device) else ScanStrings.text(context, identity.type),
+                modifier = Modifier.weight(1f), color = White, fontSize = 18.sp, fontWeight = FontWeight.W600, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.width(8.dp))
             Image(painter = painterResource(R.drawable.svg_icon_close_30), contentDescription = context.getString(R.string.a11y_close), modifier = Modifier.clickable{ dialog.dismiss() })
         }
         Spacer(modifier = Modifier.height(20.dp))
-        Text(ScanStrings.text(context, identity.type), color = White, fontSize = 14.sp)
+        Text(DevicePresentation.identityStatus(device, identity)?.let(context::getString)
+            ?: ScanStrings.text(context, identity.type), color = White, fontSize = 14.sp)
         Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
+        Spacer(Modifier.height(12.dp))
+        listOf("identity_manufacturer" to R.string.identity_manufacturer, "identity_model" to R.string.device_model).forEach { (key, label) ->
+            device.details[key]?.takeIf { it.isNotBlank() }?.let { value ->
+                Text(context.getString(label), color = White60, fontSize = 12.sp)
+                Text(value, color = White, fontSize = 14.sp)
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+        if (identity.capabilities.isNotEmpty()) {
+            Text(context.getString(R.string.ux_capabilities), color = White60, fontSize = 12.sp)
+            Text(identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = White, fontSize = 14.sp)
+            Spacer(Modifier.height(12.dp))
+        }
         Text(context.getString(R.string.detection_finding), color = White60, fontSize = 14.sp)
         Spacer(Modifier.height(6.dp))
         Text(if (device.isCurrentPhone) context.getString(R.string.current_phone) else when (device.finding) {
@@ -88,7 +105,7 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
         }, color = White, fontSize = 14.sp)
         if (!device.analysisComplete) Text(context.getString(R.string.analysis_incomplete), color = White60, fontSize = 12.sp)
         Text(context.getString(R.string.ux_next_step), color = White, fontSize = 14.sp)
-        Text(context.getString(com.spyfinder.hiddencamera.detectorapp.utils.DevicePresentation.nextStep(device)), color = White60, fontSize = 12.sp)
+        Text(context.getString(DevicePresentation.nextStep(device, identity)), color = White60, fontSize = 12.sp)
         Spacer(Modifier.height(12.dp))
         Text(context.getString(R.string.ip_address), color = White60, fontSize = 14.sp)
         Text(device.ip, color = White, fontSize = 14.sp)
@@ -97,16 +114,13 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
                 clipboard.setText(AnnotatedString(device.ip))
                 android.widget.Toast.makeText(context, context.getString(R.string.ux_ip_copied), android.widget.Toast.LENGTH_SHORT).show()
             }.padding(vertical = 10.dp))
-        if (identity.capabilities.isNotEmpty()) {
-            Text(context.getString(R.string.ux_capabilities), color = White60, fontSize = 14.sp)
-            Text(identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = White, fontSize = 14.sp)
-        }
         Text(context.getString(if (showTechnical) R.string.ux_hide_technical else R.string.ux_show_technical),
             color = White, fontSize = 14.sp, modifier = Modifier.clickable { showTechnical = !showTechnical }.padding(vertical = 14.dp))
         if (showTechnical) {
         listOf(
             R.string.mac_address to device.mac.ifBlank { context.getString(R.string.device_mac_unavailable) },
-            R.string.device_model to device.brandModel.ifBlank { context.getString(R.string.device_model_unavailable) }).forEach { (label, value) ->
+            R.string.device_model to device.brandModel.ifBlank { context.getString(R.string.device_model_unavailable) })
+            .filterNot { (label, _) -> label == R.string.device_model && !device.details["identity_model"].isNullOrBlank() }.forEach { (label, value) ->
             Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                 Text(context.getString(label), color = White60, fontSize = 14.sp)
                 Spacer(Modifier.height(4.dp))
@@ -119,7 +133,7 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
             Text(ports.joinToString(" · ") { "${it.key.removePrefix("port_")}/${it.value}" }, color = White, fontSize = 14.sp)
             Spacer(Modifier.height(12.dp))
         }
-        device.details.filterKeys { !it.startsWith("port_") && it !in setOf("identity_basis", "identity_conflict") }.toSortedMap().forEach { (key, value) ->
+        device.details.filterKeys { !it.startsWith("port_") && it !in setOf("identity_basis", "identity_conflict", "identity_model", "identity_manufacturer") }.toSortedMap().forEach { (key, value) ->
             val label = when {
                 key == "mdns_name" -> context.getString(R.string.device_advertised_name)
                 key == "mdns_host" -> context.getString(R.string.device_hostname)

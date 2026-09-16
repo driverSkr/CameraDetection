@@ -32,6 +32,7 @@ object ScanStrings {
         "Likely video recorder" to R.string.identity_recorder,
         "Likely network camera" to R.string.identity_camera,
         "UPnP device type" to R.string.identity_upnp_basis,
+        "SSDP device type" to R.string.identity_ssdp_basis,
         "Device-reported model" to R.string.identity_model_basis,
         "Video capability detected; hardware type unconfirmed" to R.string.identity_video_basis,
         "Insufficient identity information" to R.string.identity_no_basis,

@@ -303,4 +303,15 @@
     <string name="ux_scan_incomplete_empty">扫描未完成，尚未发现设备。这不代表网络中没有设备。</string>
     <string name="ux_scan_running_empty">正在查找设备…</string>
     <string name="ux_scan_empty">本次未发现设备。设备可能离线或无法访问，不能据此确认环境安全。</string>
+    <string name="identity_ssdp_basis">依据：SSDP 设备类型公告</string>
+    <string name="identity_network_device">网络设备</string>
+    <string name="identity_status_conflict">设备身份信息存在冲突</string>
+    <string name="identity_status_model">已取得型号，设备类型待确认</string>
+    <string name="identity_status_auth">设备身份信息访问受限</string>
+    <string name="identity_status_video">已发现视频服务，设备类型待确认</string>
+    <string name="identity_status_services">已识别服务，设备类型待确认</string>
+    <string name="identity_status_unknown">暂未识别出设备类型</string>
+    <string name="ux_step_conflict">请用此 IP 地址对照路由器设备列表，并在技术详情中核对各份身份报告。报告存在矛盾，暂不能确定唯一设备类型。</string>
+    <string name="ux_step_identified">请将此 IP 地址、名称及报告的类型与路由器设备列表或实际设备核对。识别到类型不代表设备安全。</string>
+    <string name="ux_step_model">已收到设备报告的型号，但暂未识别其所属类别。可对照机身标签或路由器设备列表核实；报告的型号尚未经独立验证。</string>
 </resources>

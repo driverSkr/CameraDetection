@@ -303,4 +303,15 @@
     <string name="ux_scan_incomplete_empty">The scan is incomplete and no devices were found. This does not mean the network has no devices.</string>
     <string name="ux_scan_running_empty">Searching for devices…</string>
     <string name="ux_scan_empty">No devices were found in this scan. Devices may be offline or unreachable; this does not confirm the area is safe.</string>
+    <string name="identity_ssdp_basis">SSDP device type announcement</string>
+    <string name="identity_network_device">Network device</string>
+    <string name="identity_status_conflict">Conflicting device identity</string>
+    <string name="identity_status_model">Model available · type unconfirmed</string>
+    <string name="identity_status_auth">Identity access restricted</string>
+    <string name="identity_status_video">Video service detected · type unconfirmed</string>
+    <string name="identity_status_services">Services identified · type unconfirmed</string>
+    <string name="identity_status_unknown">Device type not yet identified</string>
+    <string name="ux_step_conflict">Compare this IP address with the router device list and check the reported identities in technical details. The reports disagree, so a single device type cannot be established.</string>
+    <string name="ux_step_identified">Compare this IP address, name and reported type with the router device list or your equipment. Recognizing a type does not establish safety.</string>
+    <string name="ux_step_model">A model was reported, but its device category is not recognized. Compare it with the equipment label or router device list; the reported model has not been independently verified.</string>
 </resources>

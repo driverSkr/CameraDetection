@@ -22,7 +22,8 @@ object DeviceDescription {
                 listOf("identity_source", "upnp_name", "identity_manufacturer", "identity_model", "identity_firmware", "upnp_type")
                     .mapNotNull(it::get).joinToString(" · ")
             }
-            if (listOf("identity_model", "upnp_type").any { key -> successful.mapNotNull { it[key] }.filter(String::isNotBlank).distinct().size > 1 })
+            // MediaRenderer/MediaServer are compatible capabilities, not competing hardware identities.
+            if (listOf("identity_model", "identity_manufacturer").any { key -> successful.mapNotNull { it[key] }.filter(String::isNotBlank).distinct().size > 1 })
                 result["identity_conflict"] = "true"
         }
         val failures = reports.mapNotNull { it["identity_query"] }

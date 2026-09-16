@@ -8,10 +8,10 @@ object ServiceMetadata {
             if (key.startsWith("port_")) {
                 val protocols = values.flatMap { it.split(" / ") }.filter(String::isNotBlank).distinct().sorted()
                 protocols.filter { it != "TCP" }.ifEmpty { protocols }.joinToString(" / ")
-            } else values.filter(String::isNotBlank).distinct().sorted().joinToString("\n")
+            } else values.flatMap { it.lines() }.filter(String::isNotBlank).distinct().sorted().joinToString("\n")
         }
     fun merge(previous: Map<String, String>, incoming: Map<String, String>): Map<String, String> = previous + incoming.mapValues { (key, value) ->
-        if (key in setOf("mdns_name", "mdns_host", "mdns_device_type"))
+        if (key in setOf("mdns_name", "mdns_host", "mdns_device_type", "ssdp_st"))
             (previous[key].orEmpty().lines() + value.lines()).filter { it.isNotBlank() }.map(::clean).distinct().sorted().take(16).joinToString("\n")
         else clean(value)
     }

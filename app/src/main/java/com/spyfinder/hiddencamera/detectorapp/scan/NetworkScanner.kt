@@ -33,6 +33,9 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         override fun compareTo(other: Pending) = compareValuesBy(this, other, { it.priority }, { it.order })
     }
     private val analyzed = ConcurrentHashMap<String, Analysis>()
+    // Session observations survive invalidation of a completed analysis and failed retries.
+    private data class Observations(val evidence: List<Evidence>, val details: Map<String, String>)
+    private val observations = ConcurrentHashMap<String, Observations>()
     private val pending = PriorityBlockingQueue<Pending>()
     private val sequence = AtomicInteger()
     private val discoveryCount = AtomicInteger()
@@ -58,7 +61,22 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     fun snapshot(): List<WifiDevice> = rows.snapshot()
     private fun refreshRow(ip: String) {
         val result = analyzed[ip]
-        rows.update(device(ip, (found[ip].orEmpty() + result?.evidence.orEmpty()).distinct(), result?.complete == true, result?.complete != true))
+        rows.update(device(ip, (found[ip].orEmpty() + observations[ip]?.evidence.orEmpty()).distinct(), result?.complete == true, result?.complete != true))
+    }
+    private fun recordAnalysis(ip: String, probes: Set<ServiceProbe>, result: Analysis) = synchronized(found) {
+        val previous = observations[ip]
+        observations[ip] = Observations(
+            (previous?.evidence.orEmpty() + result.evidence).distinct(),
+            ServiceMetadata.mergeProbeDetails(listOf(previous?.details.orEmpty(),
+                result.details.filterKeys { it.startsWith("port_") || it.startsWith("server_") })))
+        if (advertisedProbes[ip].orEmpty() != probes) {
+            // Keep positive observations even when a late announcement requires another pass.
+            pending.offer(Pending(ip, 0, sequence.incrementAndGet()))
+        } else {
+            analyzed[ip] = result
+            progress.analyzed(ip)
+        }
+        refreshRow(ip)
     }
     private fun discovered(ip: String, evidence: List<Evidence>, probe: ServiceProbe? = null,
         details: Map<String, String> = emptyMap()) = synchronized(found) {
@@ -148,16 +166,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
                             val result = try { analyze(t, ip, probes) } finally {
                                 analysisMillis.addAndGet(SystemClock.elapsedRealtime() - analysisStarted)
                             }
-                            synchronized(found) {
-                                if (advertisedProbes[ip].orEmpty() != probes) {
-                                    // A late announcement must be analyzed even if this address was already in flight.
-                                    pending.offer(Pending(ip, 0, sequence.incrementAndGet()))
-                                } else {
-                                    analyzed[ip] = result
-                                    refreshRow(ip)
-                                    progress.analyzed(ip)
-                                }
-                            }
+                            recordAnalysis(ip, probes, result)
                             liveness.activity()
                         })
                 }
@@ -212,7 +221,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     private fun device(ip: String, evidence: List<Evidence>, complete: Boolean, incomplete: Boolean): WifiDevice {
         val self = ip == target?.ip
         val finding = ScanRules.finding(evidence, incomplete)
-        val details = metadata[ip].orEmpty() + analyzed[ip]?.details.orEmpty()
+        val details = metadata[ip].orEmpty() + analyzed[ip]?.details.orEmpty() + observations[ip]?.details.orEmpty()
         val identity = DeviceIdentity.classify(self, ip == target?.gateway, details, finding == Finding.CAMERA_FEATURES)
         val type = identity.type
         return WifiDevice(if (self) "Current phone" else DeviceIdentity.name(details) ?: "$type · $ip", type, ip, R.drawable.svg_icon_sensor, 0, 0,

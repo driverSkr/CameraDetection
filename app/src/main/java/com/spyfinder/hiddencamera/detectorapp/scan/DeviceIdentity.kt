@@ -16,14 +16,17 @@ object DeviceIdentity {
         "Likely phone or tablet" to Regex("(?i)(?:^|[^a-z0-9])(?:iphone|ipad)(?:[-_. 0-9]|$)")
     )
     private val upnpType = Regex("urn:schemas-upnp-org:device:(MediaRenderer|MediaServer|InternetGatewayDevice|Printer):[0-9]+")
+    private fun declaredTypes(details: Map<String, String>) =
+        listOf("upnp_type", "ssdp_st").flatMap { details[it].orEmpty().lines() }
+            .mapNotNull { upnpType.matchEntire(it.trim())?.groupValues?.get(1) }.distinct()
     fun forDevice(device: com.spyfinder.hiddencamera.detectorapp.model.WifiDevice): Result = classify(
         device.isCurrentPhone, device.details["identity_basis"] == "Configured Wi-Fi gateway" ||
             device.evidence.any { it == "Network: Configured Wi-Fi gateway" }, device.details,
         device.finding == Finding.CAMERA_FEATURES).let { it.copy(capabilities = capabilities(device.details)) }
     data class Result(val type: String, val basis: String, val capabilities: List<String> = emptyList())
     fun capabilities(details: Map<String, String>): List<String> = buildList {
-        details["upnp_type"].orEmpty().lines().forEach { declared ->
-            when (upnpType.matchEntire(declared)?.groupValues?.get(1)) {
+        declaredTypes(details).forEach { declared ->
+            when (declared) {
                 "MediaRenderer" -> add("Media playback service")
                 "MediaServer" -> add("Media server service")
                 "Printer" -> add("Printing service")
@@ -38,12 +41,21 @@ object DeviceIdentity {
         if (gateway) return Result("Router", "Configured Wi-Fi gateway")
         if (details["identity_conflict"] == "true") return Result("Device type unconfirmed", "Conflicting identity clues")
         val declared = details["upnp_type"].orEmpty()
-        val type = when (upnpType.matchEntire(declared)?.groupValues?.get(1)) {
-            "InternetGatewayDevice" -> "Router"
-            "Printer" -> "Printer"
-            else -> null
+        val hardwareTypes = declaredTypes(details).mapNotNull {
+            when (it) {
+                "InternetGatewayDevice" -> "Router"
+                "Printer" -> "Printer"
+                else -> null
+            }
+        }.distinct()
+        if (hardwareTypes.size > 1) return Result("Device type unconfirmed", "Conflicting identity clues")
+        val type = hardwareTypes.singleOrNull()
+        if (type != null) {
+            val fromDescription = declared.lines().any {
+                upnpType.matchEntire(it.trim())?.groupValues?.get(1) in setOf("InternetGatewayDevice", "Printer")
+            }
+            return Result(type, if (fromDescription) "UPnP device type" else "SSDP device type")
         }
-        if (type != null) return Result(type, "UPnP device type")
         // Use explicit model words only, not ports, manufacturer names, or software banners.
         val model = details["identity_model"].orEmpty()
         val modelMatches = modelRules.filter { it.second.containsMatchIn(model) }.map { it.first }.distinct()
