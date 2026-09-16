@@ -19,7 +19,6 @@
     <string name="camera_clues_prefix">"摄像头线索："</string>
     <string name="camera_clues">"摄像头线索"</string>
     <string name="other_devices">"其他设备"</string>
-    <string name="inspection_results">"设备检测结果"</string>
     <string name="all_detection_list">"全部检测设备"</string>
     <string name="result_explanation">"线索需人工核实；其他设备包含未完成分析的设备和本机。"</string>
     <string name="history_offline_note">"历史记录不代表设备当前在线。"</string>
@@ -30,7 +29,6 @@
     <string name="ip_address">"IP 地址"</string>
     <string name="mac_address">"MAC 地址"</string>
     <string name="device_model">"设备型号"</string>
-    <string name="unavailable">"暂无信息"</string>
     <string name="unknown">"未知"</string>
     <string name="detection_finding">"检测结论"</string>
     <string name="current_phone">"本机"</string>
@@ -136,7 +134,6 @@
     <string name="colour_red">"红色辅助滤镜"</string>
     <string name="colour_green">"绿色辅助滤镜"</string>
     <string name="colour_blue">"蓝色辅助滤镜"</string>
-    <string name="loading">"加载中…"</string>
     <string name="store_no_plans">"暂无可用的订阅套餐，请重试。"</string>
     <string name="store_timeout">"商店未响应，请重试。"</string>
     <string name="store_prices_error">"无法加载商店价格，请检查网络后重试。"</string>

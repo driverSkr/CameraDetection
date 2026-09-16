@@ -19,7 +19,6 @@
     <string name="camera_clues_prefix">"Camera clues: "</string>
     <string name="camera_clues">"Camera clues"</string>
     <string name="other_devices">"Other devices"</string>
-    <string name="inspection_results">"Device inspection results"</string>
     <string name="all_detection_list">"All Detection List"</string>
     <string name="result_explanation">"Clues need manual verification. Other devices include incomplete checks and this phone."</string>
     <string name="history_offline_note">"History does not show current online status."</string>
@@ -30,7 +29,6 @@
     <string name="ip_address">"IP Address"</string>
     <string name="mac_address">"MAC Address"</string>
     <string name="device_model">"Device Model"</string>
-    <string name="unavailable">"Unavailable"</string>
     <string name="unknown">"Unknown"</string>
     <string name="detection_finding">"Detection finding"</string>
     <string name="current_phone">"Current phone"</string>
@@ -136,7 +134,6 @@
     <string name="colour_red">"Red colour aid"</string>
     <string name="colour_green">"Green colour aid"</string>
     <string name="colour_blue">"Blue colour aid"</string>
-    <string name="loading">"loading…"</string>
     <string name="store_no_plans">"No subscription plans are available. Please retry."</string>
     <string name="store_timeout">"The store did not respond. Please retry."</string>
     <string name="store_prices_error">"Unable to load store prices. Check your connection and retry."</string>

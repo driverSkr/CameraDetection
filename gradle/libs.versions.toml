@@ -1,26 +1,66 @@
 [versions]
 agp = "8.11.1"
 kotlin = "2.0.21"
-coreKtx = "1.10.1"
+coreKtx = "1.16.0"
 junit = "4.13.2"
-junitVersion = "1.1.5"
-espressoCore = "3.5.1"
-appcompat = "1.6.1"
-material = "1.10.0"
-activity = "1.8.0"
+junitVersion = "1.2.1"
+appcompat = "1.7.0"
+material = "1.12.0"
+activity = "1.9.3"
 constraintlayout = "2.1.4"
 cameraCore = "1.5.2"
+composeBom = "2025.06.01"
+lifecycle = "2.8.5"
+json = "20240303"
+testRunner = "1.6.2"
+testRules = "1.6.1"
+wearCompose = "1.4.1"
+navigation = "2.8.0"
+multidex = "2.0.1"
+utilcode = "1.30.7"
+bundler = "1.0.4"
+review = "2.0.2"
+shapeBlur = "1.0.5"
+haze = "0.9.0-rc03"
+guava = "33.4.8-android"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraCore" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraCore" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraCore" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraCore" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-material = { group = "androidx.compose.material", name = "material" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-wear-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "wearCompose" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycle" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+androidx-multidex = { group = "androidx.multidex", name = "multidex", version.ref = "multidex" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "testRunner" }
+androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "testRules" }
+org-json = { group = "org.json", name = "json", version.ref = "json" }
+blankj-utilcode = { group = "com.blankj", name = "utilcode", version.ref = "utilcode" }
+skydoves-bundler = { group = "com.github.skydoves", name = "bundler", version.ref = "bundler" }
+google-play-review = { group = "com.google.android.play", name = "review", version.ref = "review" }
+centerzx-shape-blur-view = { group = "com.github.centerzx", name = "ShapeBlurView", version.ref = "shapeBlur" }
+chrisbanes-haze-materials = { group = "dev.chrisbanes.haze", name = "haze-materials", version.ref = "haze" }
+google-guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

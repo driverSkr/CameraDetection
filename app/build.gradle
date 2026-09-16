@@ -116,54 +116,53 @@ android {
 
 dependencies {
 
-    implementation "androidx.core:core-ktx:${KTX_CORE_VERSION}"
-    implementation "androidx.appcompat:appcompat:${ANDROIDX_APPCOMPAT_VERSION}"
-    implementation "androidx.activity:activity-ktx:${ANDROID_X_VERSION}"
-    implementation "com.google.android.material:material:${MATERIAL_VERSION}"
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.activity.ktx
+    implementation libs.material
     implementation libs.androidx.activity
 
     //================================compose dependencies area==============================
-    def composeBom = platform('androidx.compose:compose-bom:2025.06.01')
+    def composeBom = platform(libs.androidx.compose.bom)
     implementation composeBom
     androidTestImplementation composeBom
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5'
-    implementation 'androidx.lifecycle:lifecycle-process:2.8.5'
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.json:json:20240303'
-    androidTestImplementation 'androidx.test:runner:1.6.2'
-    androidTestImplementation 'androidx.test:rules:1.6.1'
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.wear.compose:compose-material:1.4.1")
-    implementation("androidx.compose.material:material")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.navigation:navigation-compose:$NAV_VERSION")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation libs.androidx.activity.compose
+    implementation libs.androidx.lifecycle.viewmodel.compose
+    implementation libs.androidx.lifecycle.process
+    testImplementation libs.junit
+    testImplementation libs.org.json
+    androidTestImplementation libs.androidx.test.runner
+    androidTestImplementation libs.androidx.test.rules
+    androidTestImplementation libs.androidx.junit
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.ui.graphics
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.wear.compose.material
+    implementation libs.androidx.compose.material
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.navigation.compose
+    androidTestImplementation libs.androidx.compose.ui.test.junit4
+    debugImplementation libs.androidx.compose.ui.tooling
+    debugImplementation libs.androidx.compose.ui.test.manifest
 
 //    implementation "com.android.support:multidex:${MULTIDEX_VERSION}"
-    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation libs.androidx.multidex
     //================================compose dependencies area==============================
-    implementation "com.blankj:utilcode:${UTILS_VERSION}"
-    implementation "com.github.skydoves:bundler:1.0.4"
-    implementation 'com.google.android.play:review:2.0.2'
+    implementation libs.blankj.utilcode
+    implementation libs.skydoves.bundler
+    implementation libs.google.play.review
     //高斯模糊
-    implementation 'com.github.centerzx:ShapeBlurView:1.0.5'
-    implementation "dev.chrisbanes.haze:haze-materials:0.9.0-rc03" //compose 使用的动态模糊库，性能开销小，仅支持33以上
+    implementation libs.centerzx.shape.blur.view
+    implementation libs.chrisbanes.haze.materials //compose 使用的动态模糊库，性能开销小，仅支持33以上
 
     // CameraX
     // 升级到稳定版，修复旧版 CameraX 附带的 native so 仅 4KB 对齐的问题。
-    def camerax_version = "1.5.2"
-    implementation "androidx.camera:camera-core:${camerax_version}"
-    implementation "androidx.camera:camera-camera2:${camerax_version}"
-    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
-    implementation "androidx.camera:camera-view:${camerax_version}"
+    implementation libs.androidx.camera.core
+    implementation libs.androidx.camera.camera2
+    implementation libs.androidx.camera.lifecycle
+    implementation libs.androidx.camera.view
     // CameraX 的 ProcessCameraProvider API 暴露了 Guava ListenableFuture，显式引入 Android 版 Guava，避免被空 listenablefuture 占位包替换后编译期找不到类。
-    implementation "com.google.guava:guava:33.4.8-android"
+    implementation libs.google.guava
     //=========================================libs=========================================
     implementation project(path: ':Libs:Base')
     implementation project(path: ':Libs:Permission')
