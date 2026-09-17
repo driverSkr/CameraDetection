@@ -70,10 +70,12 @@ class MainContextEntity(
         if (recordId == null) return
         val trusted = !device.userTrusted
         if (recordId == currentRecordId) {
-            listOf(suspiciousDevices, trustedDevices).forEach { list ->
-                val index = list.indexOfFirst { it.ip == device.ip }
-                if (index >= 0) list[index] = list[index].copy(userTrusted = trusted)
+            val updated = (suspiciousDevices + trustedDevices).map {
+                if (it.ip == device.ip) it.copy(userTrusted = trusted) else it
             }
+            val buckets = bucketDevices(updated)
+            suspiciousDevices.replaceDevices(buckets.first)
+            trustedDevices.replaceDevices(buckets.second)
         }
         archive = archive.trust(recordId, device.ip, trusted)
         refreshHistory()
@@ -96,8 +98,9 @@ class MainContextEntity(
         hasScanHistory = archive.recent != null || archive.complete != null
         if (archive.recent == null) showingCompleteHistory = true
         val record = displayedHistory
-        latestSuspiciousDevices.replaceDevices(record?.devices.orEmpty().filter { it.riskLevel == 1 })
-        latestTrustedDevices.replaceDevices(record?.devices.orEmpty().filter { it.riskLevel != 1 })
+        val buckets = bucketDevices(record?.devices.orEmpty())
+        latestSuspiciousDevices.replaceDevices(buckets.first)
+        latestTrustedDevices.replaceDevices(buckets.second)
         latestMessage = record?.summary.orEmpty()
     }
     fun selectHistory(complete: Boolean) {
@@ -115,7 +118,7 @@ class MainContextEntity(
         isShowResult.value = true
     }
     fun openWifiFeature() {
-        pendingWifiAutoScan.value = false
+        pendingWifiAutoScan.value = scanStatus != ScanStatus.RUNNING
         selectTabIndex.intValue = 0
     }
     fun closeDetectResult() {
@@ -145,4 +148,11 @@ fun SnapshotStateList<WifiDevice>.replaceDevices(devices: List<WifiDevice>) {
         }
     }
 }
+/** Camera clues are evidence-backed and not marked trusted by the user. */
+fun bucketDevices(devices: List<WifiDevice>): Pair<List<WifiDevice>, List<WifiDevice>> {
+    val clues = devices.filter { it.riskLevel == 1 && !it.userTrusted }
+    val others = devices.filter { it.riskLevel != 1 || it.userTrusted }
+    return clues to others
+}
+
 val LocalMainContextEntity = compositionLocalOf { MainContextEntity() }

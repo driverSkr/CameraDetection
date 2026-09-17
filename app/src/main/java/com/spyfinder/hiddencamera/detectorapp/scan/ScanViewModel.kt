@@ -3,20 +3,24 @@ package com.spyfinder.hiddencamera.detectorapp.scan
 import android.app.Application
 import androidx.compose.runtime.compositionLocalOf
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.MainContextEntity
-import kotlinx.coroutines.*
+import com.spyfinder.hiddencamera.detectorapp.ui.main.context.bucketDevices
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanRecord
-import com.spyfinder.hiddencamera.detectorapp.ui.main.context.replaceDevices
-import java.util.UUID
-import android.os.SystemClock
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Date
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
+import android.os.SystemClock
+import com.spyfinder.hiddencamera.detectorapp.ui.main.context.replaceDevices
 
-class ScanViewModel(application: Application) : AndroidViewModel(application), DefaultLifecycleObserver {
+class ScanViewModel(application: Application) : AndroidViewModel(application) {
     val state = MainContextEntity(application)
     private val historyLoad = viewModelScope.launch { state.restoreLatestScanResult() }
     private var startedAt = 0L
@@ -35,9 +39,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
             state.scanStatus = ScanStatus.CANCELLED
             state.scanMessage = prefs.getString("interrupted", "Scan interrupted. Please retry.").orEmpty()
         }
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
-    override fun onStop(owner: LifecycleOwner) { cancel("Scan interrupted while the app was in the background.", source = "background") }
     fun start() {
         if (state.scanStatus == ScanStatus.RUNNING) cancel("Scan replaced.", source = "replaced")
         val id = ++generation
@@ -46,6 +48,23 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
             var sessionStarted = false
             var monitor: Job? = null
             var forcedMessage: String? = null
+            val updates = Channel<ScanUiUpdate>(Channel.UNLIMITED)
+            val seq = AtomicLong()
+            val publisher = launch {
+                var lastSeq = 0L
+                for (update in updates) {
+                    if (id != generation || state.scanStatus != ScanStatus.RUNNING) continue
+                    if (update.seq < lastSeq) continue
+                    lastSeq = update.seq
+                    state.scanMessage = update.message
+                    state.detectProgress.intValue = maxOf(state.detectProgress.intValue, update.progress.coerceIn(0, 99))
+                    publish(update.devices)
+                    if (SystemClock.elapsedRealtime() - lastCheckpoint >= 3_000) {
+                        saveSnapshot(worker)
+                        lastCheckpoint = SystemClock.elapsedRealtime()
+                    }
+                }
+            }
             try {
                 historyLoad.join()
                 if (id != generation) return@launch
@@ -74,18 +93,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                 state.suspiciousDevices.clear(); state.trustedDevices.clear()
                 prefs.edit().putBoolean("running", true).remove("interrupted").apply()
                 Event.event(getApplication(), Event.WIFI_SCAN_START)
+                ScanForegroundService.start(getApplication())
                 val task = async { worker.scan(target) { message, devices, progress ->
-                    viewModelScope.launch {
-                        if (id == generation && state.scanStatus == ScanStatus.RUNNING) {
-                            state.scanMessage = message
-                            state.detectProgress.intValue = maxOf(state.detectProgress.intValue, progress.coerceIn(0, 99))
-                            publish(devices)
-                            if (SystemClock.elapsedRealtime() - lastCheckpoint >= 3_000) {
-                                saveSnapshot(worker)
-                                lastCheckpoint = SystemClock.elapsedRealtime()
-                            }
-                        }
-                    }
+                    updates.trySend(ScanUiUpdate(seq.incrementAndGet(), message, devices, progress))
                 } }
                 monitor = launch {
                     while (task.isActive) {
@@ -101,10 +111,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                     }
                 }
                 val result = task.await()
+                updates.close()
+                publisher.join()
                 if (id != generation) return@launch
                 publish(result.devices)
                 state.scanStatus = if (result.partial) ScanStatus.PARTIAL else ScanStatus.COMPLETE
-                // Work completion is independent of evidence certainty or a declared coverage limit.
                 state.detectProgress.intValue = 100
                 state.scanMessage = "${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(Date())} · ${state.networkLabel}\n${result.message}"
             } catch (e: CancellationException) {
@@ -120,11 +131,14 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                     state.scanMessage = worker.withWarnings(e.message ?: "Scan failed. Reconnect to Wi-Fi and retry.")
                 }
             } finally {
+                updates.close()
+                publisher.cancel()
                 monitor?.cancel(); worker.resources.close()
                 if (sessionStarted && id == generation) {
                     state.isAnimating.value = false
                     saveSnapshot(worker)
                     prefs.edit().putBoolean("running", false).apply()
+                    ScanForegroundService.stop(getApplication())
                     Event.event(getApplication(), when (state.scanStatus) {
                         ScanStatus.COMPLETE -> Event.WIFI_SCAN_COMPLETE
                         ScanStatus.PARTIAL -> "wifi_scan_partial"
@@ -139,8 +153,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         lastPublished = devices
         val trust = (state.suspiciousDevices + state.trustedDevices).associate { it.ip to it.userTrusted }
         val annotated = devices.map { it.copy(userTrusted = trust[it.ip] ?: false) }
-        state.suspiciousDevices.replaceDevices(annotated.filter { it.riskLevel == 1 })
-        state.trustedDevices.replaceDevices(annotated.filter { it.riskLevel != 1 })
+        val buckets = bucketDevices(annotated)
+        state.suspiciousDevices.replaceDevices(buckets.first)
+        state.trustedDevices.replaceDevices(buckets.second)
     }
     private fun saveSnapshot(worker: NetworkScanner) {
         if (!historyLoad.isCompleted) return
@@ -164,12 +179,20 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
         state.scanMessage = scanner?.withWarnings(reason) ?: reason
         scanner?.let { saveSnapshot(it) }
         prefs.edit().putBoolean("running", false).putString("interrupted", reason).apply()
+        ScanForegroundService.stop(getApplication())
         Event.event(getApplication(), Event.WIFI_SCAN_CANCEL, Event.PARAM_REASON to reason,
             Event.PARAM_SOURCE to source, Event.PARAM_PROGRESS to state.detectProgress.intValue)
     }
     override fun onCleared() {
         cancel(source = "viewmodel_cleared")
-        ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
     }
 }
+
+private data class ScanUiUpdate(
+    val seq: Long,
+    val message: String,
+    val devices: List<com.spyfinder.hiddencamera.detectorapp.model.WifiDevice>,
+    val progress: Int
+)
+
 val LocalScanViewModel = compositionLocalOf<ScanViewModel> { error("ScanViewModel was not provided") }

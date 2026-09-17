@@ -98,7 +98,7 @@ fun DetectResultView() {
     val listState = rememberLazyListState()
     val activeType = selectedType?.takeIf { it in identityGroups }
     val visibleDevices = (activeType?.let { identityGroups.getValue(it) } ?: allDevices).filter { device ->
-        (statusFilter != 1 || device.finding == com.spyfinder.hiddencamera.detectorapp.scan.Finding.CAMERA_FEATURES) &&
+        (statusFilter != 1 || (device.finding == com.spyfinder.hiddencamera.detectorapp.scan.Finding.CAMERA_FEATURES && !device.userTrusted)) &&
         (statusFilter != 2 || !device.analysisComplete) &&
         (search.isBlank() || (listOf(device.ip, device.name, device.brandModel) +
             listOf("upnp_name", "mdns_name", "mdns_host", "identity_model").mapNotNull { device.details[it] })

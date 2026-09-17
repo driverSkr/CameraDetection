@@ -234,6 +234,7 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             finding = finding, evidence = evidence.map { "${it.source}: ${it.detail}" }, isCurrentPhone = self,
             analysisComplete = complete, ruleVersion = ScanRules.VERSION,
             brandModel = if (self) "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}" else listOfNotNull(details["identity_manufacturer"], details["identity_model"]).joinToString(" "),
+            mac = MacLookup.forAddress(ip),
             details = details.filterKeys { !it.endsWith("_url") } + ("identity_basis" to identity.basis))
     }
 

@@ -73,6 +73,11 @@
     <string name="camera_permission_required">"Camera permission is required for the preview."</string>
     <string name="app_settings">"App settings"</string>
     <string name="camera_help">"Inspect lens reflections or unusual lights. Test infrared visibility using a working remote control and try both cameras. Colour filters are viewing aids, not automatic detection. No visible light does not rule out a camera."</string>
+    <string name="scanner_scene_tip">"Inspect the %1$s for lens reflections or unusual lights. Colour filters are viewing aids, not automatic detection."</string>
+    <string name="filter_visual_aid">"Viewing aids, not automatic detection"</string>
+    <string name="filter_caption_red">"Reflections"</string>
+    <string name="filter_caption_green">"IR / lights"</string>
+    <string name="filter_caption_blue">"Contrast"</string>
     <string name="original_view">"Original view"</string>
     <string name="original">"Original"</string>
     <string name="switch_camera">"Switch camera"</string>
@@ -209,7 +214,12 @@
     <string name="camera_runtime_error">The camera stopped unexpectedly. Please retry.</string>
     <string name="camera_busy">The camera is busy or unavailable. Close other camera apps and retry.</string>
     <string name="camera_starting">Opening camera…</string>
-    <string name="scan_foreground_hint">Keep this app in the foreground. The screen stays on during scanning.</string>
+    <string name="scan_foreground_hint">Scanning continues in the background. A notification stays visible until it finishes.</string>
+    <string name="scan_notification_channel">Wi-Fi scan</string>
+    <string name="scan_notification_title">Wi-Fi scan in progress</string>
+    <string name="scan_notification_text">Looking for devices on your network</string>
+    <string name="about">About</string>
+    <string name="about_version">Version %1$s (%2$d)</string>
     <string name="scan_unresolved_services"> %1$s service announcements could not be resolved to an in-scope IPv4 endpoint.</string>
     <string name="scan_channel_permission">%1$s discovery permission was denied. Results may be incomplete. Check app permissions and retry.</string>
     <string name="scan_channel_start_failed">%1$s discovery could not start. Results may be incomplete. Reconnect to Wi-Fi and retry.</string>

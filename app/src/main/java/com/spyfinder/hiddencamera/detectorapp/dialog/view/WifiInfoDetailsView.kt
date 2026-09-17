@@ -118,9 +118,10 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
             color = White, fontSize = 14.sp, modifier = Modifier.clickable { showTechnical = !showTechnical }.padding(vertical = 14.dp))
         if (showTechnical) {
         listOf(
-            R.string.mac_address to device.mac.ifBlank { context.getString(R.string.device_mac_unavailable) },
+            R.string.mac_address to device.mac,
             R.string.device_model to device.brandModel.ifBlank { context.getString(R.string.device_model_unavailable) })
-            .filterNot { (label, _) -> label == R.string.device_model && !device.details["identity_model"].isNullOrBlank() }.forEach { (label, value) ->
+            .filter { (label, value) -> value.isNotBlank() && !(label == R.string.device_model && !device.details["identity_model"].isNullOrBlank()) }
+            .forEach { (label, value) ->
             Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                 Text(context.getString(label), color = White60, fontSize = 14.sp)
                 Spacer(Modifier.height(4.dp))

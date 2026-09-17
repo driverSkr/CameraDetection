@@ -49,6 +49,19 @@ class ScanArchiveTest {
         assertTrue(state.recordDevices().single().userTrusted)
         assertFalse(first.single().userTrusted)
     }
+    @Test fun markingTrustedMovesCameraCluesOutOfTheRedCount() {
+        val clue = WifiDevice("Cam", "Likely network camera", "192.168.1.9", 1, 0, 0, riskLevel = 1,
+            finding = Finding.CAMERA_FEATURES)
+        val state = MainContextEntity(null)
+        val value = record("A", ScanStatus.COMPLETE).copy(devices = listOf(clue))
+        state.currentRecordId = "A"
+        state.suspiciousDevices.add(clue)
+        state.saveRecord(value)
+        state.markDeviceAsSafe(clue)
+        assertTrue(state.suspiciousDevices.isEmpty())
+        assertTrue(state.trustedDevices.single().userTrusted)
+        assertTrue(state.latestSuspiciousDevices.isEmpty())
+    }
     private fun record(id: String, status: ScanStatus) = ScanRecord(id, 123, 456, "192.168.1.2/24",
         status, ScanCoverage(254, 254, 10, 1), "summary",
         listOf(WifiDevice("Device", "Unknown", "192.168.1.3", 1, 0, 0, connected = false, analysisComplete = false)))

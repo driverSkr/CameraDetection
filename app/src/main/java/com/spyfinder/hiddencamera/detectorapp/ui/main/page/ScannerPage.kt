@@ -50,13 +50,16 @@ fun ScannerPage() {
     val isSubscribed = SubscriptionGate.hasAccessFlow.collectAsState().value
     var checking by remember { mutableStateOf(false) }
     var cameraOpen by rememberSaveable { mutableStateOf(false) }
+    var pendingScene by rememberSaveable { mutableStateOf("") }
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         cameraOpen = false
+        pendingScene = ""
     }
-    fun openCamera(source: String) {
+    fun openCamera(source: String, scene: String = pendingScene) {
         cameraOpen = true
+        pendingScene = scene
         try {
-            cameraLauncher.launch(Intent(context, CameraScannerActivity::class.java))
+            cameraLauncher.launch(CameraScannerActivity.intent(context, scene))
             Event.event(context, Event.CAMERA_SCANNER_OPEN, Event.PARAM_SOURCE to source)
         } catch (_: Exception) {
             cameraOpen = false
@@ -71,7 +74,7 @@ fun ScannerPage() {
         shouldLaunchScannerAfterSubscribe.value = false
         checking = true
         scope.launch {
-            try { if (SubscriptionGate.hasAccess()) openCamera("after_subscribe") }
+            try { if (SubscriptionGate.hasAccess()) openCamera("after_subscribe", pendingScene) }
             finally { checking = false }
         }
     }
@@ -105,12 +108,13 @@ fun ScannerPage() {
 
             if (subscribed) {
                 shouldLaunchScannerAfterSubscribe.value = false
-                openCamera("scanner_grid")
+                openCamera("scanner_grid", scannerItem)
             } else {
                 if (!SubscribeHelper.canOfferPurchase) {
                     android.widget.Toast.makeText(context, context.getString(R.string.access_retry), android.widget.Toast.LENGTH_LONG).show()
                     return@launch
                 }
+                pendingScene = scannerItem
                 shouldLaunchScannerAfterSubscribe.value = true
                 Event.event(
                     context,

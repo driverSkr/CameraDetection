@@ -94,11 +94,17 @@ fun DetectCheckView() {
             } finally { checking = false }
         }
     }
-    val startDetectAction = { vm.start() }
+    val notifyLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.start() }
+    val startDetectAction = {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            notifyLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else vm.start()
+    }
     LaunchedEffect(localMain.pendingWifiAutoScan.value, localMain.selectTabIndex.intValue) {
         if (localMain.pendingWifiAutoScan.value && localMain.selectTabIndex.intValue == 0) {
             localMain.pendingWifiAutoScan.value = false
-            if (localMain.scanStatus != ScanStatus.RUNNING) vm.start()
+            if (localMain.scanStatus != ScanStatus.RUNNING) startDetectAction()
         }
     }
     BoxWithConstraints(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {

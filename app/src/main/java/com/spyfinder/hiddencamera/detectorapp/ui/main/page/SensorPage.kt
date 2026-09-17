@@ -314,6 +314,7 @@ fun SensorPage() {
                 Text(
                     text = context.getString(when {
                         sensorError -> R.string.magnetic_sensor_failed
+                        magneticSensor == null -> R.string.no_magnetic_sensor
                         sampleStale -> R.string.magnetic_sample_stale
                         reading != null && com.spyfinder.hiddencamera.detectorapp.utils.MagneticSampleHealth.unreliable(sampleAccuracy) -> R.string.magnetic_accuracy_low
                         else -> R.string.magnetic_help
@@ -325,13 +326,28 @@ fun SensorPage() {
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
+            if (magneticSensor == null) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .background(color = White10, shape = RoundedCornerShape(999.dp))
+                    .padding(12.dp),
+                ) {
+                    Text(
+                        text = context.getString(R.string.no_magnetic_sensor),
+                        color = White60,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.W500,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            } else {
             Box(modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
                 .background(color = if (isListening) White10 else Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
                 .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
                 .clickable(enabled = !checking && !shouldStartDetectionAfterSubscribe.value) {
-                    // 点击切换监听状态
                     toggleDetectionWithSubscriptionCheck()
                 }.padding(12.dp),
             ) {
@@ -342,6 +358,7 @@ fun SensorPage() {
                     fontWeight = FontWeight.W500,
                     modifier = Modifier.align(Alignment.Center)
                 )
+            }
             }
         }
       }

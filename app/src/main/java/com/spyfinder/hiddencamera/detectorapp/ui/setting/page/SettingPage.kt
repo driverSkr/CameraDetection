@@ -15,10 +15,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.spyfinder.hiddencamera.detectorapp.BuildConfig
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.theme.Black
 import com.spyfinder.hiddencamera.detectorapp.theme.White
@@ -49,11 +56,13 @@ fun SettingPage() {
     val context = LocalContext.current
     val isChinese = LocalConfiguration.current.locales[0].language == "zh"
     val isSubscribed = SubscribeHelper.isSubscribedFlow.collectAsState().value
+    var showAbout by remember { mutableStateOf(false) }
     val settingItemList = listOf(
         Pair(R.drawable.svg_icon_share_app, R.string.share_app),
         Pair(R.drawable.svg_icon_privacy_policy, R.string.privacy_policy),
         Pair(R.drawable.svg_icon_restore, R.string.restore),
         Pair(R.drawable.svg_icon_rate_us, R.string.rate_us),
+        Pair(R.drawable.svg_icon_tips, R.string.about),
     )
 
     Column(modifier = Modifier.fillMaxSize().background(color = Black).statusBarsPadding()) {
@@ -89,7 +98,11 @@ fun SettingPage() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(settingItemList.size) { index ->
-                SettingItemView(settingItemList[index].let { it.first to context.getString(it.second) }) {
+                SettingItemView(settingItemList[index].let {
+                    it.first to if (it.second == R.string.about)
+                        context.getString(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+                    else context.getString(it.second)
+                }) {
                     when(settingItemList[index].second) {
                         R.string.share_app -> {
                             ShareUtils.shareTextWithHighlightedLinks(context, context.getString(R.string.share_body), "https://play.google.com/store/apps/details?id=" + context.packageName)
@@ -106,9 +119,22 @@ fun SettingPage() {
                             }
                         }
                         R.string.rate_us -> LaunchUtils.launchPlayStore(context)
+                        R.string.about -> showAbout = true
                     }
                 }
             }
+        }
+        if (showAbout) {
+            AlertDialog(
+                onDismissRequest = { showAbout = false },
+                title = { Text(context.getString(R.string.about)) },
+                text = { Text(context.getString(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)) },
+                confirmButton = {
+                    TextButton(onClick = { showAbout = false }) {
+                        Text(context.getString(R.string.a11y_close))
+                    }
+                }
+            )
         }
     }
 }

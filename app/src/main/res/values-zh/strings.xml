@@ -73,6 +73,11 @@
     <string name="camera_permission_required">"需要允许相机权限才能显示预览。"</string>
     <string name="app_settings">"应用设置"</string>
     <string name="camera_help">"检查镜头反光或异常光点。可用正常工作的遥控器测试红外可见性，并尝试前后摄像头。彩色滤镜仅辅助观察，不会自动检测摄像头；看不到光点也不能排除摄像头。"</string>
+    <string name="scanner_scene_tip">"请检查%1$s的镜头反光或异常光点。彩色滤镜仅辅助观察，不会自动检测。"</string>
+    <string name="filter_visual_aid">"目视辅助，不是自动识别"</string>
+    <string name="filter_caption_red">"反光"</string>
+    <string name="filter_caption_green">"红外/光点"</string>
+    <string name="filter_caption_blue">"对比"</string>
     <string name="original_view">"原图视图"</string>
     <string name="original">"原图"</string>
     <string name="switch_camera">"切换镜头"</string>
@@ -209,7 +214,12 @@
     <string name="camera_runtime_error">相机异常停止，请重试。</string>
     <string name="camera_busy">相机正被占用或不可用，请关闭其他相机应用后重试。</string>
     <string name="camera_starting">正在打开相机…</string>
-    <string name="scan_foreground_hint">扫描期间屏幕将保持常亮，请保持应用在前台。</string>
+    <string name="scan_foreground_hint">扫描会在后台继续，完成前通知栏会保持显示。</string>
+    <string name="scan_notification_channel">Wi-Fi 扫描</string>
+    <string name="scan_notification_title">正在扫描 Wi-Fi</string>
+    <string name="scan_notification_text">正在查找局域网设备</string>
+    <string name="about">关于</string>
+    <string name="about_version">版本 %1$s（%2$d）</string>
     <string name="scan_unresolved_services"> 有 %1$s 条服务公告无法解析到扫描范围内的 IPv4 端点。</string>
     <string name="scan_channel_permission">%1$s 设备发现权限被拒绝，结果可能不完整。请检查应用权限后重试。</string>
     <string name="scan_channel_start_failed">%1$s 设备发现未能启动，结果可能不完整。请重新连接 Wi-Fi 后重试。</string>

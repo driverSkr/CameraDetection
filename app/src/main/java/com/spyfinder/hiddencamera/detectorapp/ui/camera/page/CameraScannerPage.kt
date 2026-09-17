@@ -66,7 +66,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
-fun CameraScannerPage() {
+fun CameraScannerPage(sceneTitle: String = "") {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     var granted by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) }
@@ -124,7 +124,7 @@ fun CameraScannerPage() {
                 context.findBaseActivityVBind()?.finish()
             })
             Image(painterResource(R.drawable.svg_icon_warning_gray), contentDescription = context.getString(R.string.inspection_tips), modifier = Modifier.align(Alignment.CenterEnd).size(24.dp).clickable { showHelp = !showHelp })
-            Text(context.getString(R.string.tab_scanner), color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+            Text(if (sceneTitle.isBlank()) context.getString(R.string.tab_scanner) else sceneTitle, color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -174,7 +174,8 @@ fun CameraScannerPage() {
                     Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = context.getString(R.string.camera_help),
+                        text = if (sceneTitle.isBlank()) context.getString(R.string.camera_help)
+                        else context.getString(R.string.scanner_scene_tip, sceneTitle),
                         color = White60,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.W400, modifier = Modifier.weight(1f)
@@ -184,24 +185,31 @@ fun CameraScannerPage() {
                 }
             }
 
-            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = context.getString(R.string.a11y_reset_camera), modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 8.dp).clickable{
+            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = context.getString(R.string.a11y_reset_camera), modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 118.dp, end = 8.dp).clickable{
                 currentFilterColorIndex = -1
                 setZoom(1f)
             })
 
-            Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 50.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Box(Modifier.size(58.dp).border(2.dp, if (currentFilterColorIndex == -1) White else Transparent, RoundedCornerShape(999.dp)).padding(5.dp).background(White10, RoundedCornerShape(999.dp)).semantics { contentDescription = context.getString(R.string.original_view); selected = currentFilterColorIndex == -1 }.clickable { currentFilterColorIndex = -1 }, contentAlignment = Alignment.Center) {
-                    Text(context.getString(R.string.original), color = White, fontSize = 10.sp)
-                }
-                colors.forEachIndexed { index, color ->
-                    Box(modifier = Modifier
-                        .size(58.dp)
-                        .border(width = 2.dp, color = if (currentFilterColorIndex == index) White else Transparent, shape = RoundedCornerShape(999.dp))
-                        .padding(5.dp)
-                        .background(color = color, shape = RoundedCornerShape(999.dp))
-                        .semantics { contentDescription = context.getString(listOf(R.string.colour_red, R.string.colour_green, R.string.colour_blue)[index]); selected = currentFilterColorIndex == index }
-                        .clickable{ currentFilterColorIndex = index }
-                    )
+            Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 42.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(context.getString(R.string.filter_visual_aid), color = White60, fontSize = 11.sp, fontWeight = FontWeight.W400,
+                    modifier = Modifier.padding(bottom = 8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    FilterSwatch(
+                        selected = currentFilterColorIndex == -1,
+                        fill = White10,
+                        label = context.getString(R.string.original),
+                        description = context.getString(R.string.original_view)
+                    ) { currentFilterColorIndex = -1 }
+                    val captions = listOf(R.string.filter_caption_red, R.string.filter_caption_green, R.string.filter_caption_blue)
+                    val descriptions = listOf(R.string.colour_red, R.string.colour_green, R.string.colour_blue)
+                    colors.forEachIndexed { index, color ->
+                        FilterSwatch(
+                            selected = currentFilterColorIndex == index,
+                            fill = color,
+                            label = context.getString(captions[index]),
+                            description = context.getString(descriptions[index])
+                        ) { currentFilterColorIndex = index }
+                    }
                 }
             }
         }
@@ -238,6 +246,25 @@ fun CameraScannerPage() {
                 }
             }
         }
+    }
+}
+@Composable
+private fun FilterSwatch(selected: Boolean, fill: Color, label: String, description: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = description; this.selected = selected }
+    ) {
+        Box(
+            modifier = Modifier
+                .size(58.dp)
+                .border(2.dp, if (selected) White else Transparent, RoundedCornerShape(999.dp))
+                .padding(5.dp)
+                .background(fill, RoundedCornerShape(999.dp))
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(label, color = if (selected) White else White60, fontSize = 10.sp, fontWeight = FontWeight.W400)
     }
 }
 @Composable

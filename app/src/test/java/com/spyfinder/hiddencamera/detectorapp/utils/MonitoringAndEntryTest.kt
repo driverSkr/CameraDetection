@@ -16,7 +16,7 @@ class MonitoringAndEntryTest {
         assertEquals(62, state.detectProgress.intValue)
         assertEquals(0, state.selectTabIndex.intValue)
         state.scanStatus = ScanStatus.IDLE; state.openWifiFeature()
-        assertFalse(state.pendingWifiAutoScan.value)
+        assertTrue(state.pendingWifiAutoScan.value)
         assertEquals(ScanStatus.IDLE, state.scanStatus)
     }
     @Test fun sensorSilenceAndRecoveryUseTheLastValidSample() {
