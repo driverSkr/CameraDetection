@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,19 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.event.Event
-import com.spyfinder.hiddencamera.detectorapp.scan.LocalScanViewModel
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 
 @Composable
 fun MainPage() {
     val localMain = LocalMainContextEntity.current
-    val scanViewModel = LocalScanViewModel.current
     val view = androidx.compose.ui.platform.LocalView.current
     val scanning = localMain.scanStatus == com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus.RUNNING
-    val selectedTab = localMain.selectTabIndex.intValue
-    LaunchedEffect(selectedTab) {
-        if (selectedTab != 0) scanViewModel.cancel(source = "tab_leave")
-    }
     androidx.compose.runtime.DisposableEffect(view, scanning) {
         val previous = view.keepScreenOn
         view.keepScreenOn = previous || scanning

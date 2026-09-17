@@ -76,7 +76,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     if (id == generation) state.scanMessage = e.message ?: SCAN_CONNECT_WIFI
                     return@launch
                 }
-                if (id != generation || state.selectTabIndex.intValue != 0) return@launch
+                if (id != generation) return@launch
                 sessionStarted = true
                 scanner = worker
                 lastPublished = null
