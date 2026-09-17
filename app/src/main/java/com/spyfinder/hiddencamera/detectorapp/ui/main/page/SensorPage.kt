@@ -67,6 +67,7 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White60
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
+import com.spyfinder.hiddencamera.detectorapp.utils.ExclusiveSession
 import kotlinx.coroutines.launch
 import com.spyfinder.hiddencamera.detectorapp.utils.MagneticReading
 import com.spyfinder.hiddencamera.detectorapp.utils.MagneticScale
@@ -95,8 +96,9 @@ fun SensorPage() {
     var sampleStale by remember { mutableStateOf(false) }
     var sampleAccuracy by remember { mutableStateOf(SensorManager.SENSOR_STATUS_UNRELIABLE) }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val selectedTab = com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity.current.selectTabIndex.intValue
-    var isListening by remember { mutableStateOf(false) } // 控制是否监听传感器
+    val localMain = com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity.current
+    val selectedTab = localMain.selectTabIndex.intValue
+    var isListening by localMain.magneticListening
     var checking by remember { mutableStateOf(false) }
 
     val shouldStartDetectionAfterSubscribe = androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
@@ -110,7 +112,11 @@ fun SensorPage() {
           try {
             val subscribed = SubscriptionGate.hasAccess()
             if (subscribed) {
+                shouldStartDetectionAfterSubscribe.value = false
                 Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "after_subscribe")
+                if (ExclusiveSession.yieldToMagnetic()) {
+                    android.widget.Toast.makeText(context, context.getString(R.string.feature_preempted), android.widget.Toast.LENGTH_SHORT).show()
+                }
                 sensorError = false
                 isListening = true
             }
@@ -209,6 +215,9 @@ fun SensorPage() {
             if (subscribed) {
                 shouldStartDetectionAfterSubscribe.value = false
                 Event.event(context, Event.MAGNETIC_DETECT_START, Event.PARAM_SOURCE to "sensor_page")
+                if (ExclusiveSession.yieldToMagnetic()) {
+                    android.widget.Toast.makeText(context, context.getString(R.string.feature_preempted), android.widget.Toast.LENGTH_SHORT).show()
+                }
                 sensorError = false
                 isListening = true
             } else {

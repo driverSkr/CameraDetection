@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.event.Event
+import com.spyfinder.hiddencamera.detectorapp.scan.LocalScanViewModel
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 
 @Composable
@@ -70,6 +73,10 @@ fun MainPage() {
                 }
             }
 
+            if (scanning && localMain.selectTabIndex.intValue != 0) {
+                ScanActiveBanner()
+            }
+
             if (!localMain.isShowResult.value || localMain.selectTabIndex.intValue != 0) {
                 NavigationBarView(
                     modifier = Modifier
@@ -79,6 +86,45 @@ fun MainPage() {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ScanActiveBanner() {
+    val context = LocalContext.current
+    val localMain = LocalMainContextEntity.current
+    val scanViewModel = LocalScanViewModel.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(color = Color(0xFF1C3A2E), shape = RoundedCornerShape(16.dp))
+            .clickable { localMain.selectTabIndex.intValue = 0 }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                context.getString(R.string.scan_banner_title),
+                color = Color(0xFFFFFFFF),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.W600
+            )
+            Text(
+                context.getString(R.string.scan_banner_progress, localMain.detectProgress.intValue),
+                color = Color(0xFFB7E0C8),
+                fontSize = 12.sp
+            )
+        }
+        Text(
+            context.getString(R.string.action_cancel),
+            color = Color(0xFFFFFFFF),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.W600,
+            modifier = Modifier
+                .clickable { scanViewModel.cancel(source = "banner") }
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 }
 

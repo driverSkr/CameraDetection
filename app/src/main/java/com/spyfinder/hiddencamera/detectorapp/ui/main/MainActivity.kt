@@ -2,6 +2,7 @@ package com.spyfinder.hiddencamera.detectorapp.ui.main
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -33,6 +34,7 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     companion object {
         private const val EXTRA_CHECK_SUBSCRIBE_ON_LAUNCH = "extra_check_subscribe_on_launch"
+        const val EXTRA_FOCUS_DETECT = "extra_focus_detect"
 
         fun launch(context: Context, checkSubscribeOnLaunch: Boolean = false) {
             context.intentOf<MainActivity> {
@@ -46,13 +48,16 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     private val scanViewModel: ScanViewModel by viewModels()
 
-    override fun onResume() {
-        super.onResume()
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        focusDetectIfRequested(intent)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) checkColdStartSubscribeIfNeeded()
+        focusDetectIfRequested(intent)
 
         binding.composeView.apply {
             setContent {
@@ -65,6 +70,13 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
                 }
             }
         }
+    }
+
+    private fun focusDetectIfRequested(intent: android.content.Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_FOCUS_DETECT, false) != true) return
+        scanViewModel.state.selectTabIndex.intValue = 0
+        scanViewModel.state.closeDetectResult()
+        intent.removeExtra(EXTRA_FOCUS_DETECT)
     }
 
     private fun checkColdStartSubscribeIfNeeded() {

@@ -13,6 +13,8 @@ import com.spyfinder.hiddencamera.detectorapp.theme.ComposeProjectTheme
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
 import com.spyfinder.hiddencamera.detectorapp.ui.camera.page.CameraScannerPage
 import com.spyfinder.hiddencamera.detectorapp.databinding.LayoutComposeContainerBinding
+import com.spyfinder.hiddencamera.detectorapp.utils.ExclusiveSession
+import com.spyfinder.hiddencamera.detectorapp.R
 
 class CameraScannerActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
@@ -27,6 +29,10 @@ class CameraScannerActivity : BaseActivityVBind<LayoutComposeContainerBinding>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (ExclusiveSession.yieldToCamera()) {
+            android.widget.Toast.makeText(this, getString(R.string.feature_preempted), android.widget.Toast.LENGTH_SHORT).show()
+        }
+        ExclusiveSession.attachCamera(this)
         val sceneTitle = intent.getStringExtra(EXTRA_SCENE_TITLE).orEmpty()
         Event.event(this, Event.PAGE_VIEW, Event.PARAM_PAGE to "camera_scanner")
         binding.composeView.apply {
@@ -40,5 +46,10 @@ class CameraScannerActivity : BaseActivityVBind<LayoutComposeContainerBinding>()
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        ExclusiveSession.detachCamera(this)
+        super.onDestroy()
     }
 }

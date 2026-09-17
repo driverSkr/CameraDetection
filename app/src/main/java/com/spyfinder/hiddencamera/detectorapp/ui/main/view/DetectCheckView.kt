@@ -46,6 +46,8 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.net.Uri
+import android.provider.Settings
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
@@ -54,6 +56,8 @@ import com.spyfinder.hiddencamera.detectorapp.theme.White10
 import com.spyfinder.hiddencamera.detectorapp.theme.White60
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.NotificationAccess
+import com.spyfinder.hiddencamera.detectorapp.utils.findActivity
 import kotlinx.coroutines.launch
 
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -94,12 +98,18 @@ fun DetectCheckView() {
             } finally { checking = false }
         }
     }
-    val notifyLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.start() }
+    val notifyLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        NotificationAccess.markAsked(context)
+        vm.start()
+    }
+    var notifyPrompt by remember { mutableStateOf<NotificationAccess.Step?>(null) }
+    fun startScan() { notifyPrompt = null; vm.start() }
     val startDetectAction = {
-        if (android.os.Build.VERSION.SDK_INT >= 33 &&
-            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            notifyLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        } else vm.start()
+        val activity = context.findActivity()
+        when (val step = activity?.let(NotificationAccess::step) ?: if (NotificationAccess.granted(context)) NotificationAccess.Step.GRANTED else NotificationAccess.Step.EXPLAIN) {
+            NotificationAccess.Step.NOT_REQUIRED, NotificationAccess.Step.GRANTED -> startScan()
+            NotificationAccess.Step.EXPLAIN, NotificationAccess.Step.SETTINGS -> notifyPrompt = step
+        }
     }
     LaunchedEffect(localMain.pendingWifiAutoScan.value, localMain.selectTabIndex.intValue) {
         if (localMain.pendingWifiAutoScan.value && localMain.selectTabIndex.intValue == 0) {
@@ -140,7 +150,7 @@ fun DetectCheckView() {
             Text(ScanStrings.text(context, localMain.scanMessage), color = White60, fontSize = 12.sp,
                 lineHeight = 18.sp, softWrap = true, modifier = Modifier.fillMaxWidth())
             if (localMain.scanStatus == ScanStatus.RUNNING) {
-                Text(context.getString(R.string.scan_foreground_hint), color = White60, fontSize = 10.sp,
+                Text(context.getString(if (localMain.scanProtected) R.string.scan_foreground_hint else R.string.scan_unprotected_hint), color = White60, fontSize = 10.sp,
                     lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
             }
         }
@@ -336,6 +346,65 @@ fun DetectCheckView() {
                             fontWeight = FontWeight.W500,
                             modifier = Modifier.align(Alignment.Center)
                         )
+                    }
+                }
+            }
+        }
+        notifyPrompt?.let { prompt ->
+            val explain = prompt == NotificationAccess.Step.EXPLAIN
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x99000000))
+                    .clickable { notifyPrompt = null; startScan() }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 24.dp)
+                        .background(Color(0xFF161618), RoundedCornerShape(20.dp))
+                        .clickable(enabled = false) {}
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        context.getString(if (explain) R.string.notify_rationale_title else R.string.notify_settings_title),
+                        color = White, fontSize = 18.sp, fontWeight = FontWeight.W600
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        context.getString(if (explain) R.string.notify_rationale_body else R.string.notify_settings_body),
+                        color = White60, fontSize = 14.sp, lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .background(White10, RoundedCornerShape(999.dp))
+                                .clickable { notifyPrompt = null; startScan() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(context.getString(R.string.notify_not_now), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W500)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .background(Color(0xFF00C46F), RoundedCornerShape(999.dp))
+                                .clickable {
+                                    notifyPrompt = null
+                                    if (explain) notifyLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                    else context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                context.getString(if (explain) R.string.notify_allow else R.string.app_settings),
+                                color = White, fontSize = 14.sp, fontWeight = FontWeight.W500
+                            )
+                        }
                     }
                 }
             }

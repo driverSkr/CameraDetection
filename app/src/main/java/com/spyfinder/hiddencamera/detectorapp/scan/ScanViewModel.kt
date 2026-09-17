@@ -3,6 +3,9 @@ package com.spyfinder.hiddencamera.detectorapp.scan
 import android.app.Application
 import androidx.compose.runtime.compositionLocalOf
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.MainContextEntity
@@ -18,7 +21,10 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import android.os.SystemClock
+import android.widget.Toast
+import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.replaceDevices
+import com.spyfinder.hiddencamera.detectorapp.utils.ExclusiveSession
 
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
     val state = MainContextEntity(application)
@@ -30,7 +36,32 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private var scanner: NetworkScanner? = null
     private var generation = 0L
     private var lastPublished: List<com.spyfinder.hiddencamera.detectorapp.model.WifiDevice>? = null
+    private val processObserver = object : DefaultLifecycleObserver {
+        override fun onStop(owner: LifecycleOwner) {
+            if (state.scanStatus == ScanStatus.RUNNING && !ScanForegroundService.isRunning()) {
+                cancel(UNPROTECTED_BACKGROUND, source = "unprotected_background")
+            }
+        }
+    }
     init {
+        ExclusiveSession.bind(
+            cancelScan = { reason, source -> cancel(reason, source) },
+            scanRunning = { state.scanStatus == ScanStatus.RUNNING },
+            stopMagnetic = { state.magneticListening.value = false },
+            magneticActive = { state.magneticListening.value }
+        )
+        ProcessLifecycleOwner.get().lifecycle.addObserver(processObserver)
+        ScanForegroundService.setCallbacks(
+            onStop = { cancel(source = "notification") },
+            onLost = {
+                if (state.scanStatus == ScanStatus.RUNNING) {
+                    state.scanProtected = false
+                    if (!ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                        cancel(UNPROTECTED_BACKGROUND, source = "service_lost")
+                    }
+                }
+            }
+        )
         if (prefs.getBoolean("running", false)) {
             state.scanStatus = ScanStatus.CANCELLED
             state.scanMessage = "The previous scan was interrupted. Start a new scan."
@@ -42,6 +73,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun start() {
         if (state.scanStatus == ScanStatus.RUNNING) cancel("Scan replaced.", source = "replaced")
+        if (ExclusiveSession.yieldToScan()) {
+            Toast.makeText(getApplication(), getApplication<Application>().getString(R.string.feature_preempted), Toast.LENGTH_SHORT).show()
+        }
         val id = ++generation
         val worker = NetworkScanner(getApplication())
         job = viewModelScope.launch {
@@ -59,6 +93,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     state.scanMessage = update.message
                     state.detectProgress.intValue = maxOf(state.detectProgress.intValue, update.progress.coerceIn(0, 99))
                     publish(update.devices)
+                    ScanForegroundService.update(state.detectProgress.intValue)
                     if (SystemClock.elapsedRealtime() - lastCheckpoint >= 3_000) {
                         saveSnapshot(worker)
                         lastCheckpoint = SystemClock.elapsedRealtime()
@@ -93,7 +128,10 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 state.suspiciousDevices.clear(); state.trustedDevices.clear()
                 prefs.edit().putBoolean("running", true).remove("interrupted").apply()
                 Event.event(getApplication(), Event.WIFI_SCAN_START)
-                ScanForegroundService.start(getApplication())
+                state.scanProtected = ScanForegroundService.ensureRunning(getApplication())
+                if (!state.scanProtected) {
+                    state.scanMessage = UNPROTECTED_KEEP_OPEN
+                }
                 val task = async { worker.scan(target) { message, devices, progress ->
                     updates.trySend(ScanUiUpdate(seq.incrementAndGet(), message, devices, progress))
                 } }
@@ -170,6 +208,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         ++generation
         if (preparing) {
             job?.cancel()
+            ScanForegroundService.stop(getApplication())
             return
         }
         scanner?.let { it.resources.close(); publish(it.snapshot()) }
@@ -184,9 +223,17 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             Event.PARAM_SOURCE to source, Event.PARAM_PROGRESS to state.detectProgress.intValue)
     }
     override fun onCleared() {
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(processObserver)
+        ExclusiveSession.unbind()
+        ScanForegroundService.setCallbacks(null, null)
         cancel(source = "viewmodel_cleared")
     }
 }
+
+private const val UNPROTECTED_KEEP_OPEN =
+    "Background scan protection is unavailable. Keep the app open until the scan finishes."
+private const val UNPROTECTED_BACKGROUND =
+    "Scan stopped because background protection is unavailable. Results are incomplete. Keep the app open and retry."
 
 private data class ScanUiUpdate(
     val seq: Long,

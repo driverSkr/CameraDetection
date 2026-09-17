@@ -33,6 +33,8 @@ class MainContextEntity(
 
     val selectTabIndex = mutableIntStateOf(0)
     val pendingWifiAutoScan = mutableStateOf(false)
+    val magneticListening = mutableStateOf(false)
+    var scanProtected by mutableStateOf(true)
     var scanStatus by mutableStateOf(ScanStatus.IDLE)
     var scanMessage by mutableStateOf("Ready to check your Wi-Fi network")
     var latestMessage by mutableStateOf("")
