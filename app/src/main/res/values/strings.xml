@@ -159,6 +159,8 @@
     <string name="scan_failed">"Scan failed. Reconnect to Wi-Fi and retry."</string>
     <string name="scan_cancelled">"Scan cancelled. Results are incomplete."</string>
     <string name="scan_connect_wifi">"Connect to Wi-Fi before scanning."</string>
+    <string name="scan_airplane">"Turn off Airplane mode and connect to Wi-Fi before scanning."</string>
+    <string name="scan_disconnect_vpn">"Disconnect VPN to scan the local network."</string>
     <string name="scan_multiple_networks">"Multiple Wi-Fi networks are available. Select one network and retry."</string>
     <string name="scan_address_unavailable">"Wi-Fi address is unavailable. Reconnect and retry."</string>
     <string name="scan_ipv6_unsupported">"This network has no IPv4 address. IPv6 scanning is not supported yet."</string>

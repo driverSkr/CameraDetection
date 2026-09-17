@@ -139,7 +139,13 @@ fun DetectCheckView() {
             }
         }
 
-        Box(modifier = Modifier.size(radarSize).align(Alignment.Center)) {
+        val radarStartsScan = !localMain.isStartDetect.value || localMain.scanStatus == ScanStatus.FAILED
+        Box(
+            modifier = Modifier
+                .size(radarSize)
+                .align(Alignment.Center)
+                .clickable(enabled = radarStartsScan, onClick = startDetectAction)
+        ) {
             RadarScannerWithControls()
             if (localMain.isStartDetect.value) {
                 if (localMain.suspiciousDevices.isNotEmpty()) {

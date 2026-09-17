@@ -39,31 +39,41 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
     }
     override fun onStop(owner: LifecycleOwner) { cancel("Scan interrupted while the app was in the background.", source = "background") }
     fun start() {
-        cancel("Scan replaced.", source = "replaced")
-        lastPublished = null
+        if (state.scanStatus == ScanStatus.RUNNING) cancel("Scan replaced.", source = "replaced")
         val id = ++generation
-        startedAt = System.currentTimeMillis()
-        lastCheckpoint = SystemClock.elapsedRealtime()
-        state.currentRecordId = UUID.randomUUID().toString()
         val worker = NetworkScanner(getApplication())
-        scanner = worker
-        state.isShowResult.value = false
-        state.isStartDetect.value = true
-        state.isAnimating.value = true
-        state.scanStatus = ScanStatus.RUNNING
-        state.detectProgress.intValue = 0
-        state.scanMessage = "Preparing Wi-Fi scan…"
-        state.networkLabel = ""
-        state.suspiciousDevices.clear(); state.trustedDevices.clear()
-        prefs.edit().putBoolean("running", true).remove("interrupted").apply()
-        Event.event(getApplication(), Event.WIFI_SCAN_START)
         job = viewModelScope.launch {
+            var sessionStarted = false
             var monitor: Job? = null
             var forcedMessage: String? = null
             try {
                 historyLoad.join()
-                val target = worker.selectNetwork()
+                if (id != generation) return@launch
+                val target = try {
+                    worker.selectNetwork()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: IllegalStateException) {
+                    if (id == generation) state.scanMessage = e.message ?: SCAN_CONNECT_WIFI
+                    return@launch
+                }
+                if (id != generation || state.selectTabIndex.intValue != 0) return@launch
+                sessionStarted = true
+                scanner = worker
+                lastPublished = null
+                startedAt = System.currentTimeMillis()
+                lastCheckpoint = SystemClock.elapsedRealtime()
+                state.currentRecordId = UUID.randomUUID().toString()
+                state.isShowResult.value = false
+                state.isStartDetect.value = true
+                state.isAnimating.value = true
+                state.scanStatus = ScanStatus.RUNNING
+                state.detectProgress.intValue = 0
+                state.scanMessage = "Preparing Wi-Fi scan…"
                 state.networkLabel = "${target.ip}/${target.prefix}"
+                state.suspiciousDevices.clear(); state.trustedDevices.clear()
+                prefs.edit().putBoolean("running", true).remove("interrupted").apply()
+                Event.event(getApplication(), Event.WIFI_SCAN_START)
                 val task = async { worker.scan(target) { message, devices, progress ->
                     viewModelScope.launch {
                         if (id == generation && state.scanStatus == ScanStatus.RUNNING) {
@@ -98,20 +108,20 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
                 state.detectProgress.intValue = 100
                 state.scanMessage = "${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(Date())} · ${state.networkLabel}\n${result.message}"
             } catch (e: CancellationException) {
-                if (id == generation && forcedMessage != null) {
+                if (sessionStarted && id == generation && forcedMessage != null) {
                     publish(worker.snapshot())
                     state.scanStatus = ScanStatus.PARTIAL
                     state.scanMessage = worker.withWarnings(forcedMessage!!)
                 } else throw e
             } catch (e: Exception) {
-                if (id == generation) {
+                if (sessionStarted && id == generation) {
                     publish(worker.snapshot())
                     state.scanStatus = ScanStatus.FAILED
                     state.scanMessage = worker.withWarnings(e.message ?: "Scan failed. Reconnect to Wi-Fi and retry.")
                 }
             } finally {
                 monitor?.cancel(); worker.resources.close()
-                if (id == generation) {
+                if (sessionStarted && id == generation) {
                     state.isAnimating.value = false
                     saveSnapshot(worker)
                     prefs.edit().putBoolean("running", false).apply()
@@ -140,8 +150,13 @@ class ScanViewModel(application: Application) : AndroidViewModel(application), D
             state.recordDevices()))
     }
     fun cancel(reason: String = "Scan cancelled. Results are incomplete.", source: String = "lifecycle") {
-        if (state.scanStatus != ScanStatus.RUNNING) return
+        val preparing = job?.isActive == true && state.scanStatus != ScanStatus.RUNNING
+        if (state.scanStatus != ScanStatus.RUNNING && !preparing) return
         ++generation
+        if (preparing) {
+            job?.cancel()
+            return
+        }
         scanner?.let { it.resources.close(); publish(it.snapshot()) }
         job?.cancel()
         state.isAnimating.value = false

@@ -107,9 +107,14 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     }
 
     fun selectNetwork(): WifiTarget {
-        val networks = cm.allNetworks.filter { isLocalWifi(cm.getNetworkCapabilities(it)) }
-        val network = networks.firstOrNull { it == cm.activeNetwork } ?: networks.singleOrNull()
-            ?: throw IllegalStateException(if (networks.isEmpty()) "Connect to Wi-Fi before scanning." else "Multiple Wi-Fi networks are available. Select one network and retry.")
+        val networks = cm.allNetworks.toList()
+        val local = networks.filter { isLocalWifi(cm.getNetworkCapabilities(it)) }
+        val hasWifi = networks.any { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true }
+        val hasVpn = networks.any { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true }
+        val airplane = android.provider.Settings.Global.getInt(
+            context.contentResolver, android.provider.Settings.Global.AIRPLANE_MODE_ON, 0) != 0
+        scanPreflightMessage(airplane, local.size, hasWifi, hasVpn)?.let { throw IllegalStateException(it) }
+        val network = local.firstOrNull { it == cm.activeNetwork } ?: local.single()
         val properties = cm.getLinkProperties(network) ?: error("Wi-Fi address is unavailable. Reconnect and retry.")
         val address = properties.linkAddresses.firstOrNull { it.address is Inet4Address }
             ?: error("This network has no IPv4 address. IPv6 scanning is not supported yet.")

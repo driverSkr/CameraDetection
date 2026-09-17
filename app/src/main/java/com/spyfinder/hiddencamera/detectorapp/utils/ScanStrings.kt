@@ -51,6 +51,8 @@ object ScanStrings {
         "Scan failed. Reconnect to Wi-Fi and retry." to R.string.scan_failed,
         "Scan cancelled. Results are incomplete." to R.string.scan_cancelled,
         "Connect to Wi-Fi before scanning." to R.string.scan_connect_wifi,
+        "Turn off Airplane mode and connect to Wi-Fi before scanning." to R.string.scan_airplane,
+        "Disconnect VPN to scan the local network." to R.string.scan_disconnect_vpn,
         "Multiple Wi-Fi networks are available. Select one network and retry." to R.string.scan_multiple_networks,
         "Wi-Fi address is unavailable. Reconnect and retry." to R.string.scan_address_unavailable,
         "This network has no IPv4 address. IPv6 scanning is not supported yet." to R.string.scan_ipv6_unsupported,
