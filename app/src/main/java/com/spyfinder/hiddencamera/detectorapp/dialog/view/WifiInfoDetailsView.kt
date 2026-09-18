@@ -81,20 +81,7 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
         Spacer(modifier = Modifier.height(20.dp))
         Text(DevicePresentation.identityStatus(device, identity)?.let(context::getString)
             ?: ScanStrings.text(context, identity.type), color = White, fontSize = 14.sp)
-        Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
         Spacer(Modifier.height(12.dp))
-        listOf("identity_manufacturer" to R.string.identity_manufacturer, "identity_model" to R.string.device_model).forEach { (key, label) ->
-            device.details[key]?.takeIf { it.isNotBlank() }?.let { value ->
-                Text(context.getString(label), color = White60, fontSize = 12.sp)
-                Text(value, color = White, fontSize = 14.sp)
-                Spacer(Modifier.height(8.dp))
-            }
-        }
-        if (identity.capabilities.isNotEmpty()) {
-            Text(context.getString(R.string.ux_capabilities), color = White60, fontSize = 12.sp)
-            Text(identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = White, fontSize = 14.sp)
-            Spacer(Modifier.height(12.dp))
-        }
         Text(context.getString(R.string.detection_finding), color = White60, fontSize = 14.sp)
         Spacer(Modifier.height(6.dp))
         Text(if (device.isCurrentPhone) context.getString(R.string.current_phone) else when (device.finding) {
@@ -117,6 +104,20 @@ fun WifiInfoDetailsView(dialog: BottomSheetDialog, device: WifiDevice, onMarkSaf
         Text(context.getString(if (showTechnical) R.string.ux_hide_technical else R.string.ux_show_technical),
             color = White, fontSize = 14.sp, modifier = Modifier.clickable { showTechnical = !showTechnical }.padding(vertical = 14.dp))
         if (showTechnical) {
+        Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
+        Spacer(Modifier.height(12.dp))
+        listOf("identity_manufacturer" to R.string.identity_manufacturer, "identity_model" to R.string.device_model).forEach { (key, label) ->
+            device.details[key]?.takeIf { it.isNotBlank() }?.let { value ->
+                Text(context.getString(label), color = White60, fontSize = 12.sp)
+                Text(value, color = White, fontSize = 14.sp)
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+        if (identity.capabilities.isNotEmpty()) {
+            Text(context.getString(R.string.ux_capabilities), color = White60, fontSize = 12.sp)
+            Text(identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = White, fontSize = 14.sp)
+            Spacer(Modifier.height(12.dp))
+        }
         listOf(
             R.string.mac_address to device.mac,
             R.string.device_model to device.brandModel.ifBlank { context.getString(R.string.device_model_unavailable) })

@@ -47,15 +47,18 @@ class DeviceIdentityDetailsTest {
                 }
             }
             compose.onNodeWithText(context.getString(R.string.identity_status_model)).assertIsDisplayed()
-            compose.onNodeWithText("XYZ-123").assertIsDisplayed()
-            compose.onNodeWithText("Example").assertIsDisplayed()
-            compose.onNodeWithText(context.getString(R.string.ux_service_playback)).assertIsDisplayed()
+            compose.onNodeWithText("XYZ-123").assertDoesNotExist()
+            compose.onNodeWithText("Example").assertDoesNotExist()
+            compose.onNodeWithText(context.getString(R.string.ux_service_playback)).assertDoesNotExist()
             compose.onNodeWithText("80/HTTP").assertDoesNotExist()
             compose.onRoot().captureToImage().asAndroidBitmap().let { bitmap ->
                 screenshot.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             }
             compose.onNodeWithText(context.getString(R.string.ux_step_model)).performScrollTo().assertIsDisplayed()
             compose.onNodeWithText(context.getString(R.string.ux_show_technical)).performScrollTo().performClick()
+            compose.onNodeWithText("XYZ-123").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("Example").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText(context.getString(R.string.ux_service_playback)).performScrollTo().assertIsDisplayed()
             compose.onNodeWithText("80/HTTP").performScrollTo().assertIsDisplayed()
         }
     }

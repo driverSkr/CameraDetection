@@ -49,13 +49,14 @@ class ReauditEvidenceTest {
             compose.onNodeWithText(body).assertDoesNotExist()
         }
     }
-    @Test fun resultTypeFilterShowsOnlyTheChosenDevices() {
+    @Test fun resultListLeadsWithDevicesThatNeedALookAndHidesSearch() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            lateinit var needsLook: String
+            lateinit var otherDevices: String
             lateinit var printerLabel: String
             lateinit var searchLabel: String
-            lateinit var clearLabel: String
-            lateinit var noMatches: String
-            lateinit var incompleteLabel: String
+            lateinit var allList: String
+            lateinit var incompleteCount: String
             scenario.onActivity { activity ->
                 val state = com.spyfinder.hiddencamera.detectorapp.ui.main.context.MainContextEntity(null)
                 state.trustedDevices.add(WifiDevice("Printer", "Printer", "192.168.1.20", 0, 0, 0,
@@ -63,11 +64,12 @@ class ReauditEvidenceTest {
                 state.suspiciousDevices.add(WifiDevice("Recorder", "Unknown", "192.168.1.21", 0, 0, 0,
                     finding = com.spyfinder.hiddencamera.detectorapp.scan.Finding.CAMERA_FEATURES,
                     analysisComplete = false, details = mapOf("identity_model" to "NVR")))
-                printerLabel = activity.getString(R.string.identity_printer) + " (1)"
+                needsLook = activity.getString(R.string.result_needs_look)
+                otherDevices = activity.getString(R.string.other_devices)
+                printerLabel = activity.getString(R.string.identity_printer)
                 searchLabel = activity.getString(R.string.ux_search)
-                clearLabel = activity.getString(R.string.ux_clear_filter)
-                noMatches = activity.getString(R.string.ux_no_matches)
-                incompleteLabel = activity.getString(R.string.ux_status_incomplete)
+                allList = activity.getString(R.string.all_detection_list)
+                incompleteCount = activity.getString(R.string.ux_incomplete_count, 1)
                 activity.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.composeView).setContent {
                     CompositionLocalProvider(com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity provides state,
                         androidx.activity.compose.LocalActivityResultRegistryOwner provides activity) {
@@ -75,18 +77,26 @@ class ReauditEvidenceTest {
                     }
                 }
             }
-            compose.onNodeWithText(printerLabel).performScrollTo().performClick()
-            compose.onNodeWithText("192.168.1.20").performScrollTo().assertIsDisplayed()
-            compose.onNodeWithText("192.168.1.21").assertDoesNotExist()
-            compose.onNodeWithText(printerLabel).assertIsDisplayed()
-            compose.onNodeWithText(searchLabel).performTextInput("no-such-device")
-            compose.onNodeWithText(searchLabel).performImeAction()
-            compose.onNodeWithText(noMatches).performScrollTo().assertIsDisplayed()
-            compose.onNodeWithText(clearLabel).performClick()
-            compose.onNode(hasText(incompleteLabel) and SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.Selected)).performClick()
-            compose.onNode(hasScrollToIndexAction()).performScrollToIndex(2)
-            compose.onNodeWithText("192.168.1.21", substring = true).performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("$allList (2)").assertIsDisplayed()
+            compose.onNodeWithText("$needsLook (1)").assertIsDisplayed()
+            compose.onNodeWithText("$otherDevices (1)").assertIsDisplayed()
+            compose.onNodeWithText("NVR").assertIsDisplayed()
+            compose.onNodeWithText(printerLabel).performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText(searchLabel).assertDoesNotExist()
+            compose.onNodeWithText(incompleteCount).assertDoesNotExist()
             compose.onNodeWithText("192.168.1.20").assertDoesNotExist()
+            compose.onNodeWithText("192.168.1.21").assertDoesNotExist()
+            val nvr = compose.onNodeWithText("NVR").fetchSemanticsNode().boundsInRoot
+            val printer = compose.onNodeWithText(printerLabel).fetchSemanticsNode().boundsInRoot
+            assertTrue("Camera clues should sort above other devices", nvr.top < printer.top)
+            compose.onNodeWithText("$printerLabel (1)").performClick()
+            compose.onNodeWithText("NVR").assertDoesNotExist()
+            compose.onNodeWithText(printerLabel).assertIsDisplayed()
+            compose.onNodeWithText("$allList (2)").performClick()
+            compose.onNodeWithText("NVR").assertIsDisplayed()
+            compose.onNodeWithText("$otherDevices (1)").performClick()
+            compose.onNodeWithText(printerLabel).assertDoesNotExist()
+            compose.onNodeWithText("NVR").assertIsDisplayed()
         }
     }
 

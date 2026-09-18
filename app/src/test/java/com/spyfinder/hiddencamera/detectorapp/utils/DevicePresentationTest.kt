@@ -30,4 +30,14 @@ class DevicePresentationTest {
         val video = device().copy(finding = Finding.CAMERA_FEATURES)
         assertEquals(R.string.identity_status_video, DevicePresentation.identityStatus(video, DeviceIdentity.forDevice(video)))
     }
+    @Test fun listRanksCameraCluesAheadOfOtherDevices() {
+        val clue = device().copy(finding = Finding.CAMERA_FEATURES)
+        assertTrue(DevicePresentation.needsLook(clue))
+        assertFalse(DevicePresentation.needsLook(clue.copy(userTrusted = true)))
+        assertEquals(0, DevicePresentation.listRank(clue))
+        assertEquals(1, DevicePresentation.listRank(device().copy(analysisComplete = false)))
+        assertEquals(2, DevicePresentation.listRank(device().copy(userTrusted = true)))
+        assertEquals(2, DevicePresentation.listRank(device().copy(isCurrentPhone = true)))
+        assertEquals(3, DevicePresentation.listRank(device()))
+    }
 }

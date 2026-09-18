@@ -39,6 +39,10 @@ object AppColors {
     val outline = White10
     /** 半透明白色蒙层。 */
     val overlayLight = Color(0x33FFFFFF)
+    /** 分类 tab 未选中胶囊，比列表卡片更透。 */
+    val tabSurface = Color(0x0DFFFFFF)
+    /** 分类 tab 选中胶囊。 */
+    val tabSurfaceSelected = Color(0x3300C46F)
     /** 半透明黑色遮罩。 */
     val scrim = Black60
     /** 错误提示颜色。 */
@@ -46,6 +50,8 @@ object AppColors {
     /** 高风险检测结果的强调色和淡色背景。 */
     val warning = Color(0xFFFE2D3F)
     val warningSurface = Color(0x33FE2D3F)
+    /** 需要看一眼的列表卡片浅底，弱于顶部计数卡。 */
+    val warningSurfaceMuted = Color(0x1AFE2D3F)
     /** 相机滤镜的红、绿、蓝三种颜色。 */
     val filterRed = Color(0xFFDD1313)
     val filterGreen = Color(0xFF00C424)

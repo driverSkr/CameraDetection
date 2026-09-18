@@ -37,4 +37,14 @@ object DevicePresentation {
         device.details["identity_model"].orEmpty().isNotBlank() -> R.string.ux_step_model
         else -> R.string.ux_step_unknown
     }
+
+    fun needsLook(device: WifiDevice) =
+        device.finding == Finding.CAMERA_FEATURES && !device.userTrusted
+
+    fun listRank(device: WifiDevice) = when {
+        needsLook(device) -> 0
+        !device.analysisComplete -> 1
+        device.isCurrentPhone || device.userTrusted -> 2
+        else -> 3
+    }
 }
