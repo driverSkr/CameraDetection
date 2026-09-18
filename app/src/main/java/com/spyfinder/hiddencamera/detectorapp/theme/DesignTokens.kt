@@ -47,10 +47,10 @@ object AppColors {
     val scrim = Black60
     /** 错误提示颜色。 */
     val error = Color(0xFFFF5F5F)
-    /** 高风险检测结果的强调色和淡色背景。 */
+    /** 摄像头线索的强调色和淡色背景。 */
     val warning = Color(0xFFFE2D3F)
     val warningSurface = Color(0x33FE2D3F)
-    /** 需要看一眼的列表卡片浅底，弱于顶部计数卡。 */
+    /** 摄像头线索列表卡片浅底，弱于顶部计数卡。 */
     val warningSurfaceMuted = Color(0x1AFE2D3F)
     /** 相机滤镜的红、绿、蓝三种颜色。 */
     val filterRed = Color(0xFFDD1313)

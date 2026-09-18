@@ -182,7 +182,7 @@ fun DetectResultView() {
             Row(modifier = Modifier.fillMaxWidth().height(76.dp)) {
                 ResultCountCard(
                     count = resultSuspiciousDevices.size,
-                    label = context.getString(R.string.result_needs_look),
+                    label = context.getString(R.string.camera_clues),
                     background = AppColors.warningSurface,
                     countColor = AppColors.warning,
                     labelColor = AppColors.warning,
@@ -280,7 +280,7 @@ fun DetectResultView() {
                 if (lookDevices.isNotEmpty()) {
                     item(key = "section-look") {
                         ResultSectionHeader(
-                            title = context.getString(R.string.result_needs_look),
+                            title = context.getString(R.string.camera_clues),
                             count = lookDevices.size,
                             expanded = lookExpanded,
                             onToggle = { lookExpanded = !lookExpanded }

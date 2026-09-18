@@ -49,7 +49,7 @@ class DevicePresentationTest {
         assertEquals("192.168.1.2", empty.caption)
         val video = lines(device().copy(finding = Finding.CAMERA_FEATURES))
         assertEquals("Network device", video.title)
-        assertEquals("Video service found", video.caption)
+        assertEquals("Possible camera-related clue", video.caption)
         val named = lines(device(mapOf("identity_model" to "NVR")).copy(finding = Finding.CAMERA_FEATURES))
         assertEquals("NVR", named.title)
         assertEquals("Likely video recorder", named.caption)
@@ -61,7 +61,7 @@ class DevicePresentationTest {
         when (id) {
             R.string.identity_network_device -> "Network device"
             R.string.current_phone -> "Current phone"
-            R.string.result_video_service -> "Video service found"
+            R.string.result_video_service -> "Possible camera-related clue"
             R.string.result_marked_known -> "Marked known"
             else -> "res:$id"
         }

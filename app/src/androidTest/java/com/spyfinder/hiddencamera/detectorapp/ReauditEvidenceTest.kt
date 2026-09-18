@@ -49,7 +49,7 @@ class ReauditEvidenceTest {
             compose.onNodeWithText(body).assertDoesNotExist()
         }
     }
-    @Test fun resultListLeadsWithDevicesThatNeedALookAndHidesSearch() {
+    @Test fun resultListLeadsWithCameraCluesAndHidesSearch() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var needsLook: String
             lateinit var otherDevices: String
@@ -64,7 +64,7 @@ class ReauditEvidenceTest {
                 state.suspiciousDevices.add(WifiDevice("Recorder", "Unknown", "192.168.1.21", 0, 0, 0,
                     finding = com.spyfinder.hiddencamera.detectorapp.scan.Finding.CAMERA_FEATURES,
                     analysisComplete = false, details = mapOf("identity_model" to "NVR")))
-                needsLook = activity.getString(R.string.result_needs_look)
+                needsLook = activity.getString(R.string.camera_clues)
                 otherDevices = activity.getString(R.string.other_devices)
                 printerLabel = activity.getString(R.string.identity_printer)
                 searchLabel = activity.getString(R.string.ux_search)

@@ -20,7 +20,7 @@
     <string name="camera_clues">"摄像头线索"</string>
     <string name="other_devices">"其他设备"</string>
     <string name="all_detection_list">"全部检测设备"</string>
-    <string name="result_explanation">"需要看一眼的设备请到现场核对，不能据此确认有隐藏摄像头。"</string>
+    <string name="result_explanation">"有摄像头线索的设备请到现场核对，不能据此确认有隐藏摄像头。"</string>
     <string name="history_offline_note">"历史记录不代表设备当前在线。"</string>
     <string name="review_devices_suffix">" 台设备待核实"</string>
     <string name="access_unconfirmed">"暂时无法确认订阅状态，请在商店恢复可用后重试。"</string>
@@ -32,8 +32,8 @@
     <string name="unknown">"未知"</string>
     <string name="detection_finding">"检测结论"</string>
     <string name="current_phone">"本机"</string>
-    <string name="finding_camera">"发现摄像头相关特征，请人工核实"</string>
-    <string name="finding_no_camera">"已检查的服务中未发现摄像头特征"</string>
+    <string name="finding_camera">"发现摄像头相关线索，请人工核实"</string>
+    <string name="finding_no_camera">"已检查的服务中未发现明显线索"</string>
     <string name="finding_insufficient">"信息不足"</string>
     <string name="finding_legacy">"旧版检测结果，请重新扫描"</string>
     <string name="analysis_incomplete">"分析未完成"</string>
@@ -61,7 +61,7 @@
     <string name="object_air_conditioner">"空调"</string>
     <string name="object_router">"路由器"</string>
     <string name="feature_wifi">"Wi-Fi"</string>
-    <string name="feature_wifi_description">"扫描当前网络中的设备线索"</string>
+    <string name="feature_wifi_description">"扫描当前网络中的摄像头线索"</string>
     <string name="feature_magnetic">"磁场"</string>
     <string name="feature_magnetic_description">"观察磁场变化，读数不能识别摄像头"</string>
     <string name="feature_camera_description">"使用相机人工检查反光与光点"</string>
@@ -104,8 +104,8 @@
     <string name="guide_body_wifi">"检查有响应的 Wi-Fi 设备，查找摄像头相关服务线索。"</string>
     <string name="guide_title_camera">"相机辅助检查"</string>
     <string name="guide_body_camera">"使用相机检查反光与光点，能否看到红外光取决于手机硬件。"</string>
-    <string name="guide_title_devices">"检查可疑设备"</string>
-    <string name="guide_body_devices">"了解周围的可疑设备，保护个人隐私。"</string>
+    <string name="guide_title_devices">"查看扫描线索"</string>
+    <string name="guide_body_devices">"摄像头线索只是辅助依据，不能确认存在隐藏摄像头。"</string>
     <string name="subscribe_advanced">"高级功能"</string>
     <string name="subscribe_title">"隐藏摄像头检测"</string>
     <string name="subscribe_all_features">"解锁全部高级功能"</string>
@@ -287,8 +287,8 @@
     <string name="identity_unmatched">已取得型号或类型，暂未匹配识别规则</string>
     <string name="identity_services_only">仅识别到网络服务，设备未提供类型信息</string>
     <string name="identity_online_only">仅确认设备响应，尚未取得身份信息</string>
-    <string name="tips_result_1">Wi-Fi 扫描只检查当前网络中可访问且有响应的设备，可能遗漏离线、网络隔离或使用其他网络的设备。“视频线索”表示检测到相关服务，不等于确认摄像头，也不能确定设备位于哪个房间。</string>
-    <string name="tips_result_2">“类型待确认”表示身份信息不足或查询未成功，不等于可疑设备。“疑似”类型来自有限线索，设备名称和型号也可能由设备自行报告；请查看详情中的识别依据与查询状态。</string>
+    <string name="tips_result_1">Wi-Fi 扫描只检查当前网络中可访问且有响应的设备，可能遗漏离线、网络隔离或使用其他网络的设备。“摄像头线索”表示检测到相关服务，不等于确认摄像头，也不能确定设备位于哪个房间。</string>
+    <string name="tips_result_2">“类型待确认”表示身份信息不足或查询未成功，不等于发现摄像头线索。“疑似”类型来自有限线索，设备名称和型号也可能由设备自行报告；请查看详情中的识别依据与查询状态。</string>
     <string name="tips_result_3">磁场读数只能反映手机周围的磁场变化，不能识别摄像头。相机画面、补光和滤镜用于人工观察反光或光点，不会自动确认摄像头；没有异常读数或光点也不能排除摄像头。</string>
     <string name="tips_action_1">如果现场情况让你不安，先停止在该区域进行需要隐私的活动，离开到合适的位置，再联系场所管理人员核实。</string>
     <string name="tips_action_2">在不触碰可疑物品的前提下，记录发现时间、位置和外观，保留相关扫描结果。扫描记录是辅助信息，不能单独证明存在偷拍；不要自行拆解、移动或尝试登录不明设备。</string>
@@ -304,10 +304,10 @@
     <string name="ux_my_mark">我的标记：已信任</string>
     <string name="ux_next_step">下一步建议</string>
     <string name="ux_step_self">这是正在运行本次扫描的手机。</string>
-    <string name="ux_step_auth">身份信息需要登录查看。如果你有权限管理该设备，请在其管理页面核对名称和型号。仅有视频服务不能确认它是摄像头。</string>
+    <string name="ux_step_auth">身份信息需要登录查看。如果你有权限管理该设备，请在其管理页面核对名称和型号。仅有摄像头线索不能确认它是摄像头。</string>
     <string name="ux_step_incomplete">部分检查未完成。请检查 Wi-Fi 连接，稍后重试；检查不完整不能确定设备类型或安全性。</string>
-    <string name="ux_step_video">检测到视频相关服务。请与有权限检查的设备核对名称和型号；这不能定位摄像头，也不能确认存在偷拍。</string>
-    <string name="ux_step_unknown">可与已知设备核对名称和型号。身份信息不足不代表设备可疑，也不代表安全。</string>
+    <string name="ux_step_video">发现可能与摄像头相关的线索。请与有权限检查的设备核对名称和型号；线索不能定位摄像头，也不能确认存在偷拍。</string>
+    <string name="ux_step_unknown">可与已知设备核对名称和型号。身份信息不足不代表存在摄像头线索，也不代表安全。</string>
     <string name="ux_copy_ip">复制 IP 地址</string>
     <string name="ux_ip_copied">IP 地址已复制</string>
     <string name="ux_show_technical">展开技术详情</string>
@@ -327,8 +327,8 @@
     <string name="ux_show_scan_details">展开扫描详情</string>
     <string name="ux_hide_scan_details">收起扫描详情</string>
     <string name="ux_about_this_scan">关于本次扫描</string>
-    <string name="result_needs_look">需要看一眼</string>
-    <string name="result_video_service">发现视频服务</string>
+    <string name="result_needs_look">摄像头线索</string>
+    <string name="result_video_service">可能与摄像头相关</string>
     <string name="result_marked_known">已标记</string>
     <string name="identity_unknown_short">未知设备</string>
     <string name="ux_return_to_scan">返回 Wi-Fi 扫描</string>
@@ -341,7 +341,7 @@
     <string name="identity_status_conflict">设备身份信息存在冲突</string>
     <string name="identity_status_model">已取得型号，设备类型待确认</string>
     <string name="identity_status_auth">设备身份信息访问受限</string>
-    <string name="identity_status_video">已发现视频服务，设备类型待确认</string>
+    <string name="identity_status_video">发现摄像头相关线索，设备类型待确认</string>
     <string name="identity_status_services">已识别服务，设备类型待确认</string>
     <string name="identity_status_unknown">暂未识别出设备类型</string>
     <string name="ux_step_conflict">请用此 IP 地址对照路由器设备列表，并在技术详情中核对各份身份报告。报告存在矛盾，暂不能确定唯一设备类型。</string>
