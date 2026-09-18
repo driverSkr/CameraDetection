@@ -363,7 +363,7 @@ fun DetectCheckView() {
                         .align(Alignment.Center)
                         .padding(horizontal = 24.dp)
                         .background(Color(0xFF161618), RoundedCornerShape(20.dp))
-                        .clickable(enabled = false) {}
+                        .clickable { }
                         .padding(20.dp)
                 ) {
                     Text(
