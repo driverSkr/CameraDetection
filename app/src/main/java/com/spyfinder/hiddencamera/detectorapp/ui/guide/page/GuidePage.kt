@@ -1,4 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.guide.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppShapes
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -31,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.google.android.play.core.review.ReviewException
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.spyfinder.hiddencamera.detectorapp.R
-import com.spyfinder.hiddencamera.detectorapp.theme.Black
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.background
 import com.spyfinder.hiddencamera.detectorapp.ui.guide.view.GuideBannerView
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +85,7 @@ fun GuidePage(onComplete: (() -> Unit)? = null) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(color = Black)) {
+    Box(modifier = Modifier.fillMaxSize().background(color = AppColors.background)) {
         Image(painter = painterResource(R.mipmap.bg_mask), contentScale = ContentScale.Crop, contentDescription = null)
 
         Column(modifier = Modifier.fillMaxSize()) {
@@ -91,12 +94,12 @@ fun GuidePage(onComplete: (() -> Unit)? = null) {
                 pagerState = pagerState,
                 bannerInfo = bannerInfo
             )
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.wide))
             Box(modifier = Modifier
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = AppSpacing.large)
                 .fillMaxWidth()
-                .height(56.dp)
-                .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                .height(AppSpacing.control)
+                .background(color = AppColors.primary, shape = RoundedCornerShape(AppShapes.pill))
                 .clickable{
                     if (pagerState.currentPage < pagerState.pageCount - 1) {
                         scope.launch(Dispatchers.Main) {
@@ -110,7 +113,7 @@ fun GuidePage(onComplete: (() -> Unit)? = null) {
             ) {
                 Text(
                     text = context.getString(R.string.action_continue),
-                    color = Color(0xFFFFFFFF),
+                    color = AppColors.textPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.W500,
                     modifier = Modifier.align(Alignment.Center)

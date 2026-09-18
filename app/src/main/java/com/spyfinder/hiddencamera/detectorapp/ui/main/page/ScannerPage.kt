@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -132,19 +134,19 @@ fun ScannerPage() {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            Text(context.getString(R.string.tab_scanner), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(context.getString(R.string.scanner_description), color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = AppSpacing.pageTop)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screen)) {
+            Text(context.getString(R.string.tab_scanner), color = AppColors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.W700)
+            Spacer(modifier = Modifier.height(AppSpacing.compact))
+            Text(context.getString(R.string.scanner_description), color = AppColors.textPrimary.copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
         }
 
         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
           LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.section),
             verticalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+            contentPadding = PaddingValues(horizontal = AppSpacing.screen, vertical = 20.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             items(scannerItemList.size) { index ->

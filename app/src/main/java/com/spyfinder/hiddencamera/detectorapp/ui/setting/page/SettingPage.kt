@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.setting.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -38,8 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.BuildConfig
 import com.spyfinder.hiddencamera.detectorapp.R
-import com.spyfinder.hiddencamera.detectorapp.theme.Black
-import com.spyfinder.hiddencamera.detectorapp.theme.White
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.background
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
 import com.spyfinder.hiddencamera.detectorapp.ui.setting.view.SettingItemView
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.LaunchUtils
@@ -65,8 +67,8 @@ fun SettingPage() {
         Pair(R.drawable.svg_icon_tips, R.string.about),
     )
 
-    Column(modifier = Modifier.fillMaxSize().background(color = Black).statusBarsPadding()) {
-        Box(modifier = Modifier.fillMaxWidth().height(54.dp).padding(start = 12.dp, end = 16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(color = AppColors.background).statusBarsPadding()) {
+        Box(modifier = Modifier.fillMaxWidth().height(AppSpacing.topBar).padding(start = AppSpacing.section, end = AppSpacing.screen)) {
             Image(
                 painter = painterResource(R.drawable.svg_icon_back),
                 contentDescription = context.getString(R.string.a11y_back),
@@ -74,7 +76,7 @@ fun SettingPage() {
                     .align(Alignment.CenterStart)
                     .clickable{ context.findBaseActivityVBind()?.finish() }
             )
-            Text(context.getString(R.string.title_setting), color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+            Text(context.getString(R.string.title_setting), color = AppColors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }
 
         if (!isSubscribed) {
@@ -85,7 +87,7 @@ fun SettingPage() {
                 contentScale = ContentScale.Fit,
                 contentDescription = null,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = AppSpacing.screen)
                     .fillMaxWidth()
                     .then(if (isChinese) Modifier.clip(RoundedCornerShape(percent = 30)) else Modifier)
                     .clickable{ SubscribeActivity.launch(context) }
@@ -94,8 +96,8 @@ fun SettingPage() {
         Spacer(modifier = Modifier.height(19.dp))
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = AppSpacing.screen),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.section)
         ) {
             items(settingItemList.size) { index ->
                 SettingItemView(settingItemList[index].let {

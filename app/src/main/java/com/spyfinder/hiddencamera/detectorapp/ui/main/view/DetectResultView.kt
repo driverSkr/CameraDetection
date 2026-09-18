@@ -1,4 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppShapes
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanHistoryStore
@@ -62,11 +65,11 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.dialog.DialogHelper
-import com.spyfinder.hiddencamera.detectorapp.theme.Black
-import com.spyfinder.hiddencamera.detectorapp.theme.Orange
-import com.spyfinder.hiddencamera.detectorapp.theme.White
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.background
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.resultAccent
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
@@ -155,10 +158,10 @@ fun DetectResultView() {
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding().navigationBarsPadding()
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = AppSpacing.section)
                 .haze(hazeState)
         ) {
-            Box(modifier = Modifier.fillMaxWidth().height(54.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().height(AppSpacing.topBar)) {
                 Image(
                     painter = painterResource(R.drawable.svg_icon_back),
                     contentDescription = context.getString(R.string.a11y_back),
@@ -168,108 +171,108 @@ fun DetectResultView() {
                 )
                 Text(
                     if (localMain.isShowingLatestHistoryResult) context.getString(R.string.action_history) else context.getString(R.string.action_result),
-                    color = White,
+                    color = AppColors.textPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.W500,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.compact))
             Row(modifier = Modifier.align(Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
                 Image(painter = painterResource(R.drawable.svg_icon_sensor), modifier = Modifier.size(20.dp), contentDescription = null)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(context.getString(R.string.ux_scan_overview), color = White, fontSize = 14.sp, fontWeight = FontWeight.W400)
+                Spacer(modifier = Modifier.width(AppSpacing.micro))
+                Text(context.getString(R.string.ux_scan_overview), color = AppColors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.W400)
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.screen))
             Row(modifier = Modifier.fillMaxWidth().height(76.dp)) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(1f)
-                        .background(color = Color(0x33FE2D3F), shape = RoundedCornerShape(20.dp))
+                        .background(color = AppColors.warningSurface, shape = RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${resultSuspiciousDevices.size}", color = Color(0xFFFE2D3F), fontSize = 32.sp, fontWeight = FontWeight.W700)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(context.getString(R.string.camera_clues), color = Color(0xFFFE2D3F), fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text("${resultSuspiciousDevices.size}", color = AppColors.warning, fontSize = 32.sp, fontWeight = FontWeight.W700)
+                        Spacer(modifier = Modifier.height(AppSpacing.micro))
+                        Text(context.getString(R.string.camera_clues), color = AppColors.warning, fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(AppSpacing.compact))
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(1f)
-                        .background(color = White10, shape = RoundedCornerShape(20.dp))
+                        .background(color = AppColors.outline, shape = RoundedCornerShape(20.dp))
                 ) {
                     Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${resultTrustedDevices.size}", color = White, fontSize = 32.sp, fontWeight = FontWeight.W700)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(context.getString(R.string.other_devices), color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text("${resultTrustedDevices.size}", color = AppColors.textPrimary, fontSize = 32.sp, fontWeight = FontWeight.W700)
+                        Spacer(modifier = Modifier.height(AppSpacing.micro))
+                        Text(context.getString(R.string.other_devices), color = AppColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.W400)
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.compact))
             Text(context.getString(R.string.ux_incomplete_count, allDevices.count { !it.analysisComplete }),
-                color = White60, fontSize = 12.sp)
+                color = AppColors.textSecondary, fontSize = 12.sp)
             LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(vertical = AppSpacing.section),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.compact)
             ) {
                 stickyHeader {
-                    Column(Modifier.fillMaxWidth().background(Black).padding(vertical = 4.dp)) {
+                    Column(Modifier.fillMaxWidth().background(AppColors.background).padding(vertical = AppSpacing.micro)) {
                         OutlinedTextField(value = search, onValueChange = { search = it },
                             label = { Text(context.getString(R.string.ux_search)) }, singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
                             modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = White, unfocusedTextColor = White,
-                                focusedLabelColor = White60, unfocusedLabelColor = White60, cursorColor = White))
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = AppColors.textPrimary, unfocusedTextColor = AppColors.textPrimary,
+                                focusedLabelColor = AppColors.textSecondary, unfocusedLabelColor = AppColors.textSecondary, cursorColor = AppColors.textPrimary))
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(AppSpacing.compact)) {
                             (listOf<String?>(null) + identityGroups.keys.sorted()).forEach { type ->
                                 val title = type?.let { ScanStrings.text(context, it) } ?: context.getString(R.string.all_detection_list)
                                 val count = type?.let { identityGroups.getValue(it).size } ?: allDevices.size
-                                Text("$title ($count)", color = if (activeType == type) White else White60, fontSize = 12.sp,
+                                Text("$title ($count)", color = if (activeType == type) AppColors.textPrimary else AppColors.textSecondary, fontSize = 12.sp,
                                     modifier = Modifier.semantics { selected = activeType == type }
-                                        .clickable { selectedType = type; keyboard?.hide() }.padding(horizontal = 8.dp, vertical = 10.dp))
+                                        .clickable { selectedType = type; keyboard?.hide() }.padding(horizontal = AppSpacing.compact, vertical = 10.dp))
                             }
                         }
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(AppSpacing.compact)) {
                             listOf(R.string.ux_status_all, R.string.camera_clues, R.string.ux_status_incomplete).forEachIndexed { index, label ->
-                                Text(context.getString(label), color = if (statusFilter == index) White else White60, fontSize = 12.sp,
+                                Text(context.getString(label), color = if (statusFilter == index) AppColors.textPrimary else AppColors.textSecondary, fontSize = 12.sp,
                                     modifier = Modifier.semantics { selected = statusFilter == index }
-                                        .clickable { statusFilter = index; keyboard?.hide() }.padding(horizontal = 8.dp, vertical = 10.dp))
+                                        .clickable { statusFilter = index; keyboard?.hide() }.padding(horizontal = AppSpacing.compact, vertical = 10.dp))
                             }
                         }
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             val category = activeType?.let { ScanStrings.text(context, it) } ?: context.getString(R.string.ux_status_all)
                             Text(context.getString(R.string.ux_filter_count, category, visibleDevices.size, allDevices.size),
-                                color = White60, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                color = AppColors.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
                             if (activeType != null || search.isNotBlank() || statusFilter != 0)
-                                Text(context.getString(R.string.ux_clear_filter), color = White, fontSize = 12.sp,
-                                    modifier = Modifier.clickable { selectedType = null; search = ""; statusFilter = 0; keyboard?.hide() }.padding(8.dp))
+                                Text(context.getString(R.string.ux_clear_filter), color = AppColors.textPrimary, fontSize = 12.sp,
+                                    modifier = Modifier.clickable { selectedType = null; search = ""; statusFilter = 0; keyboard?.hide() }.padding(AppSpacing.compact))
                         }
                     }
                 }
                 item {
                     HistoryReadWarning()
                     if (saveFailed) {
-                        Text(context.getString(R.string.history_save_failed), color = White60, fontSize = 12.sp)
-                        Text(context.getString(R.string.history_retry_save), color = Color(0xFF00C46F), fontSize = 12.sp,
-                            modifier = Modifier.clickable { localMain.retryHistorySave() }.padding(vertical = 8.dp))
+                        Text(context.getString(R.string.history_save_failed), color = AppColors.textSecondary, fontSize = 12.sp)
+                        Text(context.getString(R.string.history_retry_save), color = AppColors.primary, fontSize = 12.sp,
+                            modifier = Modifier.clickable { localMain.retryHistorySave() }.padding(vertical = AppSpacing.compact))
                     }
                     if (localMain.isShowingLatestHistoryResult) {
                         if (localMain.hasHistoryChoice) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.compact)) {
                                 listOf(false to R.string.history_recent, true to if (localMain.archive.complete?.status == ScanStatus.COMPLETE) R.string.history_complete else R.string.history_previous).forEach { (complete, label) ->
                                     Text(context.getString(label), fontSize = 12.sp,
-                                        color = if (localMain.showingCompleteHistory == complete) Color(0xFF00C46F) else White60,
-                                        modifier = Modifier.weight(1f).background(White10, RoundedCornerShape(999.dp))
-                                            .clickable { localMain.selectHistory(complete) }.padding(horizontal = 12.dp, vertical = 10.dp))
+                                        color = if (localMain.showingCompleteHistory == complete) AppColors.primary else AppColors.textSecondary,
+                                        modifier = Modifier.weight(1f).background(AppColors.outline, RoundedCornerShape(AppShapes.pill))
+                                            .clickable { localMain.selectHistory(complete) }.padding(horizontal = AppSpacing.section, vertical = 10.dp))
                                 }
                             }
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(AppSpacing.compact))
                         }
                         localMain.displayedHistory?.let { record ->
                             val label = when (record.status) {
@@ -280,10 +283,10 @@ fun DetectResultView() {
                                 ScanStatus.RUNNING -> R.string.history_status_running
                                 else -> R.string.history_status_legacy
                             }
-                            Text(context.getString(label), color = White60, fontSize = 12.sp)
+                            Text(context.getString(label), color = AppColors.textSecondary, fontSize = 12.sp)
                             if (record.startedAt > 0) Text(context.getString(R.string.history_meta,
                                 java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(java.util.Date(record.startedAt)),
-                                record.network, record.coverage.checked, record.coverage.total, record.coverage.analyzed), color = White60, fontSize = 12.sp)
+                                record.network, record.coverage.checked, record.coverage.total, record.coverage.analyzed), color = AppColors.textSecondary, fontSize = 12.sp)
                         }
                     }
                     if (!localMain.isShowingLatestHistoryResult) {
@@ -295,23 +298,23 @@ fun DetectResultView() {
                             ScanStatus.RUNNING -> R.string.history_status_running
                             else -> R.string.history_status_legacy
                         }
-                        Text(context.getString(label), color = White, fontSize = 14.sp)
+                        Text(context.getString(label), color = AppColors.textPrimary, fontSize = 14.sp)
                     }
                     if (needsAttention) {
-                        Text(resultMessage, color = White60, fontSize = 12.sp)
-                        Text(context.getString(R.string.ux_return_to_scan), color = Color(0xFF00C46F), fontSize = 14.sp,
+                        Text(resultMessage, color = AppColors.textSecondary, fontSize = 12.sp)
+                        Text(context.getString(R.string.ux_return_to_scan), color = AppColors.primary, fontSize = 14.sp,
                             modifier = Modifier.clickable {
                                 localMain.closeDetectResult()
                                 localMain.openWifiFeature()
-                            }.padding(vertical = 12.dp))
+                            }.padding(vertical = AppSpacing.section))
                     }
-                    if (!needsAttention) Text(context.getString(if (showScanDetails) R.string.ux_hide_scan_details else R.string.ux_show_scan_details), color = White, fontSize = 12.sp,
+                    if (!needsAttention) Text(context.getString(if (showScanDetails) R.string.ux_hide_scan_details else R.string.ux_show_scan_details), color = AppColors.textPrimary, fontSize = 12.sp,
                         modifier = Modifier.clickable { showScanDetails = !showScanDetails }.padding(vertical = 10.dp))
-                    if (showScanDetails && !needsAttention) Text(resultMessage, color = White60, fontSize = 12.sp)
+                    if (showScanDetails && !needsAttention) Text(resultMessage, color = AppColors.textSecondary, fontSize = 12.sp)
                     Spacer(Modifier.height(6.dp))
-                    Text(context.getString(R.string.result_explanation), color = White60, fontSize = 12.sp)
+                    Text(context.getString(R.string.result_explanation), color = AppColors.textSecondary, fontSize = 12.sp)
                     if (localMain.isShowingLatestHistoryResult) {
-                        Text(context.getString(R.string.history_offline_note), color = White60, fontSize = 12.sp)
+                        Text(context.getString(R.string.history_offline_note), color = AppColors.textSecondary, fontSize = 12.sp)
                     }
                 }
                 if (visibleDevices.isEmpty()) item {
@@ -322,7 +325,7 @@ fun DetectResultView() {
                         resultStatus == ScanStatus.RUNNING -> R.string.ux_scan_running_empty
                         else -> R.string.ux_scan_empty
                     }
-                    Text(context.getString(emptyLabel), color = White60, fontSize = 14.sp, modifier = Modifier.padding(16.dp))
+                    Text(context.getString(emptyLabel), color = AppColors.textSecondary, fontSize = 14.sp, modifier = Modifier.padding(AppSpacing.screen))
                 }
                 items(visibleDevices.size, key = { visibleDevices[it].ip }) { index ->
                     WifiInfoItemView(visibleDevices[index]) {
@@ -339,23 +342,23 @@ fun DetectResultView() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .hazeChild(hazeState, style = HazeStyle(backgroundColor = Black, tint = null, blurRadius = 12.dp))
+                    .hazeChild(hazeState, style = HazeStyle(backgroundColor = AppColors.background, tint = null, blurRadius = AppSpacing.section))
                     .clickable(enabled = false) { }
             ) {
                 Column(modifier = Modifier.align(Alignment.Center).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(
                         modifier = Modifier
                             .wrapContentWidth()
-                            .background(color = Color(0x33FFFFFF), shape = RoundedCornerShape(20.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .background(color = AppColors.overlayLight, shape = RoundedCornerShape(20.dp))
+                            .padding(horizontal = AppSpacing.compact, vertical = AppSpacing.micro),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(context.getString(R.string.camera_clues_prefix), fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
-                        Text("${resultSuspiciousDevices.size}", fontSize = 12.sp, fontWeight = FontWeight.W400, color = Orange)
-                        Text(context.getString(R.string.review_devices_suffix), fontSize = 12.sp, fontWeight = FontWeight.W400, color = White)
+                        Text(context.getString(R.string.camera_clues_prefix), fontSize = 12.sp, fontWeight = FontWeight.W400, color = AppColors.textPrimary)
+                        Text("${resultSuspiciousDevices.size}", fontSize = 12.sp, fontWeight = FontWeight.W400, color = AppColors.resultAccent)
+                        Text(context.getString(R.string.review_devices_suffix), fontSize = 12.sp, fontWeight = FontWeight.W400, color = AppColors.textPrimary)
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(AppSpacing.compact))
 
                     Box(
                         modifier = Modifier
@@ -363,13 +366,13 @@ fun DetectResultView() {
                                 openSubscribeWithResultRefresh()
                             }
                             .fillMaxWidth()
-                            .height(56.dp)
-                            .padding(horizontal = 24.dp)
-                            .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                            .height(AppSpacing.control)
+                            .padding(horizontal = AppSpacing.large)
+                            .background(color = AppColors.primary, shape = RoundedCornerShape(AppShapes.pill))
                     ) {
                         Text(
                             text = if (checking) context.getString(R.string.action_checking) else context.getString(R.string.action_view_results),
-                            color = Color(0xFFFFFFFF),
+                            color = AppColors.textPrimary,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,
                             modifier = Modifier.align(Alignment.Center)

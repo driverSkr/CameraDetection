@@ -1,4 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.camera.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppShapes
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
 
 import android.Manifest
 import com.spyfinder.hiddencamera.detectorapp.utils.LatestRequest
@@ -42,11 +45,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
-import com.spyfinder.hiddencamera.detectorapp.theme.Black
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.background
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
-import com.spyfinder.hiddencamera.detectorapp.theme.White
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 import com.spyfinder.hiddencamera.detectorapp.ui.camera.view.CameraPreview
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
 
@@ -76,7 +79,7 @@ fun CameraScannerPage(sceneTitle: String = "") {
     var camera by remember { mutableStateOf<Camera?>(null) }
     var canSwitch by remember { mutableStateOf(false) }
     var torch by remember { mutableStateOf(false) }
-    val colors = listOf(Color(0xFFDD1313), Color(0xFF00C424), Color(0xFF1C73FF))
+    val colors = listOf(AppColors.filterRed, AppColors.filterGreen, AppColors.filterBlue)
     var currentFilterColorIndex by rememberSaveable { mutableIntStateOf(-1) }
     var zoom by remember { mutableFloatStateOf(1f) }
     var minZoom by remember { mutableFloatStateOf(1f) }
@@ -118,13 +121,13 @@ fun CameraScannerPage(sceneTitle: String = "") {
         owner.lifecycle.addObserver(observer)
         onDispose { invalidateControls(); owner.lifecycle.removeObserver(observer) }
     }
-    Column(modifier = Modifier.fillMaxSize().background(color = Black).statusBarsPadding().navigationBarsPadding()) {
-        Box(modifier = Modifier.fillMaxWidth().height(54.dp).padding(horizontal = 12.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(color = AppColors.background).statusBarsPadding().navigationBarsPadding()) {
+        Box(modifier = Modifier.fillMaxWidth().height(AppSpacing.topBar).padding(horizontal = AppSpacing.section)) {
             Image(painter = painterResource(R.drawable.svg_icon_back), contentDescription = context.getString(R.string.a11y_back), modifier = Modifier.align(Alignment.CenterStart).clickable{
                 context.findBaseActivityVBind()?.finish()
             })
-            Image(painterResource(R.drawable.svg_icon_warning_gray), contentDescription = context.getString(R.string.inspection_tips), modifier = Modifier.align(Alignment.CenterEnd).size(24.dp).clickable { showHelp = !showHelp })
-            Text(if (sceneTitle.isBlank()) context.getString(R.string.tab_scanner) else sceneTitle, color = White, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+            Image(painterResource(R.drawable.svg_icon_warning_gray), contentDescription = context.getString(R.string.inspection_tips), modifier = Modifier.align(Alignment.CenterEnd).size(AppSpacing.large).clickable { showHelp = !showHelp })
+            Text(if (sceneTitle.isBlank()) context.getString(R.string.tab_scanner) else sceneTitle, color = AppColors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
         }
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -144,59 +147,59 @@ fun CameraScannerPage(sceneTitle: String = "") {
             )
 
             if (granted && camera == null && error.isEmpty()) {
-                Text(context.getString(R.string.camera_starting), color = White60, fontSize = 14.sp,
+                Text(context.getString(R.string.camera_starting), color = AppColors.textSecondary, fontSize = 14.sp,
                     modifier = Modifier.align(Alignment.Center))
             }
 
             if (!granted || error.isNotEmpty()) {
-                Column(Modifier.align(Alignment.Center).padding(16.dp).fillMaxWidth().background(Color(0xFF161618), RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(if (!granted) context.getString(R.string.camera_permission_required) else error, color = White60, fontSize = 14.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.align(Alignment.Center).padding(AppSpacing.screen).fillMaxWidth().background(AppColors.dialogSurface, RoundedCornerShape(20.dp)).padding(AppSpacing.screen), verticalArrangement = Arrangement.spacedBy(AppSpacing.section)) {
+                    Text(if (!granted) context.getString(R.string.camera_permission_required) else error, color = AppColors.textSecondary, fontSize = 14.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.compact)) {
                         CameraControl(context.getString(R.string.action_retry)) { if (!granted) launcher.launch(Manifest.permission.CAMERA) else if (error.isNotEmpty()) { invalidateControls(); camera = null; error = ""; torch = false; canSwitch = false; retry++ } }
                         CameraControl(context.getString(R.string.app_settings)) { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
                     }
                 }
             }
             // 顶部遮罩
-            Box(modifier = Modifier.fillMaxWidth().height(140.dp).background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to Black, 1f to Transparent))))
+            Box(modifier = Modifier.fillMaxWidth().height(140.dp).background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to AppColors.background, 1f to Transparent))))
             // 底部遮罩
-            Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(140.dp).background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to Transparent, 1f to Black))))
+            Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(140.dp).background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to Transparent, 1f to AppColors.background))))
 
             if (showHelp) {
                 Row(modifier = Modifier
-                    .padding(16.dp)
+                    .padding(AppSpacing.screen)
                     .fillMaxWidth()
                     .heightIn(min = 60.dp)
-                    .background(color = White10, shape = RoundedCornerShape(20.dp))
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                    .background(color = AppColors.outline, shape = RoundedCornerShape(20.dp))
+                    .padding(horizontal = AppSpacing.section, vertical = AppSpacing.section),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(AppSpacing.compact))
                     Text(
                         text = if (sceneTitle.isBlank()) context.getString(R.string.camera_help)
                         else context.getString(R.string.scanner_scene_tip, sceneTitle),
-                        color = White60,
+                        color = AppColors.textSecondary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.W400, modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(AppSpacing.compact))
                     Image(painter = painterResource(R.drawable.svg_icon_close), contentDescription = context.getString(R.string.a11y_close), modifier = Modifier.clickable{ showHelp = false })
                 }
             }
 
-            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = context.getString(R.string.a11y_reset_camera), modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 118.dp, end = 8.dp).clickable{
+            Image(painter = painterResource(R.drawable.svg_icon_retry), contentDescription = context.getString(R.string.a11y_reset_camera), modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 118.dp, end = AppSpacing.compact).clickable{
                 currentFilterColorIndex = -1
                 setZoom(1f)
             })
 
             Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 42.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(context.getString(R.string.filter_visual_aid), color = White60, fontSize = 11.sp, fontWeight = FontWeight.W400,
-                    modifier = Modifier.padding(bottom = 8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(context.getString(R.string.filter_visual_aid), color = AppColors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.W400,
+                    modifier = Modifier.padding(bottom = AppSpacing.compact))
+                Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.screen)) {
                     FilterSwatch(
                         selected = currentFilterColorIndex == -1,
-                        fill = White10,
+                        fill = AppColors.outline,
                         label = context.getString(R.string.original),
                         description = context.getString(R.string.original_view)
                     ) { currentFilterColorIndex = -1 }
@@ -213,8 +216,8 @@ fun CameraScannerPage(sceneTitle: String = "") {
                 }
             }
         }
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screen, vertical = AppSpacing.compact)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(AppSpacing.section, Alignment.CenterHorizontally)) {
                 if (canSwitch) CameraControl(context.getString(R.string.switch_camera), enabled = camera != null) {
                     invalidateControls(); camera = null; torch = false
                     lens = if (lens == CameraSelector.LENS_FACING_BACK) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
@@ -234,14 +237,14 @@ fun CameraScannerPage(sceneTitle: String = "") {
                     }
                 }
             }
-            if (torchError.isNotEmpty()) Text(torchError, color = White60, fontSize = 12.sp)
-            if (zoomError.isNotEmpty()) Text(zoomError, color = White60, fontSize = 12.sp)
+            if (torchError.isNotEmpty()) Text(torchError, color = AppColors.textSecondary, fontSize = 12.sp)
+            if (zoomError.isNotEmpty()) Text(zoomError, color = AppColors.textSecondary, fontSize = 12.sp)
             if (camera != null && maxZoom > minZoom) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(context.getString(R.string.zoom), color = White60, fontSize = 12.sp)
-                    Spacer(Modifier.width(12.dp))
+                    Text(context.getString(R.string.zoom), color = AppColors.textSecondary, fontSize = 12.sp)
+                    Spacer(Modifier.width(AppSpacing.section))
                     Slider(modifier = Modifier.weight(1f), value = zoom.coerceIn(minZoom, maxZoom), valueRange = minZoom..maxZoom,
-                        colors = SliderDefaults.colors(thumbColor = Color(0xFF00C46F), activeTrackColor = Color(0xFF00C46F), inactiveTrackColor = White10),
+                        colors = SliderDefaults.colors(thumbColor = AppColors.primary, activeTrackColor = AppColors.primary, inactiveTrackColor = AppColors.outline),
                         onValueChange = { setZoom(it) })
                 }
             }
@@ -259,17 +262,17 @@ private fun FilterSwatch(selected: Boolean, fill: Color, label: String, descript
         Box(
             modifier = Modifier
                 .size(58.dp)
-                .border(2.dp, if (selected) White else Transparent, RoundedCornerShape(999.dp))
+                .border(2.dp, if (selected) AppColors.textPrimary else Transparent, RoundedCornerShape(AppShapes.pill))
                 .padding(5.dp)
-                .background(fill, RoundedCornerShape(999.dp))
+                .background(fill, RoundedCornerShape(AppShapes.pill))
         )
-        Spacer(Modifier.height(4.dp))
-        Text(label, color = if (selected) White else White60, fontSize = 10.sp, fontWeight = FontWeight.W400)
+        Spacer(Modifier.height(AppSpacing.micro))
+        Text(label, color = if (selected) AppColors.textPrimary else AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.W400)
     }
 }
 @Composable
 private fun CameraControl(text: String, enabled: Boolean = true, onClick: () -> Unit) {
-    Box(Modifier.background(White10, RoundedCornerShape(999.dp)).border(1.dp, White10, RoundedCornerShape(999.dp)).clickable(enabled = enabled, onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
-        Text(text, color = if (enabled) White else White60, fontSize = 12.sp, fontWeight = FontWeight.W500)
+    Box(Modifier.background(AppColors.outline, RoundedCornerShape(AppShapes.pill)).border(1.dp, AppColors.outline, RoundedCornerShape(AppShapes.pill)).clickable(enabled = enabled, onClick = onClick).padding(horizontal = AppSpacing.screen, vertical = AppSpacing.section), contentAlignment = Alignment.Center) {
+        Text(text, color = if (enabled) AppColors.textPrimary else AppColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.W500)
     }
 }

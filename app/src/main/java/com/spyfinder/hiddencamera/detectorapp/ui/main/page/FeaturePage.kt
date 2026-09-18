@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -49,12 +51,12 @@ fun FeaturePage() {
         Triple(context.getString(R.string.title_tips), R.drawable.svg_icon_tips, context.getString(R.string.feature_tips_description)),
     )
 
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = AppSpacing.pageTop)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screen), verticalAlignment = Alignment.CenterVertically) {
             Column {
-                Text(context.getString(R.string.title_features), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(context.getString(R.string.detection_method), color = Color(0xFFFFFFFF).copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
+                Text(context.getString(R.string.title_features), color = AppColors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.W700)
+                Spacer(modifier = Modifier.height(AppSpacing.compact))
+                Text(context.getString(R.string.detection_method), color = AppColors.textPrimary.copy(0.6f), fontSize = 14.sp, fontWeight = FontWeight.W400)
             }
             Spacer(modifier = Modifier.weight(1f))
             Image(painter = painterResource(R.drawable.svg_icon_settings), contentDescription = null, modifier = Modifier.clickable{
@@ -63,10 +65,10 @@ fun FeaturePage() {
                 SettingActivity.launch(context)
             })
         }
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(AppSpacing.pageTop))
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = AppSpacing.screen),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.section),
             modifier = Modifier.fillMaxWidth()
         ) {
             items(featureItemList.size) { index ->

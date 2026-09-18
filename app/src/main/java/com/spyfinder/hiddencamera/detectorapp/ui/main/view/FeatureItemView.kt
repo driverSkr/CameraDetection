@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,23 +22,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 
 @Composable
 fun FeatureItemView(item: Triple<String, Int, String>, onClick: () -> Unit) {
     Row(modifier = Modifier
         .fillMaxWidth()
         .height(100.dp)
-        .background(color = White10, shape = RoundedCornerShape(32.dp))
+        .background(color = AppColors.outline, shape = RoundedCornerShape(32.dp))
         .clickable { onClick.invoke() }
-        .padding(horizontal = 24.dp),
+        .padding(horizontal = AppSpacing.large),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.width(219.dp)) {
-            Text(item.first, color = Color(0xFF00C46F), fontSize = 20.sp, fontWeight = FontWeight.W700)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(item.third, color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400)
+            Text(item.first, color = AppColors.primary, fontSize = 20.sp, fontWeight = FontWeight.W700)
+            Spacer(modifier = Modifier.height(AppSpacing.micro))
+            Text(item.third, color = AppColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.W400)
         }
         Spacer(modifier = Modifier.weight(1f))
         Image(painter = painterResource(item.second), contentDescription = null)

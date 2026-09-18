@@ -1,4 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.guide.view
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppShapes
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,7 +41,7 @@ fun GuideBannerView(modifier: Modifier = Modifier, pagerState: PagerState, banne
             state = pagerState,
             modifier = modifier.weight(1f)
         ) { page ->
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = AppSpacing.large), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(modifier = Modifier.weight(1f)) {
                     BannerPhoto(
                         modifier = Modifier.align(Alignment.BottomCenter),
@@ -49,16 +52,16 @@ fun GuideBannerView(modifier: Modifier = Modifier, pagerState: PagerState, banne
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .height(100.dp)
-                        .background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to Color(0x00000000), 1f to Color(0xFF000000))))
+                        .background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to AppColors.transparent, 1f to AppColors.background)))
                     )
                     if (page == 2) {
                         Image(painter = painterResource(R.mipmap.img_banner_3_card), modifier = Modifier.align(Alignment.Center).offset(y = 127.dp), contentDescription = null)
                     }
                 }
                 Spacer(modifier = Modifier.height(21.dp))
-                Text(bannerInfo[page].second, color = Color(0xFF00C46F), fontSize = 24.sp, fontWeight = FontWeight.W700, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(bannerInfo[page].third, color = Color(0xFF96939E), fontSize = 14.sp, fontWeight = FontWeight.W400, textAlign = TextAlign.Center)
+                Text(bannerInfo[page].second, color = AppColors.primary, fontSize = 24.sp, fontWeight = FontWeight.W700, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(AppSpacing.compact))
+                Text(bannerInfo[page].third, color = AppColors.textMuted, fontSize = 14.sp, fontWeight = FontWeight.W400, textAlign = TextAlign.Center)
             }
         }
         Spacer(modifier = Modifier.height(27.dp))
@@ -80,7 +83,7 @@ fun BannerPhoto(modifier: Modifier = Modifier, page: Int, photo: Int) {
                 )
                 Image(
                     painter = painterResource(R.mipmap.img_position),
-                    modifier = Modifier.size(64.dp).align(Alignment.CenterEnd).offset(x = (-10).dp, y = (-90).dp),
+                    modifier = Modifier.size(AppSpacing.navigationBar).align(Alignment.CenterEnd).offset(x = (-10).dp, y = (-90).dp),
                     contentDescription = null
                 )
                 Image(
@@ -90,7 +93,7 @@ fun BannerPhoto(modifier: Modifier = Modifier, page: Int, photo: Int) {
                 )
                 Image(
                     painter = painterResource(R.mipmap.img_position),
-                    modifier = Modifier.size(48.dp).align(Alignment.CenterEnd).offset(x = 24.dp, y = 120.dp),
+                    modifier = Modifier.size(AppSpacing.wide).align(Alignment.CenterEnd).offset(x = AppSpacing.large, y = 120.dp),
                     contentDescription = null
                 )
             }
@@ -107,15 +110,15 @@ fun BannerPhoto(modifier: Modifier = Modifier, page: Int, photo: Int) {
                 )
 
                 Row(modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-40).dp), horizontalArrangement = Arrangement.spacedBy(17.5.dp)) {
-                    val colorList = listOf(Color(0xFFDD1313), Color(0xFF00C424), Color(0xFF1C73FF))
+                    val colorList = listOf(AppColors.filterRed, AppColors.filterGreen, AppColors.filterBlue)
                     repeat(3) { index ->
                         Box(modifier = Modifier
-                            .border(width = 1.5.dp, color = if (index == 0) Color(0xFFFFFFFF) else Color(0x00FFFFFF), shape = RoundedCornerShape(999.dp))
-                            .padding(4.dp)
+                            .border(width = 1.5.dp, color = if (index == 0) AppColors.textPrimary else AppColors.transparent, shape = RoundedCornerShape(AppShapes.pill))
+                            .padding(AppSpacing.micro)
                             .size(43.dp)
                             .background(
                                 color = colorList[index],
-                                shape = RoundedCornerShape(999.dp)
+                                shape = RoundedCornerShape(AppShapes.pill)
                             )
                         )
                     }
@@ -127,15 +130,15 @@ fun BannerPhoto(modifier: Modifier = Modifier, page: Int, photo: Int) {
 
 @Composable
 fun BannerIndicator(modifier: Modifier = Modifier, pagerState: PagerState, num: Int) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(AppSpacing.compact)) {
         repeat(num) { index ->
             val isSelected = index == pagerState.currentPage % num
 
             Box(modifier = Modifier
                 .size(10.dp)
                 .background(
-                    color = if (isSelected) Color(0xFFFFFFFF) else Color(0xFF5B5B5E),
-                    shape = RoundedCornerShape(999.dp)
+                    color = if (isSelected) AppColors.textPrimary else AppColors.indicatorInactive,
+                    shape = RoundedCornerShape(AppShapes.pill)
                 )
             )
         }

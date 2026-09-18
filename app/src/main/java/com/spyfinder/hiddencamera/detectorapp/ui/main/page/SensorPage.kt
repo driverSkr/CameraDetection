@@ -1,4 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppShapes
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import android.content.Context
 import android.content.Intent
@@ -61,9 +64,9 @@ import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
-import com.spyfinder.hiddencamera.detectorapp.theme.White
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
@@ -237,12 +240,12 @@ fun SensorPage() {
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = AppSpacing.pageTop)) {
       Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight),
           horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
-        Text(context.getString(R.string.title_magnetic), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+        Text(context.getString(R.string.title_magnetic), color = AppColors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.W700, modifier = Modifier.fillMaxWidth().padding(horizontal = AppSpacing.screen))
 
-        Column(Modifier.padding(top = 24.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.padding(top = AppSpacing.large, bottom = AppSpacing.large), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(modifier = Modifier
             .size(280.dp)
         ) {
@@ -280,7 +283,7 @@ fun SensorPage() {
                     withStyle(
                         style = SpanStyle(
                             fontSize = 44.sp,
-                            color = White,
+                            color = AppColors.textPrimary,
                             fontWeight = FontWeight.W700,
                             baselineShift = BaselineShift(0f) // 调整符号的垂直位置
                         )
@@ -290,7 +293,7 @@ fun SensorPage() {
                     withStyle(
                         style = SpanStyle(
                             fontSize = 16.sp,
-                            color = White,
+                            color = AppColors.textPrimary,
                             fontWeight = FontWeight.W700,
                             baselineShift = BaselineShift(0f) // 调整符号的垂直位置
                         )
@@ -298,28 +301,28 @@ fun SensorPage() {
                         append(" μT")
                     }
                 },
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = AppSpacing.micro)
             )
             Text(context.getString(if (displayedMicroTesla > MagneticScale.MAX_MICRO_TESLA)
                 R.string.magnetic_over_range else R.string.magnetic_scale),
-                color = White60, fontSize = 10.sp,
-                modifier = Modifier.padding(top = 4.dp))
+                color = AppColors.textSecondary, fontSize = 10.sp,
+                modifier = Modifier.padding(top = AppSpacing.micro))
         }
 
         Column(modifier = Modifier
-            .padding(bottom = 24.dp)
+            .padding(bottom = AppSpacing.large)
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = AppSpacing.large)
         ) {
             Row(modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 60.dp)
-                .background(color = Color(0xFFFFFFFF).copy(0.1f), shape = RoundedCornerShape(20.dp))
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .background(color = AppColors.textPrimary.copy(0.1f), shape = RoundedCornerShape(20.dp))
+                .padding(horizontal = AppSpacing.section, vertical = AppSpacing.section),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(painter = painterResource(R.drawable.svg_icon_warning_gray), contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(AppSpacing.compact))
                 Text(
                     text = context.getString(when {
                         sensorError -> R.string.magnetic_sensor_failed
@@ -328,23 +331,23 @@ fun SensorPage() {
                         reading != null && com.spyfinder.hiddencamera.detectorapp.utils.MagneticSampleHealth.unreliable(sampleAccuracy) -> R.string.magnetic_accuracy_low
                         else -> R.string.magnetic_help
                     }),
-                    color = Color(0xFFFFFFFF).copy(0.6f),
+                    color = AppColors.textPrimary.copy(0.6f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W400,
                     modifier = Modifier.weight(1f)
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.large))
             if (magneticSensor == null) {
                 Box(modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 56.dp)
-                    .background(color = White10, shape = RoundedCornerShape(999.dp))
-                    .padding(12.dp),
+                    .heightIn(min = AppSpacing.control)
+                    .background(color = AppColors.outline, shape = RoundedCornerShape(AppShapes.pill))
+                    .padding(AppSpacing.section),
                 ) {
                     Text(
                         text = context.getString(R.string.no_magnetic_sensor),
-                        color = White60,
+                        color = AppColors.textSecondary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.W500,
                         modifier = Modifier.align(Alignment.Center)
@@ -353,16 +356,16 @@ fun SensorPage() {
             } else {
             Box(modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .background(color = if (isListening) White10 else Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
-                .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                .heightIn(min = AppSpacing.control)
+                .background(color = if (isListening) AppColors.outline else AppColors.primary, shape = RoundedCornerShape(AppShapes.pill))
+                .border(width = 1.dp, shape = RoundedCornerShape(AppShapes.pill), brush = Brush.verticalGradient(colorStops = arrayOf(0f to AppColors.outline, 0.5f to Transparent, 1f to AppColors.outline)))
                 .clickable(enabled = !checking && !shouldStartDetectionAfterSubscribe.value) {
                     toggleDetectionWithSubscriptionCheck()
-                }.padding(12.dp),
+                }.padding(AppSpacing.section),
             ) {
                 Text(
                     text = context.getString(if (checking) R.string.action_checking else if (isListening) R.string.stop_detection else R.string.start_detection),
-                    color = if (isListening) White60 else White,
+                    color = if (isListening) AppColors.textSecondary else AppColors.textPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.W500,
                     modifier = Modifier.align(Alignment.Center)

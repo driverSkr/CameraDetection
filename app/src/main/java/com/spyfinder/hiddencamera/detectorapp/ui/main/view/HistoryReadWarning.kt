@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
 
 import androidx.compose.runtime.*
 import androidx.compose.foundation.clickable
@@ -10,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanHistoryStore
 import kotlinx.coroutines.launch
@@ -22,12 +24,12 @@ import kotlinx.coroutines.launch
     val scope = rememberCoroutineScope()
     var retrying by remember { mutableStateOf(false) }
     if (failed) {
-        Text(context.getString(R.string.history_read_failed), color = White60, fontSize = 12.sp)
+        Text(context.getString(R.string.history_read_failed), color = AppColors.textSecondary, fontSize = 12.sp)
         Text(context.getString(if (retrying) R.string.action_checking else R.string.history_retry_read),
-            color = White60, fontSize = 12.sp,
+            color = AppColors.textSecondary, fontSize = 12.sp,
             modifier = Modifier.clickable(enabled = !retrying && state.scanStatus != ScanStatus.RUNNING) {
                 retrying = true
                 scope.launch { try { state.retryHistoryLoad() } finally { retrying = false } }
-            }.padding(vertical = 12.dp))
+            }.padding(vertical = AppSpacing.section))
     }
 }

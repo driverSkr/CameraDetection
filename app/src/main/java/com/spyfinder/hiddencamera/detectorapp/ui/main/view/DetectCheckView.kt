@@ -1,4 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppShapes
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
 import android.content.Intent
@@ -51,9 +54,9 @@ import android.provider.Settings
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.event.Event
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
-import com.spyfinder.hiddencamera.detectorapp.theme.White
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.NotificationAccess
@@ -117,17 +120,17 @@ fun DetectCheckView() {
             if (localMain.scanStatus != ScanStatus.RUNNING) startDetectAction()
         }
     }
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 18.dp)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = AppSpacing.pageTop)) {
         // Preserve the original radar size when space permits; keep text and controls outside it.
         val radarSize = minOf(313.dp, maxWidth, (maxHeight - 304.dp).coerceAtLeast(0.dp))
-        val headerHeight = ((maxHeight - radarSize) / 2 - 8.dp).coerceAtLeast(0.dp)
+        val headerHeight = ((maxHeight - radarSize) / 2 - AppSpacing.compact).coerceAtLeast(0.dp)
         Column(modifier = Modifier.fillMaxWidth().heightIn(max = headerHeight)
-            .verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+            .verticalScroll(rememberScrollState()).padding(horizontal = AppSpacing.screen)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(context.getString(R.string.title_wifi_scan), color = Color(0xFFFFFFFF), fontSize = 28.sp, fontWeight = FontWeight.W700, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Text(context.getString(R.string.title_wifi_scan), color = AppColors.textPrimary, fontSize = 28.sp, fontWeight = FontWeight.W700, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 if (localMain.hasScanHistory && localMain.isStartDetect.value && localMain.scanStatus != ScanStatus.RUNNING) {
-                    Text(context.getString(R.string.action_history), color = White60, fontSize = 12.sp,
-                        modifier = Modifier.clickable { localMain.openLatestResult() }.padding(horizontal = 8.dp, vertical = 12.dp))
+                    Text(context.getString(R.string.action_history), color = AppColors.textSecondary, fontSize = 12.sp,
+                        modifier = Modifier.clickable { localMain.openLatestResult() }.padding(horizontal = AppSpacing.compact, vertical = AppSpacing.section))
                 }
                 if (!isSubscribed) {
                     // 未订阅时展示皇冠入口，订阅后自动隐藏。
@@ -143,15 +146,15 @@ fun DetectCheckView() {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(if (localMain.networkLabel.isBlank()) context.getString(R.string.wifi_network_scan) else context.getString(R.string.wifi_network_address, localMain.networkLabel), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W400)
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.compact))
+            Text(if (localMain.networkLabel.isBlank()) context.getString(R.string.wifi_network_scan) else context.getString(R.string.wifi_network_address, localMain.networkLabel), color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.W400)
+            Spacer(Modifier.height(AppSpacing.compact))
             HistoryReadWarning()
-            Text(ScanStrings.text(context, localMain.scanMessage), color = White60, fontSize = 12.sp,
+            Text(ScanStrings.text(context, localMain.scanMessage), color = AppColors.textSecondary, fontSize = 12.sp,
                 lineHeight = 18.sp, softWrap = true, modifier = Modifier.fillMaxWidth())
             if (localMain.scanStatus == ScanStatus.RUNNING) {
-                Text(context.getString(if (localMain.scanProtected) R.string.scan_foreground_hint else R.string.scan_unprotected_hint), color = White60, fontSize = 10.sp,
-                    lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+                Text(context.getString(if (localMain.scanProtected) R.string.scan_foreground_hint else R.string.scan_unprotected_hint), color = AppColors.textSecondary, fontSize = 10.sp,
+                    lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = AppSpacing.micro))
             }
         }
 
@@ -172,7 +175,7 @@ fun DetectCheckView() {
                         withStyle(
                             style = SpanStyle(
                                 fontSize = 44.sp,
-                                color = White,
+                                color = AppColors.textPrimary,
                                 fontWeight = FontWeight.W700,
                                 baselineShift = BaselineShift(0f) // 调整符号的垂直位置
                             )
@@ -182,7 +185,7 @@ fun DetectCheckView() {
                         withStyle(
                             style = SpanStyle(
                                 fontSize = 24.sp,
-                                color = White,
+                                color = AppColors.textPrimary,
                                 fontWeight = FontWeight.W700,
                                 baselineShift = BaselineShift(0f) // 调整符号的垂直位置
                             )
@@ -195,7 +198,7 @@ fun DetectCheckView() {
             } else {
                 Text(
                     text = context.getString(R.string.action_start),
-                    color = Color(0xFFFFFFFF),
+                    color = AppColors.textPrimary,
                     fontSize = 44.sp,
                     fontWeight = FontWeight.W700,
                     modifier = Modifier.align(Alignment.Center)
@@ -203,36 +206,36 @@ fun DetectCheckView() {
             }
         }
 
-        Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = AppSpacing.large), horizontalAlignment = Alignment.CenterHorizontally) {
             if (localMain.isStartDetect.value) {
                 Row(modifier = Modifier, verticalAlignment = Alignment.CenterVertically) {
                     Image(painter = painterResource(R.drawable.svg_icon_warning_red), contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(context.getString(R.string.camera_clues_prefix), color = White60, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                    Spacer(modifier = Modifier.width(AppSpacing.micro))
+                    Text(context.getString(R.string.camera_clues_prefix), color = AppColors.textSecondary, fontSize = 16.sp, fontWeight = FontWeight.W500)
                     Text(
                         "${localMain.suspiciousDevices.size}",
-                        color = Color(0xFFFE2D3F),
+                        color = AppColors.warning,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.W500
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.large))
             if (localMain.isStartDetect.value) {
                 if (localMain.isAnimating.value) {
                     Box(modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 24.dp)
-                        .background(color = White10, shape = RoundedCornerShape(999.dp))
-                        .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                        .height(AppSpacing.control)
+                        .padding(horizontal = AppSpacing.large)
+                        .background(color = AppColors.outline, shape = RoundedCornerShape(AppShapes.pill))
+                        .border(width = 1.dp, shape = RoundedCornerShape(AppShapes.pill), brush = Brush.verticalGradient(colorStops = arrayOf(0f to AppColors.outline, 0.5f to Transparent, 1f to AppColors.outline)))
                         .clickable{
                             vm.cancel(source = "cancel_button")
                         }
                     ) {
                         Text(
                             text = context.getString(R.string.action_cancel),
-                            color = White60,
+                            color = AppColors.textSecondary,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,
                             modifier = Modifier.align(Alignment.Center)
@@ -241,31 +244,31 @@ fun DetectCheckView() {
                 } else {
                     Row(modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 24.dp)
+                        .height(AppSpacing.control)
+                        .padding(horizontal = AppSpacing.large)
                     ) {
                         Box(modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .background(color = White10, shape = RoundedCornerShape(999.dp))
-                            .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                        .background(color = AppColors.outline, shape = RoundedCornerShape(AppShapes.pill))
+                            .border(width = 1.dp, shape = RoundedCornerShape(AppShapes.pill), brush = Brush.verticalGradient(colorStops = arrayOf(0f to AppColors.outline, 0.5f to Transparent, 1f to AppColors.outline)))
                             .clickable{
                                 startDetectAction()
                             }
                     ) {
                         Text(
                             text = context.getString(R.string.action_recheck),
-                            color = White60,
+                            color = AppColors.textSecondary,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
                                 modifier = Modifier.align(Alignment.Center)
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(AppSpacing.section))
                         Box(modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                            .background(color = AppColors.primary, shape = RoundedCornerShape(AppShapes.pill))
                             .clickable{
                                 Event.event(context, Event.WIFI_RESULT_CLICK, Event.PARAM_SOURCE to "result_button")
                                 openResultWithSubscriptionCheck()
@@ -273,7 +276,7 @@ fun DetectCheckView() {
                         ) {
                             Text(
                                 text = if (checking) context.getString(R.string.action_checking) else context.getString(R.string.action_result),
-                                color = Color(0xFFFFFFFF),
+                                color = AppColors.textPrimary,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
                                 modifier = Modifier.align(Alignment.Center)
@@ -285,14 +288,14 @@ fun DetectCheckView() {
                 if (localMain.hasScanHistory) {
                     Row(modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 24.dp)
+                        .height(AppSpacing.control)
+                        .padding(horizontal = AppSpacing.large)
                     ) {
                         Box(modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(color = White10, shape = RoundedCornerShape(999.dp))
-                            .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                            .background(color = AppColors.outline, shape = RoundedCornerShape(AppShapes.pill))
+                            .border(width = 1.dp, shape = RoundedCornerShape(AppShapes.pill), brush = Brush.verticalGradient(colorStops = arrayOf(0f to AppColors.outline, 0.5f to Transparent, 1f to AppColors.outline)))
                             .clickable{
                                 Event.event(
                                     context,
@@ -305,24 +308,24 @@ fun DetectCheckView() {
                         ) {
                             Text(
                                 text = context.getString(R.string.action_history),
-                                color = White60,
+                                color = AppColors.textSecondary,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
                                 modifier = Modifier.align(Alignment.Center)
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(AppSpacing.section))
                         Box(modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                            .background(color = AppColors.primary, shape = RoundedCornerShape(AppShapes.pill))
                             .clickable{
                                 startDetectAction()
                             }
                         ) {
                             Text(
                                 text = context.getString(R.string.action_start),
-                                color = Color(0xFFFFFFFF),
+                                color = AppColors.textPrimary,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.W500,
                                 modifier = Modifier.align(Alignment.Center)
@@ -335,13 +338,13 @@ fun DetectCheckView() {
                             startDetectAction()
                         }
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 24.dp)
-                        .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
+                        .height(AppSpacing.control)
+                        .padding(horizontal = AppSpacing.large)
+                        .background(color = AppColors.primary, shape = RoundedCornerShape(AppShapes.pill))
                     ) {
                         Text(
                             text = context.getString(R.string.action_start),
-                            color = Color(0xFFFFFFFF),
+                            color = AppColors.textPrimary,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.W500,
                             modifier = Modifier.align(Alignment.Center)
@@ -355,44 +358,44 @@ fun DetectCheckView() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0x99000000))
+                    .background(AppColors.scrim)
                     .clickable { notifyPrompt = null; startScan() }
             ) {
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .padding(horizontal = 24.dp)
-                        .background(Color(0xFF161618), RoundedCornerShape(20.dp))
+                        .padding(horizontal = AppSpacing.large)
+                        .background(AppColors.dialogSurface, RoundedCornerShape(20.dp))
                         .clickable { }
                         .padding(20.dp)
                 ) {
                     Text(
                         context.getString(if (explain) R.string.notify_rationale_title else R.string.notify_settings_title),
-                        color = White, fontSize = 18.sp, fontWeight = FontWeight.W600
+                        color = AppColors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.W600
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(AppSpacing.compact))
                     Text(
                         context.getString(if (explain) R.string.notify_rationale_body else R.string.notify_settings_body),
-                        color = White60, fontSize = 14.sp, lineHeight = 20.sp
+                        color = AppColors.textSecondary, fontSize = 14.sp, lineHeight = 20.sp
                     )
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(AppSpacing.screen))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp)
-                                .background(White10, RoundedCornerShape(999.dp))
+                                .height(AppSpacing.wide)
+                                .background(AppColors.outline, RoundedCornerShape(AppShapes.pill))
                                 .clickable { notifyPrompt = null; startScan() },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(context.getString(R.string.notify_not_now), color = White60, fontSize = 14.sp, fontWeight = FontWeight.W500)
+                            Text(context.getString(R.string.notify_not_now), color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.W500)
                         }
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(AppSpacing.section))
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp)
-                                .background(Color(0xFF00C46F), RoundedCornerShape(999.dp))
+                                .height(AppSpacing.wide)
+                                .background(AppColors.primary, RoundedCornerShape(AppShapes.pill))
                                 .clickable {
                                     notifyPrompt = null
                                     if (explain) notifyLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -402,7 +405,7 @@ fun DetectCheckView() {
                         ) {
                             Text(
                                 context.getString(if (explain) R.string.notify_allow else R.string.app_settings),
-                                color = White, fontSize = 14.sp, fontWeight = FontWeight.W500
+                                color = AppColors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.W500
                             )
                         }
                     }

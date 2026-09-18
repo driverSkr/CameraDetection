@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.view
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
 
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
 import androidx.compose.ui.platform.LocalContext
@@ -28,9 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
-import com.spyfinder.hiddencamera.detectorapp.theme.White
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 
 @Composable
 fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
@@ -41,26 +43,26 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 88.dp)
-            .background(color = White10, shape = RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .background(color = AppColors.outline, shape = RoundedCornerShape(20.dp))
+            .padding(horizontal = AppSpacing.screen, vertical = 10.dp)
             .clickable{ onClick.invoke() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(painter = painterResource(deviceType), contentDescription = null, modifier = Modifier.size(32.dp))
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(AppSpacing.screen))
         Column(Modifier.weight(1f)) {
-            Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(info.details) ?: ScanStrings.text(context, identity.type), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(info.details) ?: ScanStrings.text(context, identity.type), color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(3.dp))
             Text(if (com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(info.details) != null)
                 "${info.ip} · ${ScanStrings.text(context, identity.type)}" else info.ip,
-                color = White60, fontSize = 12.sp, fontWeight = FontWeight.W400, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                color = AppColors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.W400, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(3.dp))
-            Text(ScanStrings.text(context, identity.basis), color = White60, fontSize = 12.sp)
-            if (identity.capabilities.isNotEmpty()) Text(context.getString(R.string.ux_capabilities) + ": " + identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = White60, fontSize = 12.sp)
-            if (info.userTrusted) Text(context.getString(R.string.ux_my_mark), color = White60, fontSize = 12.sp)
-            if (!info.analysisComplete) Text(context.getString(R.string.analysis_incomplete), color = White60, fontSize = 12.sp)
+            Text(ScanStrings.text(context, identity.basis), color = AppColors.textSecondary, fontSize = 12.sp)
+            if (identity.capabilities.isNotEmpty()) Text(context.getString(R.string.ux_capabilities) + ": " + identity.capabilities.joinToString(" · ") { ScanStrings.text(context, it) }, color = AppColors.textSecondary, fontSize = 12.sp)
+            if (info.userTrusted) Text(context.getString(R.string.ux_my_mark), color = AppColors.textSecondary, fontSize = 12.sp)
+            if (!info.analysisComplete) Text(context.getString(R.string.analysis_incomplete), color = AppColors.textSecondary, fontSize = 12.sp)
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(AppSpacing.compact))
         Image(painter = painterResource(when {
             !info.analysisComplete -> R.drawable.svg_icon_warning_gray
             else -> R.drawable.svg_icon_next

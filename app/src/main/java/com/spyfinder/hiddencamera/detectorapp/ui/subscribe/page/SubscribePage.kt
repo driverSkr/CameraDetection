@@ -1,4 +1,7 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.subscribe.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppShapes
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -39,10 +42,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.event.Event
-import com.spyfinder.hiddencamera.detectorapp.theme.Black
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.background
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
-import com.spyfinder.hiddencamera.detectorapp.theme.White
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.view.SubProductView
 import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.viewmodel.SubscribeViewModel
 import com.spyfinder.hiddencamera.detectorapp.utils.LaunchUtils
@@ -82,7 +85,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
     }
     val canBuy = vm.selected != null && !vm.loading && vm.purchaseState !in listOf(PurchaseUiState.LAUNCHING, PurchaseUiState.PENDING, PurchaseUiState.SUCCESS)
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    BoxWithConstraints(Modifier.fillMaxSize().background(Black).navigationBarsPadding()) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(AppColors.background).navigationBarsPadding()) {
         val pageHeight = maxOf(maxHeight, 800.dp * fontScale)
         Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             Box(Modifier.fillMaxWidth().height(pageHeight)) {
@@ -92,18 +95,18 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .height(200.dp)
-                        .background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to Transparent, 1f to Black)))
+                        .background(brush = Brush.verticalGradient(colorStops = arrayOf(0f to Transparent, 1f to AppColors.background)))
                     )
 
                     Box(modifier = Modifier.align(Alignment.BottomCenter).offset(x = (-20).dp, y = (-78).dp)) {
                         Image(painter = painterResource(R.mipmap.img_light_cone_big), contentDescription = null)
-                        Image(painter = painterResource(R.drawable.svg_icon_red_dot), contentDescription = null, modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-2).dp))
+                        Image(painter = painterResource(R.drawable.svg_icon_red_dot), contentDescription = null, modifier = Modifier.align(Alignment.TopEnd).offset(x = AppSpacing.micro, y = (-2).dp))
                         Image(painter = painterResource(R.mipmap.img_sub_camera), contentDescription = null, modifier = Modifier.align(Alignment.BottomStart).offset(x = (-20).dp))
                     }
 
                     Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-30).dp, y = (-100).dp)) {
                         Image(painter = painterResource(R.mipmap.img_light_cone_small), contentDescription = null)
-                        Image(painter = painterResource(R.drawable.svg_icon_red_dot), contentDescription = null, modifier = Modifier.align(Alignment.BottomStart).offset(x = (-2).dp, y = 4.dp))
+                        Image(painter = painterResource(R.drawable.svg_icon_red_dot), contentDescription = null, modifier = Modifier.align(Alignment.BottomStart).offset(x = (-2).dp, y = AppSpacing.micro))
                         Image(painter = painterResource(R.mipmap.img_sub_notebook), contentDescription = null, modifier = Modifier.align(Alignment.TopEnd).offset(y = (-20).dp))
                     }
                     // 弃用，可能后边会开启
@@ -138,7 +141,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
-                        .padding(top = 15.dp, end = 16.dp)
+                        .padding(top = 15.dp, end = AppSpacing.screen)
                         .clickable{
                             Event.event(context, Event.FEATURE_CLICK, Event.PARAM_FEATURE to "subscribe_close")
                             if (onDismiss != null) {
@@ -154,7 +157,7 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                     Text(
                         text = context.getString(R.string.subscribe_advanced),
                         style = TextStyle(
-                            brush = Brush.horizontalGradient(colorStops = arrayOf(0f to Color(0xFF01C587), 1f to Color(0xFFBCF085))),
+                            brush = Brush.horizontalGradient(colorStops = arrayOf(0f to AppColors.primaryDark, 1f to AppColors.primarySoft)),
                             fontWeight = FontWeight.W700,
                             fontSize = 32.sp
                         ),
@@ -164,43 +167,43 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                     Text(
                         text = context.getString(R.string.subscribe_title),
                         style = TextStyle(
-                            brush = Brush.horizontalGradient(colorStops = arrayOf(0f to Color(0xFF01C587), 1f to Color(0xFFBCF085))),
+                            brush = Brush.horizontalGradient(colorStops = arrayOf(0f to AppColors.primaryDark, 1f to AppColors.primarySoft)),
                             fontWeight = FontWeight.W700,
                             fontSize = 32.sp
                         ),
                         softWrap = false,
                         maxLines = 1
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(AppSpacing.large))
                     Column {
                         Row(modifier = Modifier) {
-                            Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = 4.dp), contentDescription = null)
-                            Text(context.getString(R.string.subscribe_all_features), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                            Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = AppSpacing.micro), contentDescription = null)
+                            Text(context.getString(R.string.subscribe_all_features), color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W500)
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(AppSpacing.section))
                         Row(modifier = Modifier) {
-                            Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = 4.dp), contentDescription = null)
-                            Text(context.getString(R.string.subscribe_device_info), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                            Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = AppSpacing.micro), contentDescription = null)
+                            Text(context.getString(R.string.subscribe_device_info), color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W500)
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(AppSpacing.section))
                         Row(modifier = Modifier) {
-                            Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = 4.dp), contentDescription = null)
-                            Text(context.getString(R.string.subscribe_no_ads), color = White, fontSize = 16.sp, fontWeight = FontWeight.W500)
+                            Image(painter = painterResource(R.drawable.svg_icon_correct), modifier = Modifier.padding(end = AppSpacing.micro), contentDescription = null)
+                            Text(context.getString(R.string.subscribe_no_ads), color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W500)
                         }
                     }
                 }
 
                 Column(
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 12.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = AppSpacing.section),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(modifier = Modifier.fillMaxWidth().height(148.dp * fontScale)) {
                         if (vm.loading) {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center).size(36.dp), color = White, trackColor = White10, strokeCap = StrokeCap.Round)
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center).size(36.dp), color = AppColors.textPrimary, trackColor = AppColors.outline, strokeCap = StrokeCap.Round)
                         } else if (vm.products.isEmpty()) {
                             EmptyView { vm.load(context, true) }
                         } else {
-                            Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+                            Row(Modifier.fillMaxSize().padding(horizontal = AppSpacing.screen), horizontalArrangement = Arrangement.spacedBy(AppSpacing.compact), verticalAlignment = Alignment.Bottom) {
                                 vm.products.forEach { model ->
                                     SubProductView(Modifier.weight(1f), vm.selected?.id == model.id, model) { vm.select(model) }
                                 }
@@ -208,35 +211,35 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
                         }
                     }
                     if (vm.productMessageRes != 0) {
-                        Text(context.getString(vm.productMessageRes), modifier = Modifier.padding(horizontal = 24.dp), color = Color(0xFF96939E), fontSize = 12.sp, textAlign = TextAlign.Center)
+                        Text(context.getString(vm.productMessageRes), modifier = Modifier.padding(horizontal = AppSpacing.large), color = AppColors.textMuted, fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
                     if (vm.messageRes != 0) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(context.getString(vm.messageRes), modifier = Modifier.padding(horizontal = 24.dp), color = Color(0xFF96939E), fontSize = 12.sp, textAlign = TextAlign.Center)
+                        Spacer(Modifier.height(AppSpacing.compact))
+                        Text(context.getString(vm.messageRes), modifier = Modifier.padding(horizontal = AppSpacing.large), color = AppColors.textMuted, fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
-                    Spacer(modifier = Modifier.height(18.dp))
-                    Text(vm.selected?.let { context.getString(R.string.subscription_renewal_price, it.formattedPrice, periodLabel(context, it.billingPeriod)) } ?: context.getString(R.string.subscribe_renewal), modifier = Modifier.padding(horizontal = 24.dp), textAlign = TextAlign.Center, color = Color(0xFF96939E), fontSize = 14.sp, fontWeight = FontWeight.W400)
+                    Spacer(modifier = Modifier.height(AppSpacing.pageTop))
+                    Text(vm.selected?.let { context.getString(R.string.subscription_renewal_price, it.formattedPrice, periodLabel(context, it.billingPeriod)) } ?: context.getString(R.string.subscribe_renewal), modifier = Modifier.padding(horizontal = AppSpacing.large), textAlign = TextAlign.Center, color = AppColors.textMuted, fontSize = 14.sp, fontWeight = FontWeight.W400)
                     Spacer(modifier = Modifier.height(20.dp))
                     Box(modifier = Modifier
-                        .padding(horizontal = 24.dp)
+                        .padding(horizontal = AppSpacing.large)
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .background(color = Color(0xFF00C46F), shape = RoundedCornerShape(999.dp))
-                        .border(width = 1.dp, shape = RoundedCornerShape(999.dp), brush = Brush.verticalGradient(colorStops = arrayOf(0f to White10, 0.5f to Transparent, 1f to White10)))
+                        .height(AppSpacing.control)
+                        .background(color = AppColors.primary, shape = RoundedCornerShape(AppShapes.pill))
+                        .border(width = 1.dp, shape = RoundedCornerShape(AppShapes.pill), brush = Brush.verticalGradient(colorStops = arrayOf(0f to AppColors.outline, 0.5f to Transparent, 1f to AppColors.outline)))
                         .alpha(if (canBuy) 1f else 0.5f)
                         .clickable(enabled = canBuy) { vm.buy(activity) }
                     ) {
-                        Text(when (vm.purchaseState) { PurchaseUiState.LAUNCHING -> context.getString(R.string.opening_store); PurchaseUiState.PENDING -> context.getString(R.string.payment_pending); else -> context.getString(R.string.action_continue) }, color = White, fontSize = 16.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
+                        Text(when (vm.purchaseState) { PurchaseUiState.LAUNCHING -> context.getString(R.string.opening_store); PurchaseUiState.PENDING -> context.getString(R.string.payment_pending); else -> context.getString(R.string.action_continue) }, color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center))
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(context.getString(R.string.restore_purchases), color = Color(0xFF00C46F), fontSize = 12.sp, modifier = Modifier.clickable(enabled = vm.purchaseState != PurchaseUiState.LAUNCHING) { vm.restore(context) }.padding(4.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(AppSpacing.section))
+                    Text(context.getString(R.string.restore_purchases), color = AppColors.primary, fontSize = 12.sp, modifier = Modifier.clickable(enabled = vm.purchaseState != PurchaseUiState.LAUNCHING) { vm.restore(context) }.padding(AppSpacing.micro))
+                    Spacer(modifier = Modifier.height(AppSpacing.compact))
                     Row {
-                        Text(context.getString(R.string.privacy_policy), color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
+                        Text(context.getString(R.string.privacy_policy), color = AppColors.primary, fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
                             LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-privacy-policy/home", context.getString(R.string.privacy_policy))
                         })
-                        Text(context.getString(R.string.policy_separator), color = White, fontSize = 12.sp, fontWeight = FontWeight.W400)
-                        Text(context.getString(R.string.terms_of_use), color = Color(0xFF00C46F), fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
+                        Text(context.getString(R.string.policy_separator), color = AppColors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.W400)
+                        Text(context.getString(R.string.terms_of_use), color = AppColors.primary, fontSize = 12.sp, fontWeight = FontWeight.W400, modifier = Modifier.clickable {
                             LaunchUtils.launchWeb(context, "https://sites.google.com/view/spycamerafinder-terms-of-use/home", context.getString(R.string.terms_of_use))
                         })
                     }
@@ -250,13 +253,13 @@ fun SubscribePage(onDismiss: (() -> Unit)? = null) {
 fun EmptyView(modifier: Modifier = Modifier, onRetryClick: () -> Unit) {
     val context = LocalContext.current
     Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text(context.getString(R.string.no_product), color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.W400)
+        Text(context.getString(R.string.no_product), color = AppColors.errorStrong, fontSize = 16.sp, fontWeight = FontWeight.W400)
         Box(modifier = Modifier
             .padding(top = 20.dp)
-            .border(width = 1.dp, color = Color.White, shape = RoundedCornerShape(44.dp))
+            .border(width = 1.dp, color = AppColors.textPrimary, shape = RoundedCornerShape(44.dp))
             .padding(vertical = 10.dp, horizontal = 30.dp)
             .clickable { onRetryClick.invoke() }) {
-            Text(context.getString(R.string.action_retry), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.W400)
+            Text(context.getString(R.string.action_retry), color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W400)
         }
     }
 }

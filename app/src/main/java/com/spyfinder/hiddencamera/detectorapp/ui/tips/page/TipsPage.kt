@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.tips.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
@@ -21,10 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spyfinder.hiddencamera.detectorapp.R
-import com.spyfinder.hiddencamera.detectorapp.theme.Black
-import com.spyfinder.hiddencamera.detectorapp.theme.White
-import com.spyfinder.hiddencamera.detectorapp.theme.White10
-import com.spyfinder.hiddencamera.detectorapp.theme.White60
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.background
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textPrimary
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.outline
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors.textSecondary
 import com.spyfinder.hiddencamera.detectorapp.utils.findBaseActivityVBind
 
 @Composable
@@ -35,15 +37,15 @@ fun TipsPage() {
         R.string.tips_public_title to listOf(R.string.tips_result_1, R.string.tips_result_2, R.string.tips_result_3),
         R.string.tips_strategy_title to listOf(R.string.tips_action_1, R.string.tips_action_2, R.string.tips_action_3)
     )
-    Column(Modifier.fillMaxSize().background(Black).statusBarsPadding().navigationBarsPadding()) {
-        Box(Modifier.fillMaxWidth().heightIn(min = 54.dp).padding(horizontal = 12.dp)) {
+    Column(Modifier.fillMaxSize().background(AppColors.background).statusBarsPadding().navigationBarsPadding()) {
+        Box(Modifier.fillMaxWidth().heightIn(min = AppSpacing.topBar).padding(horizontal = AppSpacing.section)) {
             Image(painterResource(R.drawable.svg_icon_back), contentDescription = context.getString(R.string.a11y_back),
-                modifier = Modifier.align(Alignment.CenterStart).size(48.dp).clickable { context.findBaseActivityVBind()?.finish() }.padding(12.dp))
-            Text(context.getString(R.string.title_tips), color = White, fontSize = 18.sp,
-                fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center).padding(horizontal = 48.dp, vertical = 12.dp))
+                modifier = Modifier.align(Alignment.CenterStart).size(AppSpacing.wide).clickable { context.findBaseActivityVBind()?.finish() }.padding(AppSpacing.section))
+            Text(context.getString(R.string.title_tips), color = AppColors.textPrimary, fontSize = 18.sp,
+                fontWeight = FontWeight.W500, modifier = Modifier.align(Alignment.Center).padding(horizontal = AppSpacing.wide, vertical = AppSpacing.section))
         }
-        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(AppSpacing.screen),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.section)) {
             sections.forEach { (title, bodies) ->
                 item(key = title) { TipSection(title, bodies) }
             }
@@ -55,24 +57,24 @@ fun TipsPage() {
 private fun TipSection(title: Int, bodies: List<Int>) {
     val context = LocalContext.current
     var expanded by rememberSaveable(title) { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().animateContentSize().background(White10, RoundedCornerShape(20.dp))) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
+    Column(Modifier.fillMaxWidth().animateContentSize().background(AppColors.outline, RoundedCornerShape(20.dp))) {
+        Row(Modifier.fillMaxWidth().heightIn(min = AppSpacing.wide)
             .semantics(mergeDescendants = true) {
                 stateDescription = context.getString(if (expanded) R.string.tips_expanded else R.string.tips_collapsed)
             }
             .clickable(role = Role.Button, onClickLabel = context.getString(if (expanded) R.string.tips_collapse else R.string.tips_expand)) { expanded = !expanded }
-            .padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(context.getString(title), color = White, fontSize = 14.sp, fontWeight = FontWeight.W600,
+            .padding(AppSpacing.section), verticalAlignment = Alignment.CenterVertically) {
+            Text(context.getString(title), color = AppColors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.W600,
                 modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(AppSpacing.section))
             Image(painterResource(if (expanded) R.drawable.svg_icon_down else R.drawable.svg_icon_next), contentDescription = null)
         }
         if (expanded) {
-            Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.padding(start = AppSpacing.section, end = AppSpacing.section, bottom = AppSpacing.section), verticalArrangement = Arrangement.spacedBy(AppSpacing.section)) {
                 bodies.forEachIndexed { index, body ->
                     Row(Modifier.fillMaxWidth()) {
-                        Text("${index + 1}. ", color = White60, fontSize = 12.sp)
-                        Text(context.getString(body), color = White60, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        Text("${index + 1}. ", color = AppColors.textSecondary, fontSize = 12.sp)
+                        Text(context.getString(body), color = AppColors.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
                     }
                 }
             }

@@ -1,4 +1,6 @@
 package com.spyfinder.hiddencamera.detectorapp.ui.main.page
+import com.spyfinder.hiddencamera.detectorapp.theme.AppColors
+import com.spyfinder.hiddencamera.detectorapp.theme.AppSpacing
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Image
@@ -47,7 +49,7 @@ fun MainPage() {
 
     Box(modifier = Modifier
         .fillMaxSize()
-        .background(color = Color(0xFF000000))) {
+        .background(color = AppColors.background)) {
         Image(painter = painterResource(R.mipmap.bg_mask), contentScale = ContentScale.Crop, contentDescription = null)
 
         Column(modifier = Modifier.fillMaxSize()) {
@@ -82,7 +84,7 @@ fun MainPage() {
                     modifier = Modifier
                         .navigationBarsPadding()
                         .fillMaxWidth()
-                        .height(64.dp)
+                        .height(AppSpacing.navigationBar)
                 )
             }
         }
@@ -97,33 +99,33 @@ private fun ScanActiveBanner() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .background(color = Color(0xFF1C3A2E), shape = RoundedCornerShape(16.dp))
+            .padding(horizontal = AppSpacing.screen, vertical = AppSpacing.compact)
+            .background(color = AppColors.scanBanner, shape = RoundedCornerShape(AppSpacing.screen))
             .clickable { localMain.selectTabIndex.intValue = 0 }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = AppSpacing.screen, vertical = AppSpacing.section),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 context.getString(R.string.scan_banner_title),
-                color = Color(0xFFFFFFFF),
+                color = AppColors.textPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.W600
             )
             Text(
                 context.getString(R.string.scan_banner_progress, localMain.detectProgress.intValue),
-                color = Color(0xFFB7E0C8),
+                color = AppColors.scanBannerText,
                 fontSize = 12.sp
             )
         }
         Text(
             context.getString(R.string.action_cancel),
-            color = Color(0xFFFFFFFF),
+            color = AppColors.textPrimary,
             fontSize = 13.sp,
             fontWeight = FontWeight.W600,
             modifier = Modifier
                 .clickable { scanViewModel.cancel(source = "banner") }
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = AppSpacing.compact, vertical = AppSpacing.micro)
         )
     }
 }
@@ -154,8 +156,8 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_detect), contentDescription = null)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(context.getString(R.string.tab_detect), color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
+            Spacer(modifier = Modifier.height(AppSpacing.micro))
+            Text(context.getString(R.string.tab_detect), color = AppColors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
             modifier = Modifier
@@ -171,8 +173,8 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_sensor), contentDescription = null)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(context.getString(R.string.tab_sensor), color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
+            Spacer(modifier = Modifier.height(AppSpacing.micro))
+            Text(context.getString(R.string.tab_sensor), color = AppColors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
             modifier = Modifier
@@ -188,8 +190,8 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_scanner), contentDescription = null)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(context.getString(R.string.tab_scanner), color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
+            Spacer(modifier = Modifier.height(AppSpacing.micro))
+            Text(context.getString(R.string.tab_scanner), color = AppColors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
         Column(
             modifier = Modifier
@@ -205,8 +207,8 @@ fun NavigationBarView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center
         ) {
             Image(painter = painterResource(R.drawable.svg_icon_feature), contentDescription = null)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(context.getString(R.string.tab_feature), color = Color(0xFFFFFFFF), fontSize = 12.sp, fontWeight = FontWeight.W500)
+            Spacer(modifier = Modifier.height(AppSpacing.micro))
+            Text(context.getString(R.string.tab_feature), color = AppColors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.W500)
         }
     }
 }

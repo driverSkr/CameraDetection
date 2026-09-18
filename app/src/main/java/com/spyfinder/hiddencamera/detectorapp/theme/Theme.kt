@@ -20,15 +20,20 @@ import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = AppColors.primary,
+    secondary = AppColors.primaryDark,
+    tertiary = AppColors.primarySoft,
+    background = AppColors.background,
+    surface = AppColors.surface,
+    onPrimary = AppColors.textPrimary,
+    onBackground = AppColors.textPrimary,
+    onSurface = AppColors.textPrimary
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = AppColors.primary,
+    secondary = AppColors.primaryDark,
+    tertiary = AppColors.primarySoft
 )
 
 var NO_PADDING_TEXT_STYLE = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
@@ -39,7 +44,7 @@ private const val TAG = "Theme"
 fun ComposeProjectTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),//状态栏颜色
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
