@@ -328,6 +328,7 @@
     <string name="ux_hide_scan_details">Hide scan details</string>
     <string name="ux_about_this_scan">About this scan</string>
     <string name="result_needs_look">Needs a look</string>
+    <string name="result_video_service">Video service found</string>
     <string name="result_marked_known">Marked known</string>
     <string name="identity_unknown_short">Unknown device</string>
     <string name="ux_return_to_scan">Return to Wi-Fi scan</string>

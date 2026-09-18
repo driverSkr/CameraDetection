@@ -39,24 +39,7 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
     val context = LocalContext.current
     val identity = com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.forDevice(info)
     val needsLook = DevicePresentation.needsLook(info)
-    val typeLabel = if (identity.type == "Device type unconfirmed") {
-        context.getString(R.string.identity_unknown_short)
-    } else {
-        ScanStrings.text(context, identity.type)
-    }
-    val name = com.spyfinder.hiddencamera.detectorapp.scan.DeviceIdentity.name(info.details)
-    val status = when {
-        info.isCurrentPhone -> context.getString(R.string.current_phone)
-        needsLook -> context.getString(R.string.result_needs_look)
-        !info.analysisComplete -> context.getString(R.string.analysis_incomplete)
-        info.userTrusted -> context.getString(R.string.result_marked_known)
-        else -> null
-    }
-    val caption = when {
-        name != null && status != null -> "$typeLabel · $status"
-        name != null -> typeLabel
-        else -> status
-    }
+    val lines = DevicePresentation.listLines(info, context::getString) { ScanStrings.text(context, it) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -72,11 +55,11 @@ fun WifiInfoItemView(info: WifiDevice, onClick: () -> Unit) {
         Image(painter = painterResource(DevicePresentation.icon(identity.type)), contentDescription = null, modifier = Modifier.size(32.dp))
         Spacer(modifier = Modifier.width(AppSpacing.screen))
         Column(Modifier.weight(1f)) {
-            Text(name ?: typeLabel, color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (caption != null) {
+            Text(lines.title, color = AppColors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.W500, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (lines.caption != null) {
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    caption,
+                    lines.caption,
                     color = AppColors.textSecondary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W400,

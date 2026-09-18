@@ -47,4 +47,39 @@ object DevicePresentation {
         device.isCurrentPhone || device.userTrusted -> 2
         else -> 3
     }
+
+    data class ListLines(val title: String, val caption: String?)
+
+    fun listLines(device: WifiDevice, loc: (Int) -> String, scan: (String) -> String): ListLines {
+        val identity = DeviceIdentity.forDevice(device)
+        val unconfirmed = identity.type == "Device type unconfirmed"
+        val typeLabel = if (unconfirmed) loc(R.string.identity_network_device) else scan(identity.type)
+        val reported = DeviceIdentity.name(device.details) ?: hostLabel(device.details) ?: manufacturer(device.details)
+        val title = reported ?: typeLabel
+        val parts = buildList {
+            if (reported != null && !unconfirmed) add(typeLabel)
+            if (unconfirmed) {
+                when {
+                    needsLook(device) -> add(loc(R.string.result_video_service))
+                    identity.capabilities.isNotEmpty() -> add(scan(identity.capabilities.first()))
+                }
+            }
+            when {
+                device.isCurrentPhone -> add(loc(R.string.current_phone))
+                device.userTrusted -> add(loc(R.string.result_marked_known))
+            }
+            if (isEmpty() && reported == null && unconfirmed) add(device.ip)
+        }.distinct().filter { it.isNotBlank() && it != title }.take(2)
+        return ListLines(title, parts.joinToString(" · ").ifBlank { null })
+    }
+
+    internal fun hostLabel(details: Map<String, String>): String? {
+        val host = details["mdns_host"]?.lineSequence()?.firstOrNull(String::isNotBlank) ?: return null
+        val short = host.trim().trimEnd('.').substringBefore('.').trim()
+        if (short.isBlank() || short.any { it == ':' } || short.all { it.isDigit() || it == '.' }) return null
+        return short
+    }
+
+    internal fun manufacturer(details: Map<String, String>) =
+        details["identity_manufacturer"]?.lineSequence()?.firstOrNull(String::isNotBlank)
 }
