@@ -135,6 +135,10 @@
     <string name="tips_body_2">只进行目视检查，不拆卸插座、灯具、烟雾报警器或其他固定设施，也不要触碰裸露电线。无法确认的物品可请场所管理人员协助核实。</string>
     <string name="tips_body_3">本应用只能提供辅助线索。未发现异常不代表不存在摄像头，也不能证明房间安全；请结合现场情况判断。</string>
     <string name="wifi_network_address">"Wi-Fi：%1$s"</string>
+    <string name="wifi_connected_network">"已连接：%1$s"</string>
+    <string name="wifi_connected_unknown">"已连接 Wi-Fi"</string>
+    <string name="scan_complete_clues">"扫描完成 · 发现 %1$d 条可能与摄像头相关的线索，请查看结果"</string>
+    <string name="scan_complete_no_clues">"扫描完成 · 未发现明显线索，请查看结果了解详情"</string>
     <string name="subscription_renewal_price">"%1$s / %2$s，自动续订，可随时取消。"</string>
     <string name="colour_red">"红色辅助滤镜"</string>
     <string name="colour_green">"绿色辅助滤镜"</string>

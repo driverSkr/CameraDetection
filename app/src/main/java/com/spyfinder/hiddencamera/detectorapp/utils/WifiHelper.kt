@@ -3,11 +3,20 @@ package com.spyfinder.hiddencamera.detectorapp.utils
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
 import com.spyfinder.hiddencamera.detectorapp.model.WifiInfo
 import java.net.Inet4Address
 import com.spyfinder.hiddencamera.detectorapp.scan.isLocalWifi
 
 object WifiHelper {
+    fun connectedSsid(context: Context): String? {
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        return runCatching { wifi.connectionInfo?.ssid }
+            .getOrNull()
+            ?.takeUnless { it.isNullOrBlank() || it == WifiManager.UNKNOWN_SSID }
+            ?.trim('"')
+    }
+
     fun isWifiEnabled(context: Context): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         return cm.allNetworks.any { isLocalWifi(cm.getNetworkCapabilities(it)) }

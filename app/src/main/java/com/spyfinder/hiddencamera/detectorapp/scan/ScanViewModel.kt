@@ -25,6 +25,7 @@ import android.widget.Toast
 import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.replaceDevices
 import com.spyfinder.hiddencamera.detectorapp.utils.ExclusiveSession
+import com.spyfinder.hiddencamera.detectorapp.utils.WifiHelper
 
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
     val state = MainContextEntity(application)
@@ -44,6 +45,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     init {
+        state.networkName = WifiHelper.connectedSsid(application).orEmpty()
         ExclusiveSession.bind(
             cancelScan = { reason, source -> cancel(reason, source) },
             scanRunning = { state.scanStatus == ScanStatus.RUNNING },
@@ -125,6 +127,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 state.detectProgress.intValue = 0
                 state.scanMessage = "Preparing Wi-Fi scan…"
                 state.networkLabel = "${target.ip}/${target.prefix}"
+                state.networkName = worker.connectedWifiName(target.network).orEmpty()
                 state.suspiciousDevices.clear(); state.trustedDevices.clear()
                 prefs.edit().putBoolean("running", true).remove("interrupted").apply()
                 Event.event(getApplication(), Event.WIFI_SCAN_START)

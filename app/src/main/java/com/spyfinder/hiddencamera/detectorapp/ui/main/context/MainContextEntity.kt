@@ -38,6 +38,8 @@ class MainContextEntity(
     var scanStatus by mutableStateOf(ScanStatus.IDLE)
     var scanMessage by mutableStateOf("Ready to check your Wi-Fi network")
     var latestMessage by mutableStateOf("")
+    /** User-facing SSID. The scan scope address remains in networkLabel for evidence/history. */
+    var networkName by mutableStateOf("")
     var networkLabel by mutableStateOf("")
 
     val resultSuspiciousDevices: SnapshotStateList<WifiDevice>

@@ -135,6 +135,10 @@
     <string name="tips_body_2">Inspect visually. Do not dismantle sockets, lights, smoke alarms or other fixed equipment, or touch exposed wiring. Ask the venue staff to help identify unfamiliar objects.</string>
     <string name="tips_body_3">This app provides supporting clues only. Finding no anomalies does not rule out cameras or establish that a room is safe. Consider the surroundings as well.</string>
     <string name="wifi_network_address">"WI-FI: %1$s"</string>
+    <string name="wifi_connected_network">"Connected to %1$s"</string>
+    <string name="wifi_connected_unknown">"Connected to Wi-Fi"</string>
+    <string name="scan_complete_clues">"Scan complete · %1$d possible camera-related clues found. Review the results."</string>
+    <string name="scan_complete_no_clues">"Scan complete · No obvious clues found. Review the results for details."</string>
     <string name="subscription_renewal_price">"%1$s / %2$s. Auto-renews. Cancel anytime."</string>
     <string name="colour_red">"Red colour aid"</string>
     <string name="colour_green">"Green colour aid"</string>

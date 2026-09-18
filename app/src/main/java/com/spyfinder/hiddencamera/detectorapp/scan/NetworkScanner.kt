@@ -122,6 +122,20 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
             properties.routes.firstOrNull { it.isDefaultRoute && it.gateway is Inet4Address }?.gateway?.hostAddress).also { target = it }
     }
 
+    /** Returns the connected SSID when Android exposes it; callers should provide a generic fallback. */
+    fun connectedWifiName(network: Network): String? {
+        val fromCapabilities = runCatching {
+            (cm.getNetworkCapabilities(network)?.transportInfo as? android.net.wifi.WifiInfo)?.ssid
+        }.getOrNull()
+        val fromManager = runCatching {
+            val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            wifi.connectionInfo?.ssid
+        }.getOrNull()
+        return listOf(fromCapabilities, fromManager)
+            .firstOrNull { !it.isNullOrBlank() && it != WifiManager.UNKNOWN_SSID }
+            ?.trim('"')
+    }
+
     fun networkUnchanged(t: WifiTarget): Boolean {
         if (!isLocalWifi(cm.getNetworkCapabilities(t.network))) return false
         return cm.getLinkProperties(t.network)?.linkAddresses?.any { it.address.hostAddress == t.ip && it.prefixLength == t.prefix } == true

@@ -147,14 +147,29 @@ fun DetectCheckView() {
                 }
             }
             Spacer(modifier = Modifier.height(AppSpacing.compact))
-            Text(if (localMain.networkLabel.isBlank()) context.getString(R.string.wifi_network_scan) else context.getString(R.string.wifi_network_address, localMain.networkLabel), color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.W400)
-            Spacer(Modifier.height(AppSpacing.compact))
-            HistoryReadWarning()
-            Text(ScanStrings.text(context, localMain.scanMessage), color = AppColors.textSecondary, fontSize = 12.sp,
-                lineHeight = 18.sp, softWrap = true, modifier = Modifier.fillMaxWidth())
-            if (localMain.scanStatus == ScanStatus.RUNNING) {
-                Text(context.getString(if (localMain.scanProtected) R.string.scan_foreground_hint else R.string.scan_unprotected_hint), color = AppColors.textSecondary, fontSize = 10.sp,
-                    lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = AppSpacing.micro))
+            Text(
+                if (localMain.networkName.isBlank()) context.getString(R.string.wifi_connected_unknown)
+                else context.getString(R.string.wifi_connected_network, localMain.networkName),
+                color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.W400,
+                maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+            if (localMain.scanStatus == ScanStatus.COMPLETE) {
+                Spacer(Modifier.height(AppSpacing.compact))
+                Text(
+                    if (localMain.suspiciousDevices.isEmpty()) context.getString(R.string.scan_complete_no_clues)
+                    else context.getString(R.string.scan_complete_clues, localMain.suspiciousDevices.size),
+                    color = AppColors.textSecondary, fontSize = 12.sp, maxLines = 2,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth()
+                )
+            } else if (localMain.scanStatus != ScanStatus.IDLE) {
+                Spacer(Modifier.height(AppSpacing.compact))
+                HistoryReadWarning()
+                Text(ScanStrings.text(context, localMain.scanMessage), color = AppColors.textSecondary, fontSize = 12.sp,
+                    lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+                if (localMain.scanStatus == ScanStatus.RUNNING && !localMain.scanProtected) {
+                    Text(context.getString(R.string.scan_unprotected_hint), color = AppColors.textSecondary, fontSize = 10.sp,
+                        lineHeight = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth().padding(top = AppSpacing.micro))
+                }
             }
         }
 
