@@ -157,7 +157,11 @@ fun DetectCheckView() {
                 Spacer(Modifier.height(AppSpacing.compact))
                 Text(
                     if (localMain.suspiciousDevices.isEmpty()) context.getString(R.string.scan_complete_no_clues)
-                    else context.getString(R.string.scan_complete_clues, localMain.suspiciousDevices.size),
+                    else context.resources.getQuantityString(
+                        R.plurals.scan_complete_clues,
+                        localMain.suspiciousDevices.size,
+                        localMain.suspiciousDevices.size
+                    ),
                     color = AppColors.textSecondary, fontSize = 12.sp, maxLines = 2,
                     overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth()
                 )
@@ -413,7 +417,7 @@ fun DetectCheckView() {
                                 .background(AppColors.primary, RoundedCornerShape(AppShapes.pill))
                                 .clickable {
                                     notifyPrompt = null
-                                    if (explain) notifyLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                    if (explain) notifyLauncher.launch(NotificationAccess.POST_NOTIFICATIONS_PERMISSION)
                                     else context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
                                 },
                             contentAlignment = Alignment.Center

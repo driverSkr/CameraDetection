@@ -14,6 +14,8 @@ import com.spyfinder.hiddencamera.detectorapp.utils.ScanHistoryStore
 import com.spyfinder.hiddencamera.detectorapp.scan.ScanStatus
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanArchive
 import com.spyfinder.hiddencamera.detectorapp.utils.ScanRecord
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
+import com.spyfinder.hiddencamera.detectorapp.R
 
 class MainContextEntity(
     private val appContext: Context? = DetectorApp.INSTANCE?.applicationContext
@@ -36,7 +38,9 @@ class MainContextEntity(
     val magneticListening = mutableStateOf(false)
     var scanProtected by mutableStateOf(true)
     var scanStatus by mutableStateOf(ScanStatus.IDLE)
-    var scanMessage by mutableStateOf("Ready to check your Wi-Fi network")
+    var scanMessage by mutableStateOf(appContext?.let {
+        ScanStrings.canonical(it, R.string.scan_ready)
+    }.orEmpty())
     var latestMessage by mutableStateOf("")
     /** User-facing SSID. The scan scope address remains in networkLabel for evidence/history. */
     var networkName by mutableStateOf("")

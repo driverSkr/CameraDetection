@@ -252,9 +252,30 @@ fun DetectResultView() {
                             Text(context.getString(label), color = AppColors.textSecondary, fontSize = 12.sp)
                             if (localMain.isShowingLatestHistoryResult) {
                                 localMain.displayedHistory?.let { record ->
-                                    if (record.startedAt > 0) Text(context.getString(R.string.history_meta,
-                                        java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(java.util.Date(record.startedAt)),
-                                        record.network, record.coverage.checked, record.coverage.total, record.coverage.analyzed), color = AppColors.textSecondary, fontSize = 12.sp)
+                                    if (record.startedAt > 0) {
+                                        val header = context.getString(
+                                            R.string.history_meta_header,
+                                            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT)
+                                                .format(java.util.Date(record.startedAt)),
+                                            record.network
+                                        )
+                                        val addresses = context.resources.getQuantityString(
+                                            R.plurals.history_addresses_checked,
+                                            record.coverage.checked,
+                                            record.coverage.checked,
+                                            record.coverage.total
+                                        )
+                                        val devices = context.resources.getQuantityString(
+                                            R.plurals.history_devices_analyzed,
+                                            record.coverage.analyzed,
+                                            record.coverage.analyzed
+                                        )
+                                        Text(
+                                            "$header\n${context.getString(R.string.history_meta_details, addresses, devices)}",
+                                            color = AppColors.textSecondary,
+                                            fontSize = 12.sp
+                                        )
+                                    }
                                 }
                             }
                             Text(resultMessage, color = AppColors.textSecondary, fontSize = 12.sp)

@@ -6,8 +6,8 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- LAN scan evidence contains device addresses and must remain on this device. -->
+    <exclude domain="file" path="." />
+    <exclude domain="sharedpref" path="sp_detect_scan_history.xml" />
+    <exclude domain="sharedpref" path="scan_session.xml" />
 </full-backup-content>

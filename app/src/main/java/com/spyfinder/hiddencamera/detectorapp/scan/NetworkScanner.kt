@@ -6,8 +6,11 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.SystemClock
+import android.os.Build
 import android.util.Xml
 import com.spyfinder.hiddencamera.detectorapp.R
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
+import com.spyfinder.hiddencamera.detectorapp.utils.UNKNOWN_SSID
 import com.spyfinder.hiddencamera.detectorapp.model.WifiDevice
 import kotlinx.coroutines.*
 import java.util.concurrent.PriorityBlockingQueue
@@ -113,11 +116,14 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val hasVpn = networks.any { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true }
         val airplane = android.provider.Settings.Global.getInt(
             context.contentResolver, android.provider.Settings.Global.AIRPLANE_MODE_ON, 0) != 0
-        scanPreflightMessage(airplane, local.size, hasWifi, hasVpn)?.let { throw IllegalStateException(it) }
+        scanPreflightMessage(airplane, local.size, hasWifi, hasVpn)?.let {
+            throw IllegalStateException(ScanStrings.canonical(context, it))
+        }
         val network = local.firstOrNull { it == cm.activeNetwork } ?: local.single()
-        val properties = cm.getLinkProperties(network) ?: error("Wi-Fi address is unavailable. Reconnect and retry.")
+        val properties = cm.getLinkProperties(network)
+            ?: error(ScanStrings.canonical(context, R.string.scan_address_unavailable))
         val address = properties.linkAddresses.firstOrNull { it.address is Inet4Address }
-            ?: error("This network has no IPv4 address. IPv6 scanning is not supported yet.")
+            ?: error(ScanStrings.canonical(context, R.string.scan_ipv6_unsupported))
         return WifiTarget(network, address.address.hostAddress!!, address.prefixLength,
             properties.routes.firstOrNull { it.isDefaultRoute && it.gateway is Inet4Address }?.gateway?.hostAddress).also { target = it }
     }
@@ -125,14 +131,16 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
     /** Returns the connected SSID when Android exposes it; callers should provide a generic fallback. */
     fun connectedWifiName(network: Network): String? {
         val fromCapabilities = runCatching {
-            (cm.getNetworkCapabilities(network)?.transportInfo as? android.net.wifi.WifiInfo)?.ssid
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                (cm.getNetworkCapabilities(network)?.transportInfo as? android.net.wifi.WifiInfo)?.ssid
+            } else null
         }.getOrNull()
         val fromManager = runCatching {
             val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             wifi.connectionInfo?.ssid
         }.getOrNull()
         return listOf(fromCapabilities, fromManager)
-            .firstOrNull { !it.isNullOrBlank() && it != WifiManager.UNKNOWN_SSID }
+            .firstOrNull { !it.isNullOrBlank() && it != UNKNOWN_SSID }
             ?.trim('"')
     }
 
@@ -151,14 +159,18 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         total = targets.total
         progress = ScanWorkProgress(targets.addresses.toSet())
         discovered(t.ip, listOf(Evidence("Local", "Current phone")))
-        onProgress("Discovering devices in ${t.ip}/${t.prefix}…", snapshot(), 0)
+        onProgress(ScanStrings.canonical(context, R.string.scan_discovering_network, "${t.ip}/${t.prefix}"), snapshot(), 0)
         coroutineScope {
             val reporter = launch {
                 while (isActive) {
                     delay(200)
                     val coverage = coverage()
                     val remaining = (found.size - coverage.analyzed).coerceAtLeast(0)
-                    val message = "Discovering: ${coverage.checked}/$planned addresses checked\nAnalyzing services: ${coverage.analyzed}/${found.size} devices\nDevices awaiting analysis: $remaining"
+                    val message = listOf(
+                        ScanStrings.canonical(context, R.string.scan_discovery_progress, coverage.checked, planned),
+                        ScanStrings.canonical(context, R.string.scan_analysis_progress, coverage.analyzed, found.size),
+                        ScanStrings.canonical(context, R.string.scan_analysis_remaining, remaining)
+                    ).joinToString("\n")
                     onProgress(withWarnings(message), snapshot(), progress.percent())
                 }
             }
@@ -201,13 +213,13 @@ class NetworkScanner(private val context: Context, val resources: ScanResources 
         val incomplete = devices.count { !it.analysisComplete }
         val partial = targets.limited || limited.get() || discoveryCount.get() < planned
         ScanOutput(devices, partial, withWarnings(buildString {
-            append(if (partial) "Partially completed. " else "Scan completed. ")
-            append("Checked ${discoveryCount.get()} of ${targets.total} IPv4 addresses; ${devices.size} devices responded.")
-            if (incomplete > 0) append(" $incomplete devices could not be fully analyzed.")
-            if (uncertainAddresses.get() > 0) append(" ${uncertainAddresses.get()} addresses could not be verified due to network errors.")
-            if (unresolvedServices.get() > 0) append(" ${unresolvedServices.get()} service announcements could not be resolved to an in-scope IPv4 endpoint.")
-            if (targets.limited || limited.get()) append(" Coverage or evidence storage was limited; review the recorded scope.")
-            append(" Devices that do not respond or are isolated by the network may be missed. No result proves a room is safe.")
+            append(ScanStrings.canonical(context, if (partial) R.string.scan_partial_prefix else R.string.scan_complete_prefix))
+            append(ScanStrings.canonical(context, R.string.scan_summary, discoveryCount.get(), targets.total, devices.size))
+            if (incomplete > 0) append(ScanStrings.canonical(context, R.string.scan_incomplete_count, incomplete))
+            if (uncertainAddresses.get() > 0) append(ScanStrings.canonical(context, R.string.scan_unverified_addresses, uncertainAddresses.get()))
+            if (unresolvedServices.get() > 0) append(ScanStrings.canonical(context, R.string.scan_unresolved_services, unresolvedServices.get()))
+            if (targets.limited || limited.get()) append(ScanStrings.canonical(context, R.string.scan_scope_limited))
+            append(ScanStrings.canonical(context, R.string.scan_limits_note))
         }))
     }
 

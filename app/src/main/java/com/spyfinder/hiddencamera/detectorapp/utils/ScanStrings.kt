@@ -1,13 +1,32 @@
 package com.spyfinder.hiddencamera.detectorapp.utils
 
 import android.content.Context
+import android.content.res.Configuration
+import android.content.res.Resources
+import androidx.annotation.StringRes
 import com.spyfinder.hiddencamera.detectorapp.R
+import java.util.Locale
 
 /**
  * Formats the scanner's canonical records at the display boundary. Existing history stays readable
  * in either language; translating a view never rewrites evidence, addresses or classification input.
  */
 object ScanStrings {
+    @Volatile private var englishResources: Resources? = null
+
+    /** Stable English representation for persisted records; display text is localized by [text]. */
+    fun canonical(context: Context, @StringRes id: Int, vararg args: Any): String {
+        val resources = englishResources ?: synchronized(this) {
+            englishResources ?: Configuration(context.resources.configuration).let { configuration ->
+                configuration.setLocale(Locale.ENGLISH)
+                context.applicationContext.createConfigurationContext(configuration).resources.also {
+                    englishResources = it
+                }
+            }
+        }
+        return resources.getString(id, *args)
+    }
+
     private val exact = mapOf(
         "Services advertised; hardware type unconfirmed" to R.string.ux_service_only,
         "Media playback service" to R.string.ux_service_playback,

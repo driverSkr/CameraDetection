@@ -21,6 +21,7 @@ import com.spyfinder.hiddencamera.detectorapp.base.BaseActivityVBind
 import com.spyfinder.hiddencamera.detectorapp.databinding.LayoutComposeContainerBinding
 import com.spyfinder.hiddencamera.detectorapp.theme.ComposeProjectTheme
 import com.spyfinder.hiddencamera.detectorapp.theme.Transparent
+import com.spyfinder.hiddencamera.detectorapp.ui.guide.GuideActivity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.MainContextEntity
 import com.spyfinder.hiddencamera.detectorapp.ui.main.page.MainPage
@@ -28,12 +29,14 @@ import com.spyfinder.hiddencamera.detectorapp.ui.subscribe.SubscribeActivity
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscribeHelper
 import com.spyfinder.hiddencamera.detectorapp.utils.SubscriptionGate
 import com.spyfinder.hiddencamera.detectorapp.utils.WifiHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.DataHelper
 import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     companion object {
         private const val EXTRA_CHECK_SUBSCRIBE_ON_LAUNCH = "extra_check_subscribe_on_launch"
+        private const val KEY_FIRST_OPEN = "open"
         const val EXTRA_FOCUS_DETECT = "extra_focus_detect"
 
         fun launch(context: Context, checkSubscribeOnLaunch: Boolean = false) {
@@ -56,6 +59,7 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null && routeFirstOpenToGuide()) return
         if (savedInstanceState == null) checkColdStartSubscribeIfNeeded()
         focusDetectIfRequested(intent)
 
@@ -72,6 +76,14 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
         }
     }
 
+    private fun routeFirstOpenToGuide(): Boolean {
+        val isFirstOpen = runCatching { DataHelper.isFirst(this, KEY_FIRST_OPEN) }.getOrDefault(false)
+        if (!isFirstOpen) return false
+        GuideActivity.launch(this, isFirstLaunch = true)
+        finish()
+        return true
+    }
+
     private fun focusDetectIfRequested(intent: android.content.Intent?) {
         if (intent?.getBooleanExtra(EXTRA_FOCUS_DETECT, false) != true) return
         scanViewModel.state.selectTabIndex.intValue = 0
@@ -80,7 +92,9 @@ class MainActivity : BaseActivityVBind<LayoutComposeContainerBinding>() {
     }
 
     private fun checkColdStartSubscribeIfNeeded() {
-        val shouldCheckSubscribeOnLaunch = intent.getBooleanExtra(EXTRA_CHECK_SUBSCRIBE_ON_LAUNCH, false)
+        val launchedFromAppIcon = intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)
+        val shouldCheckSubscribeOnLaunch = launchedFromAppIcon ||
+            intent.getBooleanExtra(EXTRA_CHECK_SUBSCRIBE_ON_LAUNCH, false)
         if (!shouldCheckSubscribeOnLaunch || hasHandledColdStartSubscribeCheck) {
             return
         }

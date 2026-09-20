@@ -1,6 +1,5 @@
 package com.spyfinder.hiddencamera.detectorapp.utils
 
-import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
@@ -9,6 +8,7 @@ import androidx.core.content.ContextCompat
 
 /** Runtime notification permission for Android 13+, including the usual rationale/settings split. */
 object NotificationAccess {
+    const val POST_NOTIFICATIONS_PERMISSION = "android.permission.POST_NOTIFICATIONS"
     private const val PREFS = "notification_access"
     private const val KEY_ASKED = "system_asked"
 
@@ -16,7 +16,7 @@ object NotificationAccess {
 
     fun granted(context: Context): Boolean =
         Build.VERSION.SDK_INT < 33 ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            ContextCompat.checkSelfPermission(context, POST_NOTIFICATIONS_PERMISSION) ==
             PackageManager.PERMISSION_GRANTED
 
     fun asked(context: Context): Boolean =
@@ -31,7 +31,8 @@ object NotificationAccess {
         sdkInt = Build.VERSION.SDK_INT,
         granted = granted(activity),
         asked = asked(activity),
-        canRationale = activity.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+        canRationale = Build.VERSION.SDK_INT >= 33 &&
+            activity.shouldShowRequestPermissionRationale(POST_NOTIFICATIONS_PERMISSION)
     )
 
     fun step(sdkInt: Int, granted: Boolean, asked: Boolean, canRationale: Boolean): Step = when {

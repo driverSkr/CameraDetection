@@ -69,7 +69,7 @@ class ReauditEvidenceTest {
                 printerLabel = activity.getString(R.string.identity_printer)
                 searchLabel = activity.getString(R.string.ux_search)
                 allList = activity.getString(R.string.all_detection_list)
-                incompleteCount = activity.getString(R.string.ux_incomplete_count, 1)
+                incompleteCount = activity.resources.getQuantityString(R.plurals.ux_incomplete_count, 1, 1)
                 activity.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.composeView).setContent {
                     CompositionLocalProvider(com.spyfinder.hiddencamera.detectorapp.ui.main.context.LocalMainContextEntity provides state,
                         androidx.activity.compose.LocalActivityResultRegistryOwner provides activity) {

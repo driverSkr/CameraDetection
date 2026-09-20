@@ -26,8 +26,10 @@ import com.spyfinder.hiddencamera.detectorapp.R
 import com.spyfinder.hiddencamera.detectorapp.ui.main.context.replaceDevices
 import com.spyfinder.hiddencamera.detectorapp.utils.ExclusiveSession
 import com.spyfinder.hiddencamera.detectorapp.utils.WifiHelper
+import com.spyfinder.hiddencamera.detectorapp.utils.ScanStrings
 
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
+    private fun message(id: Int, vararg args: Any) = ScanStrings.canonical(getApplication(), id, *args)
     val state = MainContextEntity(application)
     private val historyLoad = viewModelScope.launch { state.restoreLatestScanResult() }
     private var startedAt = 0L
@@ -40,7 +42,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val processObserver = object : DefaultLifecycleObserver {
         override fun onStop(owner: LifecycleOwner) {
             if (state.scanStatus == ScanStatus.RUNNING && !ScanForegroundService.isRunning()) {
-                cancel(UNPROTECTED_BACKGROUND, source = "unprotected_background")
+                cancel(message(R.string.scan_unprotected_background), source = "unprotected_background")
             }
         }
     }
@@ -59,22 +61,22 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 if (state.scanStatus == ScanStatus.RUNNING) {
                     state.scanProtected = false
                     if (!ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-                        cancel(UNPROTECTED_BACKGROUND, source = "service_lost")
+                        cancel(message(R.string.scan_unprotected_background), source = "service_lost")
                     }
                 }
             }
         )
         if (prefs.getBoolean("running", false)) {
             state.scanStatus = ScanStatus.CANCELLED
-            state.scanMessage = "The previous scan was interrupted. Start a new scan."
+            state.scanMessage = message(R.string.scan_previous_interrupted)
             prefs.edit().putBoolean("running", false).putString("interrupted", state.scanMessage).apply()
         } else if (prefs.contains("interrupted")) {
             state.scanStatus = ScanStatus.CANCELLED
-            state.scanMessage = prefs.getString("interrupted", "Scan interrupted. Please retry.").orEmpty()
+            state.scanMessage = prefs.getString("interrupted", message(R.string.scan_interrupted)).orEmpty()
         }
     }
     fun start() {
-        if (state.scanStatus == ScanStatus.RUNNING) cancel("Scan replaced.", source = "replaced")
+        if (state.scanStatus == ScanStatus.RUNNING) cancel(message(R.string.scan_replaced), source = "replaced")
         if (ExclusiveSession.yieldToScan()) {
             Toast.makeText(getApplication(), getApplication<Application>().getString(R.string.feature_preempted), Toast.LENGTH_SHORT).show()
         }
@@ -110,7 +112,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: IllegalStateException) {
-                    if (id == generation) state.scanMessage = e.message ?: SCAN_CONNECT_WIFI
+                    if (id == generation) state.scanMessage = e.message ?: message(R.string.scan_connect_wifi)
                     return@launch
                 }
                 if (id != generation) return@launch
@@ -125,7 +127,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 state.isAnimating.value = true
                 state.scanStatus = ScanStatus.RUNNING
                 state.detectProgress.intValue = 0
-                state.scanMessage = "Preparing Wi-Fi scan…"
+                state.scanMessage = message(R.string.scan_preparing)
                 state.networkLabel = "${target.ip}/${target.prefix}"
                 state.networkName = worker.connectedWifiName(target.network).orEmpty()
                 state.suspiciousDevices.clear(); state.trustedDevices.clear()
@@ -133,7 +135,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 Event.event(getApplication(), Event.WIFI_SCAN_START)
                 state.scanProtected = ScanForegroundService.ensureRunning(getApplication())
                 if (!state.scanProtected) {
-                    state.scanMessage = UNPROTECTED_KEEP_OPEN
+                    state.scanMessage = message(R.string.scan_unprotected_keep_open)
                 }
                 val task = async { worker.scan(target) { message, devices, progress ->
                     updates.trySend(ScanUiUpdate(seq.incrementAndGet(), message, devices, progress))
@@ -142,11 +144,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     while (task.isActive) {
                         delay(500)
                         if (worker.stalled()) {
-                            forcedMessage = "Scan stopped because no probe made progress for 60 seconds. Results are incomplete. Please retry."
+                            forcedMessage = message(R.string.scan_stalled)
                             worker.resources.close(); task.cancel(); break
                         }
                         if (!worker.networkUnchanged(target)) {
-                            forcedMessage = "Wi-Fi changed or disconnected. Results are incomplete. Reconnect and retry."
+                            forcedMessage = message(R.string.scan_network_changed)
                             worker.resources.close(); task.cancel(); break
                         }
                     }
@@ -169,7 +171,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 if (sessionStarted && id == generation) {
                     publish(worker.snapshot())
                     state.scanStatus = ScanStatus.FAILED
-                    state.scanMessage = worker.withWarnings(e.message ?: "Scan failed. Reconnect to Wi-Fi and retry.")
+                    state.scanMessage = worker.withWarnings(e.message ?: message(R.string.scan_failed))
                 }
             } finally {
                 updates.close()
@@ -205,7 +207,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             state.networkLabel, state.scanStatus, worker.coverage(), state.scanMessage,
             state.recordDevices()))
     }
-    fun cancel(reason: String = "Scan cancelled. Results are incomplete.", source: String = "lifecycle") {
+    fun cancel(reason: String = message(R.string.scan_cancelled), source: String = "lifecycle") {
         val preparing = job?.isActive == true && state.scanStatus != ScanStatus.RUNNING
         if (state.scanStatus != ScanStatus.RUNNING && !preparing) return
         ++generation
@@ -232,11 +234,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         cancel(source = "viewmodel_cleared")
     }
 }
-
-private const val UNPROTECTED_KEEP_OPEN =
-    "Background scan protection is unavailable. Keep the app open until the scan finishes."
-private const val UNPROTECTED_BACKGROUND =
-    "Scan stopped because background protection is unavailable. Results are incomplete. Keep the app open and retry."
 
 private data class ScanUiUpdate(
     val seq: Long,

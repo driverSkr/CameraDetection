@@ -75,12 +75,16 @@ class ScanForegroundService : Service() {
         currentProgress = progress.coerceIn(0, 100)
         createChannel()
         val notification = buildNotification(currentProgress)
-        val types = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        val types = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        } else {
+            0
+        }
         return try {
             ServiceCompat.startForeground(
                 this, NOTIFICATION_ID, notification,
-                if (Build.VERSION.SDK_INT >= 29) types else 0
+                types
             )
             true
         } catch (error: Exception) {

@@ -137,7 +137,9 @@
     <string name="wifi_network_address">"Wi-Fi：%1$s"</string>
     <string name="wifi_connected_network">"已连接：%1$s"</string>
     <string name="wifi_connected_unknown">"已连接 Wi-Fi"</string>
-    <string name="scan_complete_clues">"扫描完成 · 发现 %1$d 条可能与摄像头相关的线索，请查看结果"</string>
+    <plurals name="scan_complete_clues">
+        <item quantity="other">扫描完成 · 发现 %1$d 条可能与摄像头相关的线索，请查看结果</item>
+    </plurals>
     <string name="scan_complete_no_clues">"扫描完成 · 未发现明显线索，请查看结果了解详情"</string>
     <string name="subscription_renewal_price">"%1$s / %2$s，自动续订，可随时取消。"</string>
     <string name="colour_red">"红色辅助滤镜"</string>
@@ -195,7 +197,14 @@
     <string name="magnetic_sensor_failed">"无法启动磁场传感器，请重试。"</string>
     <string name="history_recent">"最近一次"</string>
     <string name="history_complete">"上次完整"</string>
-    <string name="history_meta">"%1$s · %2$s\n已检查 %3$d/%4$d 个地址；已分析 %5$d 台设备"</string>
+    <string name="history_meta_header">%1$s · %2$s</string>
+    <plurals name="history_addresses_checked">
+        <item quantity="other">已检查 %1$d/%2$d 个地址</item>
+    </plurals>
+    <plurals name="history_devices_analyzed">
+        <item quantity="other">已分析 %1$d 台设备</item>
+    </plurals>
+    <string name="history_meta_details">%1$s；%2$s</string>
     <string name="history_status_complete">"已完成"</string>
     <string name="history_status_partial">"部分完成"</string>
     <string name="history_status_cancelled">"已中断或取消"</string>
@@ -313,11 +322,12 @@
     <string name="ux_show_technical">展开技术详情</string>
     <string name="ux_hide_technical">收起技术详情</string>
     <string name="ux_scan_overview">本次扫描总览</string>
-    <string name="ux_incomplete_count">%1$d 台没查完</string>
+    <plurals name="ux_incomplete_count">
+        <item quantity="other">%1$d 台没查完</item>
+    </plurals>
     <string name="ux_search">搜索名称、型号或 IP</string>
     <string name="ux_status_all">全部</string>
     <string name="ux_status_incomplete">分析未完成</string>
-    <string name="ux_filter_count">%1$s · 当前 %2$d 台 / 总计 %3$d 台</string>
     <string name="ux_clear_filter">清除筛选</string>
     <string name="ux_no_matches">没有符合条件的设备。请更换分类。</string>
     <string name="ux_service_only">已取得服务公告，硬件类型仍待确认</string>

@@ -137,7 +137,10 @@
     <string name="wifi_network_address">"WI-FI: %1$s"</string>
     <string name="wifi_connected_network">"Connected to %1$s"</string>
     <string name="wifi_connected_unknown">"Connected to Wi-Fi"</string>
-    <string name="scan_complete_clues">"Scan complete · %1$d possible camera-related clues found. Review the results."</string>
+    <plurals name="scan_complete_clues">
+        <item quantity="one">Scan complete · %1$d possible camera-related clue found. Review the results.</item>
+        <item quantity="other">Scan complete · %1$d possible camera-related clues found. Review the results.</item>
+    </plurals>
     <string name="scan_complete_no_clues">"Scan complete · No obvious clues found. Review the results for details."</string>
     <string name="subscription_renewal_price">"%1$s / %2$s. Auto-renews. Cancel anytime."</string>
     <string name="colour_red">"Red colour aid"</string>
@@ -195,7 +198,16 @@
     <string name="magnetic_sensor_failed">"Unable to start the magnetic sensor. Please retry."</string>
     <string name="history_recent">"Most recent"</string>
     <string name="history_complete">"Last complete"</string>
-    <string name="history_meta">"%1$s · %2$s\nChecked %3$d/%4$d addresses; analyzed %5$d devices"</string>
+    <string name="history_meta_header">%1$s · %2$s</string>
+    <plurals name="history_addresses_checked">
+        <item quantity="one">Checked %1$d/%2$d address</item>
+        <item quantity="other">Checked %1$d/%2$d addresses</item>
+    </plurals>
+    <plurals name="history_devices_analyzed">
+        <item quantity="one">analyzed %1$d device</item>
+        <item quantity="other">analyzed %1$d devices</item>
+    </plurals>
+    <string name="history_meta_details">%1$s; %2$s</string>
     <string name="history_status_complete">"Completed"</string>
     <string name="history_status_partial">"Partially completed"</string>
     <string name="history_status_cancelled">"Interrupted or cancelled"</string>
@@ -313,11 +325,13 @@
     <string name="ux_show_technical">Show technical details</string>
     <string name="ux_hide_technical">Hide technical details</string>
     <string name="ux_scan_overview">This scan: overview</string>
-    <string name="ux_incomplete_count">%1$d not fully checked</string>
+    <plurals name="ux_incomplete_count">
+        <item quantity="one">%1$d device not fully checked</item>
+        <item quantity="other">%1$d devices not fully checked</item>
+    </plurals>
     <string name="ux_search">Search name, model or IP</string>
     <string name="ux_status_all">All</string>
     <string name="ux_status_incomplete">Analysis incomplete</string>
-    <string name="ux_filter_count">%1$s · %2$d shown / %3$d total</string>
     <string name="ux_clear_filter">Clear filters</string>
     <string name="ux_no_matches">No devices match. Choose another category.</string>
     <string name="ux_service_only">Services advertised; hardware type unconfirmed</string>

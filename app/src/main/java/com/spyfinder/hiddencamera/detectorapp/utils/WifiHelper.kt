@@ -8,12 +8,14 @@ import com.spyfinder.hiddencamera.detectorapp.model.WifiInfo
 import java.net.Inet4Address
 import com.spyfinder.hiddencamera.detectorapp.scan.isLocalWifi
 
+const val UNKNOWN_SSID = "<unknown ssid>"
+
 object WifiHelper {
     fun connectedSsid(context: Context): String? {
         val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         return runCatching { wifi.connectionInfo?.ssid }
             .getOrNull()
-            ?.takeUnless { it.isNullOrBlank() || it == WifiManager.UNKNOWN_SSID }
+            ?.takeUnless { it.isNullOrBlank() || it == UNKNOWN_SSID }
             ?.trim('"')
     }
 
