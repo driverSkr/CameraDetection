@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">"隐藏摄像头检测"</string>
+    <string name="app_name">"探镜"</string>
     <string name="action_continue">"继续"</string>
     <string name="action_start">"开始"</string>
     <string name="action_cancel">"取消"</string>
@@ -259,15 +259,15 @@
     <string name="a11y_back">返回</string>
     <string name="a11y_close">关闭</string>
     <string name="a11y_reset_camera">重置滤镜和缩放</string>
-<string name="device_mac_unavailable">本次扫描未取得可靠的 MAC 地址。</string>
-<string name="device_model_unavailable">设备尚未提供可确认的型号。</string>
-<string name="device_open_ports">已确认开放的端口</string>
-<string name="device_advertised_name">公告名称（mDNS）</string>
-<string name="device_hostname">主机名（mDNS）</string>
-<string name="device_ssdp_server">服务软件（SSDP）</string>
-<string name="device_advertised_service">公告服务（SSDP）</string>
-<string name="device_server_port">服务软件（端口 %1$s 响应）</string>
-<string name="device_metadata_note">名称和软件描述来自设备自身，可能是通用信息，不能据此确认品牌或型号。这里只列出本次检查的端口；信息缺失不代表设备安全。</string>
+    <string name="device_mac_unavailable">本次扫描未取得可靠的 MAC 地址。</string>
+    <string name="device_model_unavailable">设备尚未提供可确认的型号。</string>
+    <string name="device_open_ports">已确认开放的端口</string>
+    <string name="device_advertised_name">公告名称（mDNS）</string>
+    <string name="device_hostname">主机名（mDNS）</string>
+    <string name="device_ssdp_server">服务软件（SSDP）</string>
+    <string name="device_advertised_service">公告服务（SSDP）</string>
+    <string name="device_server_port">服务软件（端口 %1$s 响应）</string>
+    <string name="device_metadata_note">名称和软件描述来自设备自身，可能是通用信息，不能据此确认品牌或型号。这里只列出本次检查的端口；信息缺失不代表设备安全。</string>
     <string name="identity_unconfirmed">设备类型待确认</string>
     <string name="identity_renderer">媒体播放设备</string>
     <string name="identity_server">媒体服务器</string>
@@ -286,7 +286,7 @@
     <string name="identity_firmware">固件版本</string>
     <string name="identity_source">身份信息来源</string>
     <string name="identity_query">身份查询状态</string>
-<string name="identity_mdns_basis">依据：mDNS 公告服务类型</string>
+    <string name="identity_mdns_basis">依据：mDNS 公告服务类型</string>
     <string name="identity_computer">疑似电脑</string>
     <string name="identity_mobile">疑似手机或平板</string>
     <string name="identity_tv">疑似电视</string>
